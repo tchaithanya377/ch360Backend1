@@ -1,0 +1,721 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}R&D Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.quick-actions {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.action-btn {
+    margin: 5px;
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.alert-card {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.alert-card.warning {
+    border-left-color: #ffc107;
+    background: #fffbf0;
+}
+
+.alert-card.success {
+    border-left-color: #28a745;
+    background: #f0fff4;
+}
+
+.recent-activity {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fa;
+}
+
+.progress-ring {
+    width: 60px;
+    height: 60px;
+}
+
+.progress-ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.progress-ring .bg {
+    stroke: #e9ecef;
+}
+
+.progress-ring .progress {
+    stroke: #007bff;
+    stroke-dasharray: 157;
+    stroke-dashoffset: calc(157 - (157 * var(--progress)) / 100);
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-active { background: #d4edda; color: #155724; }
+.status-draft { background: #f8d7da; color: #721c24; }
+.status-completed { background: #cce5ff; color: #004085; }
+.status-paused { background: #fff3cd; color: #856404; }
+
+.priority-high { background: #f8d7da; color: #721c24; }
+.priority-medium { background: #fff3cd; color: #856404; }
+.priority-low { background: #d1ecf1; color: #0c5460; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Research & Development Dashboard</h2>
+            <p class="text-muted mb-0">Comprehensive research management and analytics</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                <i class="fas fa-plus"></i> Quick Add
+            </button>
+            <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-outline-secondary" onclick="exportData()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h5 class="mb-3"><i class="fas fa-bolt"></i> Quick Actions</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{% url 'dashboard:rnd_projects' %}" class="btn btn-outline-primary action-btn w-100">
+                    <i class="fas fa-project-diagram"></i><br>Manage Projects
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'dashboard:rnd_researchers' %}" class="btn btn-outline-success action-btn w-100">
+                    <i class="fas fa-user-graduate"></i><br>Manage Researchers
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'dashboard:rnd_grants' %}" class="btn btn-outline-warning action-btn w-100">
+                    <i class="fas fa-money-bill-wave"></i><br>Manage Grants
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'dashboard:rnd_publications' %}" class="btn btn-outline-info action-btn w-100">
+                    <i class="fas fa-book"></i><br>Manage Publications
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="stats-card p-3 text-center">
+                <div class="h6 mb-1">Projects</div>
+                <div class="h3 mb-0">{{ projects_count }}</div>
+                <small class="text-light">{{ active_projects_count }} Active</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card p-3 text-center">
+                <div class="h6 mb-1">Publications</div>
+                <div class="h3 mb-0">{{ publications_count }}</div>
+                <small class="text-light">{{ recent_pubs_count }} This Year</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card p-3 text-center">
+                <div class="h6 mb-1">Grants</div>
+                <div class="h3 mb-0">{{ grants_count }}</div>
+                <small class="text-light">${{ total_funding|floatformat:0 }}</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card p-3 text-center">
+                <div class="h6 mb-1">Researchers</div>
+                <div class="h3 mb-0">{{ researchers_count }}</div>
+                <small class="text-light">{{ active_researchers_count }} Active</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card p-3 text-center">
+                <div class="h6 mb-1">Patents</div>
+                <div class="h3 mb-0">{{ patents_count }}</div>
+                <small class="text-light">{{ active_patents_count }} Active</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card p-3 text-center">
+                <div class="h6 mb-1">Datasets</div>
+                <div class="h3 mb-0">{{ datasets_count }}</div>
+                <small class="text-light">{{ public_datasets_count }} Public</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-pie"></i> Projects by Status</h5>
+                <canvas id="projectsStatusChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-chart-bar"></i> Publications by Year</h5>
+                <canvas id="publicationsYearChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts and Notifications -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-exclamation-triangle"></i> System Alerts</h5>
+                <div id="alertsContainer">
+                    {% for alert in alerts %}
+                    <div class="alert-card {% if alert.severity == 'high' %}alert-danger{% elif alert.severity == 'medium' %}warning{% else %}success{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ alert.title }}</strong>
+                                <p class="mb-1">{{ alert.message }}</p>
+                                <small class="text-muted">{{ alert.created_at|timesince }} ago</small>
+                            </div>
+                            <span class="badge {% if alert.severity == 'high' %}bg-danger{% elif alert.severity == 'medium' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ alert.severity|title }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>No alerts at this time</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-clock"></i> Upcoming Deadlines</h5>
+                <div id="deadlinesContainer">
+                    {% for deadline in upcoming_deadlines %}
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ deadline.title }}</strong>
+                                <br><small class="text-muted">{{ deadline.type }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-danger">{{ deadline.days_remaining }} days</div>
+                                <small class="text-muted">{{ deadline.due_date|date:"M d" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                        <p>No upcoming deadlines</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities and Quick Stats -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-history"></i> Recent Activities</h5>
+                <div class="recent-activity" id="recentActivitiesContainer">
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                {% if activity.type == 'project' %}
+                                    <i class="fas fa-project-diagram text-primary"></i>
+                                {% elif activity.type == 'publication' %}
+                                    <i class="fas fa-book text-success"></i>
+                                {% elif activity.type == 'grant' %}
+                                    <i class="fas fa-money-bill-wave text-warning"></i>
+                                {% elif activity.type == 'patent' %}
+                                    <i class="fas fa-lightbulb text-info"></i>
+                                {% else %}
+                                    <i class="fas fa-circle text-secondary"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ activity.title }}</strong>
+                                        <br><small class="text-muted">{{ activity.description }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>No recent activities</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="fas fa-tachometer-alt"></i> Performance Metrics</h5>
+                <div class="text-center">
+                    <div class="mb-3">
+                        <h6>Research Output</h6>
+                        <div class="progress-ring mx-auto">
+                            <svg class="progress-ring" viewBox="0 0 60 60">
+                                <circle class="bg" cx="30" cy="30" r="25"></circle>
+                                <circle class="progress" cx="30" cy="30" r="25" style="--progress: {{ research_output_score }}"></circle>
+                            </svg>
+                            <div class="mt-2">{{ research_output_score }}%</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Funding Success</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ funding_success_rate }}%"></div>
+                        </div>
+                        <small>{{ funding_success_rate }}%</small>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Collaboration Index</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: {{ collaboration_index }}%"></div>
+                        </div>
+                        <small>{{ collaboration_index }}%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Add Modal -->
+<div class="modal fade" id="quickAddModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Add - R&D Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="quickAddTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="project-tab" data-bs-toggle="tab" data-bs-target="#project" type="button" role="tab">
+                            <i class="fas fa-project-diagram"></i> Project
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="researcher-tab" data-bs-toggle="tab" data-bs-target="#researcher" type="button" role="tab">
+                            <i class="fas fa-user-graduate"></i> Researcher
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="publication-tab" data-bs-toggle="tab" data-bs-target="#publication" type="button" role="tab">
+                            <i class="fas fa-book"></i> Publication
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="grant-tab" data-bs-toggle="tab" data-bs-target="#grant" type="button" role="tab">
+                            <i class="fas fa-money-bill-wave"></i> Grant
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3" id="quickAddTabContent">
+                    <!-- Project Tab -->
+                    <div class="tab-pane fade show active" id="project" role="tabpanel">
+                        <form id="quickProjectForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Project Title</label>
+                                        <input type="text" class="form-control" name="title" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Principal Investigator</label>
+                                        <select class="form-select" name="principal_investigator" required>
+                                            <option value="">Select PI</option>
+                                            {% for researcher in researchers %}
+                                            <option value="{{ researcher.id }}">{{ researcher.user.get_full_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Abstract</label>
+                                <textarea class="form-control" name="abstract" rows="3"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" name="start_date">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">End Date</label>
+                                        <input type="date" class="form-control" name="end_date">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Researcher Tab -->
+                    <div class="tab-pane fade" id="researcher" role="tabpanel">
+                        <form id="quickResearcherForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User</label>
+                                        <select class="form-select" name="user" required>
+                                            <option value="">Select User</option>
+                                            {% for user in users %}
+                                            <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Department</label>
+                                        <input type="text" class="form-control" name="department">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Title</label>
+                                        <input type="text" class="form-control" name="title">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Faculty Rank</label>
+                                        <select class="form-select" name="faculty_rank">
+                                            <option value="">Select Rank</option>
+                                            <option value="professor">Professor</option>
+                                            <option value="associate_professor">Associate Professor</option>
+                                            <option value="assistant_professor">Assistant Professor</option>
+                                            <option value="lecturer">Lecturer</option>
+                                            <option value="researcher">Researcher</option>
+                                            <option value="phd_student">PhD Student</option>
+                                            <option value="masters_student">Masters Student</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Publication Tab -->
+                    <div class="tab-pane fade" id="publication" role="tabpanel">
+                        <form id="quickPublicationForm">
+                            <div class="mb-3">
+                                <label class="form-label">Publication Title</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Type</label>
+                                        <select class="form-select" name="publication_type" required>
+                                            <option value="journal">Journal</option>
+                                            <option value="conference">Conference</option>
+                                            <option value="book">Book</option>
+                                            <option value="preprint">Preprint</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Year</label>
+                                        <input type="number" class="form-control" name="year" value="{{ current_year }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Venue/Journal</label>
+                                <input type="text" class="form-control" name="venue">
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Grant Tab -->
+                    <div class="tab-pane fade" id="grant" role="tabpanel">
+                        <form id="quickGrantForm">
+                            <div class="mb-3">
+                                <label class="form-label">Grant Title</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Sponsor</label>
+                                        <input type="text" class="form-control" name="sponsor">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Amount</label>
+                                        <input type="number" class="form-control" name="amount" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Type</label>
+                                        <select class="form-select" name="grant_type">
+                                            <option value="research">Research Grant</option>
+                                            <option value="infrastructure">Infrastructure Grant</option>
+                                            <option value="fellowship">Fellowship</option>
+                                            <option value="collaboration">Collaboration Grant</option>
+                                            <option value="innovation">Innovation Grant</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Submission Deadline</label>
+                                        <input type="date" class="form-control" name="submission_deadline">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitQuickAdd()">Add Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Dashboard refresh function
+function refreshDashboard() {
+    location.reload();
+}
+
+// Export data function
+function exportData() {
+    // Implementation for data export
+    alert('Export functionality to be implemented');
+}
+
+// Submit quick add form
+function submitQuickAdd() {
+    const activeTab = document.querySelector('.tab-pane.active');
+    const formId = activeTab.id + 'Form';
+    const form = document.getElementById(formId);
+    
+    if (form.checkValidity()) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Determine the endpoint based on the active tab
+        let endpoint = '';
+        let itemType = '';
+        
+        switch(activeTab.id) {
+            case 'project':
+                endpoint = '/api/v1/rnd/projects/';
+                itemType = 'Project';
+                break;
+            case 'researcher':
+                endpoint = '/api/v1/rnd/researchers/';
+                itemType = 'Researcher';
+                break;
+            case 'publication':
+                endpoint = '/api/v1/rnd/publications/';
+                itemType = 'Publication';
+                break;
+            case 'grant':
+                endpoint = '/api/v1/rnd/grants/';
+                itemType = 'Grant';
+                break;
+        }
+        
+        // Submit the data
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                alert(`${itemType} added successfully!`);
+                $('#quickAddModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Error adding item. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding item. Please try again.');
+        });
+    } else {
+        form.reportValidity();
+    }
+}
+
+// Get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Projects by Status Chart
+    const projectsCtx = document.getElementById('projectsStatusChart').getContext('2d');
+    new Chart(projectsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Draft', 'Completed', 'Paused', 'Cancelled'],
+            datasets: [{
+                data: [{{ active_projects_count }}, {{ draft_projects_count }}, {{ completed_projects_count }}, {{ paused_projects_count }}, {{ cancelled_projects_count }}],
+                backgroundColor: ['#28a745', '#6c757d', '#007bff', '#ffc107', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Publications by Year Chart
+    const publicationsCtx = document.getElementById('publicationsYearChart').getContext('2d');
+    new Chart(publicationsCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ publication_years|safe }},
+            datasets: [{
+                label: 'Publications',
+                data: {{ publication_counts|safe }},
+                backgroundColor: '#17a2b8'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+
+// Auto-refresh dashboard every 5 minutes
+setInterval(function() {
+    // Refresh only the alerts and deadlines sections
+    fetch('/api/v1/rnd/dashboard/alerts/')
+        .then(response => response.json())
+        .then(data => {
+            // Update alerts container
+            const alertsContainer = document.getElementById('alertsContainer');
+            if (data.alerts && data.alerts.length > 0) {
+                // Update alerts display
+            }
+        });
+}, 300000); // 5 minutes
+</script>
+{% endblock %}
+

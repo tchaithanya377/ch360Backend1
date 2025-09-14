@@ -1,0 +1,177 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}ER Diagram - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-project-diagram text-primary"></i>
+        ER Diagram
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a class="btn btn-secondary" href="{% url 'dashboard:api_er' %}" target="_blank">
+            <i class="fas fa-code"></i> View Mermaid Source
+        </a>
+        <button class="btn btn-outline-secondary ms-2" onclick="downloadMermaid()">
+            <i class="fas fa-file-download"></i> Download .mmd
+        </button>
+        <button class="btn btn-outline-primary ms-2" onclick="downloadSVG()">
+            <i class="fas fa-image"></i> Download SVG
+        </button>
+        <button class="btn btn-success ms-2" onclick="downloadPNG()">
+            <i class="fas fa-file-image"></i> Download PNG
+        </button>
+        <button class="btn btn-primary ms-2" onclick="renderDiagram()">
+            <i class="fas fa-sync-alt"></i> Re-render
+        </button>
+    </div>
+    
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle"></i>
+        This diagram is generated from Django models. Relationships are inferred from ForeignKey, ManyToMany, and OneToOne fields.
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <pre class="d-none" id="mermaidSource">{{ mermaid }}</pre>
+            <div class="mermaid" id="erContainer">{{ mermaid }}</div>
+        </div>
+    </div>
+    <div class="card-footer text-muted">
+        Tip: Use your browser zoom to explore large diagrams.
+    </div>
+ </div>
+
+<script>
+function renderDiagram() {
+    const source = document.getElementById('mermaidSource').innerText;
+    const container = document.getElementById('erContainer');
+    container.innerHTML = source;
+    if (window.mermaid) {
+        window.mermaid.init(undefined, container);
+    }
+}
+
+function downloadMermaid() {
+    const source = document.getElementById('mermaidSource').innerText;
+    const blob = new Blob([source], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'er_diagram.mmd';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+async function downloadSVG() {
+    try {
+        const source = document.getElementById('mermaidSource').innerText;
+        if (!window.mermaid || !window.mermaid.render) {
+            alert('Mermaid is not loaded yet. Please try again.');
+            return;
+        }
+        const { svg } = await window.mermaid.render('er_download', source);
+        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'er_diagram.svg';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Failed to render SVG:', e);
+        alert('Failed to generate SVG.');
+    }
+}
+
+async function downloadPNG() {
+    try {
+        const source = document.getElementById('mermaidSource').innerText;
+        if (!window.mermaid || !window.mermaid.render) {
+            alert('Mermaid is not loaded yet. Please try again.');
+            return;
+        }
+        const { svg } = await window.mermaid.render('er_png', source);
+
+        // Create an image from the SVG
+        const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+
+        img.onload = () => {
+            // Determine dimensions from SVG viewBox or attributes
+            let width = img.width;
+            let height = img.height;
+            try {
+                const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+                const svgEl = doc.documentElement;
+                const viewBox = svgEl.getAttribute('viewBox');
+                if (viewBox) {
+                    const parts = viewBox.split(/\s+/);
+                    if (parts.length === 4) {
+                        width = parseFloat(parts[2]);
+                        height = parseFloat(parts[3]);
+                    }
+                } else {
+                    const wAttr = svgEl.getAttribute('width');
+                    const hAttr = svgEl.getAttribute('height');
+                    if (wAttr && hAttr) {
+                        width = parseFloat(wAttr);
+                        height = parseFloat(hAttr);
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not parse SVG size; using image dimensions.');
+            }
+
+            const scale = 2; // export at 2x for clarity
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.floor(width * scale));
+            canvas.height = Math.max(1, Math.floor(height * scale));
+            const ctx = canvas.getContext('2d', { alpha: false });
+            // White background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Draw the SVG into canvas
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    alert('Failed to generate PNG.');
+                    URL.revokeObjectURL(url);
+                    return;
+                }
+                const dlUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = dlUrl;
+                a.download = 'er_diagram.png';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(dlUrl);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        };
+
+        img.onerror = (e) => {
+            console.error('SVG image load failed:', e);
+            alert('Failed to render PNG.');
+            URL.revokeObjectURL(url);
+        };
+
+        img.src = url;
+    } catch (e) {
+        console.error('Failed to create PNG:', e);
+        alert('Failed to create PNG.');
+    }
+}
+</script>
+{% endblock %}
+
+

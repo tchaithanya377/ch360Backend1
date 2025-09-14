@@ -1,0 +1,46 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="container">
+  <h2>Interview Rounds</h2>
+  <form method="post" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-md-4">
+        <select class="form-select" name="drive_id" required>
+          <option value="">Select drive</option>
+          {% for d in drives %}<option value="{{ d.id }}">{{ d.title }} - {{ d.company.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><input class="form-control" name="name" placeholder="Round name" required></div>
+      <div class="col-md-3">
+        <select class="form-select" name="round_type">
+          {% for v, label in round_types %}<option value="{{ v }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><input type="datetime-local" class="form-control" name="scheduled_at"></div>
+      <div class="col-md-3"><input class="form-control" name="location" placeholder="Location"></div>
+      <div class="col-12"><textarea class="form-control" name="instructions" placeholder="Instructions"></textarea></div>
+      <div class="col-12"><button class="btn btn-primary mt-2" type="submit">Add Round</button></div>
+    </div>
+  </form>
+
+  <table class="table table-striped">
+    <thead><tr><th>Round</th><th>Drive</th><th>Type</th><th>Scheduled</th><th>Location</th></tr></thead>
+    <tbody>
+      {% for r in rounds %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td>{{ r.drive.title }}</td>
+        <td>{{ r.get_round_type_display }}</td>
+        <td>{{ r.scheduled_at|date:'Y-m-d H:i' }}</td>
+        <td>{{ r.location }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center">No rounds.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+

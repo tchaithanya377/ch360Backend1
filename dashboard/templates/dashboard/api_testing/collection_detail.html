@@ -1,0 +1,405 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ collection.name }} - Collection Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1>{{ collection.name }}</h1>
+                    <p class="text-muted">{{ collection.description|default:"No description" }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'dashboard:api_testing_workspace' %}" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Open in Workspace
+                    </a>
+                    <button class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+                        Actions
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#" onclick="duplicateCollection('{{ collection.id }}')">
+                            <i class="fas fa-copy"></i> Duplicate
+                        </a>
+                        <a class="dropdown-item" href="#" onclick="exportCollection('{{ collection.id }}')">
+                            <i class="fas fa-download"></i> Export
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" href="#" onclick="deleteCollection('{{ collection.id }}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Collection Info -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Collection Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Base URL:</strong> {{ collection.base_url|default:"Not set" }}</p>
+                    <p><strong>Created:</strong> {{ collection.created_at|timesince }} ago</p>
+                    <p><strong>Requests:</strong> {{ collection.requests.count }}</p>
+                    <p><strong>Test Suites:</strong> {{ collection.test_suites.count }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge badge-{{ collection.is_public|yesno:'success,secondary' }}">
+                            {{ collection.is_public|yesno:'Public,Private' }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requests -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">API Requests</h5>
+                    <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#addRequestModal">
+                        <i class="fas fa-plus"></i> Add Request
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if collection.requests.all %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Method</th>
+                                        <th>Name</th>
+                                        <th>URL</th>
+                                        <th>Tests</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in collection.requests.all %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-{{ request.method|lower }}">
+                                                {{ request.method }}
+                                            </span>
+                                        </td>
+                                        <td>{{ request.name }}</td>
+                                        <td><code>{{ request.url|truncatechars:50 }}</code></td>
+                                        <td>{{ request.tests.count }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'dashboard:api_request_detail' request.id %}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button class="btn btn-outline-success" onclick="executeRequest('{{ request.id }}')">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="#" onclick="duplicateRequest('{{ request.id }}')">
+                                                        <i class="fas fa-copy"></i> Duplicate
+                                                    </a>
+                                                    <div class="dropdown-divider"></div>
+                                                    <a class="dropdown-item text-danger" href="#" onclick="deleteRequest('{{ request.id }}')">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-code fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Requests Yet</h5>
+                            <p class="text-muted">Add your first API request to get started.</p>
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#addRequestModal">
+                                <i class="fas fa-plus"></i> Add First Request
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Suites -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Test Suites</h5>
+                    <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#addTestSuiteModal">
+                        <i class="fas fa-plus"></i> Add Test Suite
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if collection.test_suites.all %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Tests</th>
+                                        <th>Environment</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for suite in collection.test_suites.all %}
+                                    <tr>
+                                        <td>{{ suite.name }}</td>
+                                        <td>{{ suite.tests.count }}</td>
+                                        <td>{{ suite.environment.name|default:"Not set" }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ suite.enabled|yesno:'success,secondary' }}">
+                                                {{ suite.enabled|yesno:'Enabled,Disabled' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'dashboard:api_test_suite_detail' suite.id %}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button class="btn btn-outline-success" onclick="runTestSuite('{{ suite.id }}')">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-list fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Test Suites Yet</h5>
+                            <p class="text-muted">Create test suites to group and automate your tests.</p>
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#addTestSuiteModal">
+                                <i class="fas fa-plus"></i> Add First Test Suite
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Request Modal -->
+<div class="modal fade" id="addRequestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Request</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addRequestForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="requestName">Request Name</label>
+                        <input type="text" class="form-control" id="requestName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="requestDescription">Description</label>
+                        <textarea class="form-control" id="requestDescription" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="requestMethod">Method</label>
+                                <select class="form-control" id="requestMethod" name="method">
+                                    <option value="GET">GET</option>
+                                    <option value="POST">POST</option>
+                                    <option value="PUT">PUT</option>
+                                    <option value="PATCH">PATCH</option>
+                                    <option value="DELETE">DELETE</option>
+                                    <option value="HEAD">HEAD</option>
+                                    <option value="OPTIONS">OPTIONS</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="form-group">
+                                <label for="requestUrl">URL</label>
+                                <input type="url" class="form-control" id="requestUrl" name="url" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Test Suite Modal -->
+<div class="modal fade" id="addTestSuiteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Test Suite</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addTestSuiteForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="suiteName">Suite Name</label>
+                        <input type="text" class="form-control" id="suiteName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="suiteDescription">Description</label>
+                        <textarea class="form-control" id="suiteDescription" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Test Suite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#addRequestForm').submit(function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: $('#requestName').val(),
+            description: $('#requestDescription').val(),
+            method: $('#requestMethod').val(),
+            url: $('#requestUrl').val(),
+            collection: '{{ collection.id }}'
+        };
+        
+        $.post('/dashboard/api-testing/requests/', formData)
+            .done(function(response) {
+                location.reload();
+            })
+            .fail(function(xhr) {
+                alert('Failed to create request: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            });
+    });
+
+    $('#addTestSuiteForm').submit(function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: $('#suiteName').val(),
+            description: $('#suiteDescription').val(),
+            collection: '{{ collection.id }}'
+        };
+        
+        $.post('/dashboard/api-testing/test-suites/', formData)
+            .done(function(response) {
+                location.reload();
+            })
+            .fail(function(xhr) {
+                alert('Failed to create test suite: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            });
+    });
+});
+
+function duplicateCollection(collectionId) {
+    if (confirm('Are you sure you want to duplicate this collection?')) {
+        $.post(`/dashboard/api-testing/collections/${collectionId}/duplicate/`)
+            .done(function(response) {
+                location.reload();
+            })
+            .fail(function(xhr) {
+                alert('Failed to duplicate collection: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            });
+    }
+}
+
+function exportCollection(collectionId) {
+    alert('Export functionality will be implemented soon.');
+}
+
+function deleteCollection(collectionId) {
+    if (confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {
+        $.ajax({
+            url: `/dashboard/api-testing/collections/${collectionId}/`,
+            method: 'DELETE',
+            success: function() {
+                window.location.href = "{% url 'dashboard:api_collections_list' %}";
+            },
+            error: function(xhr) {
+                alert('Failed to delete collection: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            }
+        });
+    }
+}
+
+function executeRequest(requestId) {
+    $.post(`/dashboard/api-testing/requests/${requestId}/execute/`)
+        .done(function(response) {
+            alert('Request executed successfully!');
+        })
+        .fail(function(xhr) {
+            alert('Failed to execute request: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        });
+}
+
+function duplicateRequest(requestId) {
+    if (confirm('Are you sure you want to duplicate this request?')) {
+        $.post(`/dashboard/api-testing/requests/${requestId}/duplicate/`)
+            .done(function(response) {
+                location.reload();
+            })
+            .fail(function(xhr) {
+                alert('Failed to duplicate request: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            });
+    }
+}
+
+function deleteRequest(requestId) {
+    if (confirm('Are you sure you want to delete this request? This action cannot be undone.')) {
+        $.ajax({
+            url: `/dashboard/api-testing/requests/${requestId}/`,
+            method: 'DELETE',
+            success: function() {
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Failed to delete request: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            }
+        });
+    }
+}
+
+function runTestSuite(suiteId) {
+    $.post(`/dashboard/api-testing/test-suites/${suiteId}/run/`)
+        .done(function(response) {
+            alert('Test suite executed successfully!');
+        })
+        .fail(function(xhr) {
+            alert('Failed to run test suite: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        });
+}
+</script>
+{% endblock %}
+
+

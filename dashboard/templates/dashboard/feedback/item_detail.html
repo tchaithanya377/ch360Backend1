@@ -1,0 +1,78 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Feedback Detail{% endblock %}
+{% block content %}
+<div class="container-fluid">
+	<a class="btn btn-link" href="{% url 'dashboard:feedback_items_list' %}"><i class="fa fa-arrow-left"></i> Back</a>
+	<div class="row g-3">
+		<div class="col-lg-8">
+			<div class="card p-3">
+				<h4 class="mb-1">{{ item.title }}</h4>
+				<div class="text-muted mb-2">{{ item.created_at|date:'Y-m-d H:i' }} by {{ item.created_by }}</div>
+				<p>{{ item.description }}</p>
+				<div class="d-flex gap-2">
+					<span class="badge bg-secondary">{{ item.get_status_display }}</span>
+					<span class="badge bg-info">{{ item.get_priority_display }}</span>
+					{% if item.category %}<span class="badge bg-light text-dark">{{ item.category.name }}</span>{% endif %}
+				</div>
+			</div>
+			<div class="card p-3">
+				<h5>Comments</h5>
+				<form method="post" class="mb-3">
+					{% csrf_token %}
+					<input type="hidden" name="action" value="comment" />
+					<div class="input-group">
+						<input class="form-control" name="content" placeholder="Write a comment..." />
+						<button class="btn btn-outline-primary">Comment</button>
+					</div>
+				</form>
+				<ul class="list-group list-group-flush">
+					{% for c in comments %}
+					<li class="list-group-item">
+						<div class="small text-muted">{{ c.created_at|date:'Y-m-d H:i' }} by {{ c.commented_by }}</div>
+						<div>{{ c.content }}</div>
+					</li>
+					{% empty %}
+					<li class="list-group-item text-muted">No comments yet.</li>
+					{% endfor %}
+				</ul>
+			</div>
+		</div>
+		<div class="col-lg-4">
+			<div class="card p-3 mb-3">
+				<h6>Assign & Status</h6>
+				<form method="post" class="row g-2">
+					{% csrf_token %}
+					<input type="hidden" name="action" value="update_status" />
+					<div class="col-8">
+						<select class="form-select" name="status">
+							{% for value,label in status_choices %}
+							<option value="{{ value }}" {% if item.status == value %}selected{% endif %}>{{ label }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="col-4"><button class="btn btn-primary w-100">Update</button></div>
+				</form>
+			</div>
+			<div class="card p-3">
+				<h6>Voting</h6>
+				<div class="d-flex align-items-center gap-2 mb-2">
+					<form method="post">
+						{% csrf_token %}
+						<input type="hidden" name="action" value="vote" />
+						<input type="hidden" name="is_up" value="1" />
+						<button class="btn btn-success"><i class="fa fa-thumbs-up"></i></button>
+					</form>
+					<span class="fw-bold">Score: {{ score }}</span>
+					<form method="post">
+						{% csrf_token %}
+						<input type="hidden" name="action" value="vote" />
+						<input type="hidden" name="is_up" value="0" />
+						<button class="btn btn-outline-danger"><i class="fa fa-thumbs-down"></i></button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+

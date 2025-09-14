@@ -1,0 +1,376 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Exam Violations - Exam Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-exclamation-triangle text-warning"></i> Exam Violations
+            </h1>
+            <p class="text-muted">Manage and track exam rule violations</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:exams_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createViolationModal">
+                <i class="fas fa-plus"></i> New Violation
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search violations...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="severityFilter" class="form-select">
+                        <option value="">All Severities</option>
+                        <option value="minor">Minor</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="major">Major</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="reported">Reported</option>
+                        <option value="investigating">Investigating</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="dismissed">Dismissed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button id="clearFilters" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Exam Violations</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="violationsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student</th>
+                            <th>Exam</th>
+                            <th>Violation Type</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Reported Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for violation in violations %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ violation.student.full_name }}</div>
+                                        <small class="text-muted">{{ violation.student.roll_number }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ violation.exam_schedule.exam_name }}</div>
+                                    <small class="text-muted">{{ violation.exam_schedule.exam_session.name }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ violation.violation_type }}</div>
+                                    <small class="text-muted">{{ violation.description|truncatechars:50 }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if violation.severity == 'minor' %}
+                                    <span class="badge bg-success">Minor</span>
+                                {% elif violation.severity == 'moderate' %}
+                                    <span class="badge bg-warning">Moderate</span>
+                                {% elif violation.severity == 'major' %}
+                                    <span class="badge bg-danger">Major</span>
+                                {% elif violation.severity == 'critical' %}
+                                    <span class="badge bg-dark">Critical</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if violation.status == 'reported' %}
+                                    <span class="badge bg-warning">Reported</span>
+                                {% elif violation.status == 'investigating' %}
+                                    <span class="badge bg-info">Investigating</span>
+                                {% elif violation.status == 'resolved' %}
+                                    <span class="badge bg-success">Resolved</span>
+                                {% elif violation.status == 'dismissed' %}
+                                    <span class="badge bg-secondary">Dismissed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>
+                                    <div>{{ violation.reported_date|date:"M d, Y" }}</div>
+                                    <small class="text-muted">{{ violation.reported_date|time:"H:i" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'dashboard:exams_violation_detail' violation.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-success" 
+                                            onclick="resolveViolation('{{ violation.id }}')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" 
+                                            onclick="dismissViolation('{{ violation.id }}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                                    <p>No violations found</p>
+                                    <p class="small">Great! All students are following exam rules.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Violation Modal -->
+<div class="modal fade" id="createViolationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Exam Violation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'dashboard:exams_violations' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="student" class="form-label">Student</label>
+                                <select name="student" id="student" class="form-select" required>
+                                    <option value="">Select Student</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.full_name }} ({{ student.roll_number }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="exam_schedule" class="form-label">Exam Schedule</label>
+                                <select name="exam_schedule" id="exam_schedule" class="form-select" required>
+                                    <option value="">Select Exam</option>
+                                    {% for schedule in exam_schedules %}
+                                    <option value="{{ schedule.id }}">{{ schedule.exam_name }} - {{ schedule.exam_session.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="violation_type" class="form-label">Violation Type</label>
+                                <select name="violation_type" id="violation_type" class="form-select" required>
+                                    <option value="">Select Type</option>
+                                    <option value="Cheating">Cheating</option>
+                                    <option value="Use of unauthorized materials">Use of unauthorized materials</option>
+                                    <option value="Communication with others">Communication with others</option>
+                                    <option value="Leaving exam area">Leaving exam area</option>
+                                    <option value="Late arrival">Late arrival</option>
+                                    <option value="Disruptive behavior">Disruptive behavior</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="severity" class="form-label">Severity</label>
+                                <select name="severity" id="severity" class="form-select" required>
+                                    <option value="">Select Severity</option>
+                                    <option value="minor">Minor</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="major">Major</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea name="description" id="description" class="form-control" rows="3" 
+                                  placeholder="Provide detailed description of the violation..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="evidence" class="form-label">Evidence/Notes</label>
+                        <textarea name="evidence" id="evidence" class="form-control" rows="2" 
+                                  placeholder="Any evidence or additional notes..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reported_by" class="form-label">Reported By</label>
+                        <select name="reported_by" id="reported_by" class="form-select" required>
+                            <option value="">Select Faculty Member</option>
+                            {% for faculty_member in faculty_members %}
+                            <option value="{{ faculty_member.id }}">{{ faculty_member.full_name }} ({{ faculty_member.employee_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Report Violation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAction">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Search and Filter Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const severityFilter = document.getElementById('severityFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const clearFilters = document.getElementById('clearFilters');
+    const table = document.getElementById('violationsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const severityValue = severityFilter.value.toLowerCase();
+        const statusValue = statusFilter.value.toLowerCase();
+
+        for (let row of rows) {
+            if (row.cells.length === 1) continue; // Skip empty state row
+            
+            const studentName = row.cells[0].textContent.toLowerCase();
+            const examName = row.cells[1].textContent.toLowerCase();
+            const violationType = row.cells[2].textContent.toLowerCase();
+            const severity = row.cells[3].textContent.toLowerCase();
+            const status = row.cells[4].textContent.toLowerCase();
+
+            const matchesSearch = studentName.includes(searchTerm) || 
+                                examName.includes(searchTerm) || 
+                                violationType.includes(searchTerm);
+            const matchesSeverity = !severityValue || severity.includes(severityValue);
+            const matchesStatus = !statusValue || status.includes(statusValue);
+
+            row.style.display = (matchesSearch && matchesSeverity && matchesStatus) ? '' : 'none';
+        }
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    severityFilter.addEventListener('change', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    
+    clearFilters.addEventListener('click', function() {
+        searchInput.value = '';
+        severityFilter.value = '';
+        statusFilter.value = '';
+        filterTable();
+    });
+});
+
+// Confirmation Functions
+function resolveViolation(violationId) {
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to mark this violation as resolved?';
+    document.getElementById('confirmAction').onclick = function() {
+        // Send resolution request
+        fetch(`/dashboard/exams/violations/${violationId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    };
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+function dismissViolation(violationId) {
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to dismiss this violation? This action cannot be undone.';
+    document.getElementById('confirmAction').onclick = function() {
+        // Send dismissal request
+        fetch(`/dashboard/exams/violations/${violationId}/dismiss/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    };
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ suite.name }} - Test Suite Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>{{ suite.name }}</h1>
+            <p class="text-muted">{{ suite.description|default:"No description" }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Test Suite Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Collection:</strong> {{ suite.collection.name }}</p>
+                    <p><strong>Environment:</strong> {{ suite.environment.name|default:"Not set" }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge badge-{{ suite.enabled|yesno:'success,secondary' }}">
+                            {{ suite.enabled|yesno:'Enabled,Disabled' }}
+                        </span>
+                    </p>
+                    <p><strong>Tests:</strong> {{ suite.tests.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-success btn-block mb-2" onclick="runTestSuite('{{ suite.id }}')">
+                        <i class="fas fa-play"></i> Run Test Suite
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function runTestSuite(suiteId) {
+    $.post(`/dashboard/api-testing/test-suites/${suiteId}/run/`)
+        .done(function(response) {
+            alert('Test suite executed successfully!');
+        })
+        .fail(function(xhr) {
+            alert('Failed to run test suite: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        });
+}
+</script>
+{% endblock %}
+
+

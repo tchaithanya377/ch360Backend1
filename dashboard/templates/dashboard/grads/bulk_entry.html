@@ -1,0 +1,137 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-2">
+  <h2 class="mb-0">Bulk Semester Results Entry</h2>
+  <span class="text-muted">Enter results by year, section, and course</span>
+</div>
+
+<div class="row g-2 mb-3">
+  <div class="col-3">
+    <select class="form-select" id="yearSelect">
+      <option value="">Select Year</option>
+      {% for y in years %}
+        <option value="{{ y }}">{{ y }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-3">
+    <select class="form-select" id="sectionSelect">
+      <option value="">Section</option>
+    </select>
+  </div>
+  <div class="col-3">
+    <select class="form-select" id="courseSelect">
+      <option value="">Course</option>
+      {% for c in courses %}
+        <option value="{{ c.id }}">{{ c.code }} - {{ c.title }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-3">
+    <select class="form-select" id="termSelect">
+      <option value="">Term</option>
+      {% for t in terms %}
+        <option value="{{ t.id }}">{{ t.academic_year }} {{ t.get_semester_display }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-striped" id="bulkTable">
+    <thead>
+      <tr><th>Student</th><th>Internal</th><th>External</th></tr>
+    </thead>
+    <tbody id="bulkBody">
+      {% for s in students_list %}
+        <tr data-student-id="{{ s.id }}"><td>{{ s.roll_number }} - {{ s.full_name }}</td>
+          <td><input class="form-control form-control-sm" type="number" step="0.01" placeholder="Internal"></td>
+          <td><input class="form-control form-control-sm" type="number" step="0.01" placeholder="External"></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex justify-content-end gap-2">
+  <button class="btn btn-secondary" id="clearBtn">Clear</button>
+  <button class="btn btn-primary" id="saveBtn">Save All</button>
+  <a class="btn btn-light" href="{% url 'dashboard:grads_results' %}">Back to Results</a>
+</div>
+
+{% block extra_js %}
+<script>
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.querySelectorAll('#bulkBody input').forEach(i => i.value = '');
+  });
+
+  async function refreshSections() {
+    const year = document.getElementById('yearSelect').value;
+    const course = document.getElementById('courseSelect').value;
+    const res = await fetch(`{% url 'dashboard:grads_sections_api' %}?year=${encodeURIComponent(year)}&course=${encodeURIComponent(course)}`);
+    const data = await res.json();
+    const select = document.getElementById('sectionSelect');
+    select.innerHTML = '<option value="">Section</option>';
+    data.sections.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = `${s.section_number} (${s.semester})`;
+      select.appendChild(opt);
+    });
+  }
+
+  async function refreshStudents() {
+    const year = document.getElementById('yearSelect').value;
+    const sectionText = document.getElementById('sectionSelect').selectedOptions[0]?.text.split(' ')[0] || '';
+    const res = await fetch(`{% url 'dashboard:grads_students_api' %}?year=${encodeURIComponent(year)}&section=${encodeURIComponent(sectionText)}`);
+    const data = await res.json();
+    const tbody = document.getElementById('bulkBody');
+    tbody.innerHTML = '';
+    data.students.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-student-id', s.id);
+      tr.innerHTML = `<td>${s.roll_number} - ${s.full_name}</td>
+        <td><input class="form-control form-control-sm" type="number" step="0.01" placeholder="Internal"></td>
+        <td><input class="form-control form-control-sm" type="number" step="0.01" placeholder="External"></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('yearSelect').addEventListener('change', () => { refreshSections(); refreshStudents(); });
+  document.getElementById('courseSelect').addEventListener('change', refreshSections);
+  document.getElementById('sectionSelect').addEventListener('change', refreshStudents);
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const term = document.getElementById('termSelect').value;
+    const course = document.getElementById('courseSelect').value;
+    const course_section = document.getElementById('sectionSelect').value;
+    if (!term || !course || !course_section) { alert('Select term, course, and section first.'); return; }
+
+    const rows = Array.from(document.querySelectorAll('#bulkBody tr'));
+    const payloads = [];
+    for (const row of rows) {
+      const student = row.getAttribute('data-student-id');
+      const inputs = row.querySelectorAll('input');
+      const internal = inputs[0].value; const external = inputs[1].value;
+      if (internal || external) {
+        payloads.push({ student, term, course_section, internal_marks: parseFloat(internal||0), external_marks: parseFloat(external||0) });
+      }
+    }
+    if (payloads.length === 0) { alert('No entries to save.'); return; }
+
+    let success = 0; let fail = 0;
+    for (const p of payloads) {
+      const res = await fetch('/api/v1/grads/course-results/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('jwt')||''}` },
+        body: JSON.stringify(p)
+      });
+      if (res.ok) success++; else fail++;
+    }
+    alert(`Saved: ${success}, Failed: ${fail}`);
+    if (success) location.href = '{% url 'dashboard:grads_results' %}';
+  });
+</script>
+{% endblock %}
+{% endblock %}
+
+

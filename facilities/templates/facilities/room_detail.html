@@ -1,0 +1,244 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ room.building.code }}-{{ room.code }} - Facilities Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h1 class="display-4 text-white fw-bold mb-3">
+                        <i class="fas fa-door-open me-3"></i>{{ room.building.code }}-{{ room.code }}
+                    </h1>
+                    <p class="lead text-white-50 mb-0">{{ room.name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Room Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Room Code</small>
+                            <div class="fw-semibold">{{ room.building.code }}-{{ room.code }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Status</small>
+                            <div class="fw-semibold">
+                                {% if room.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Building</small>
+                            <div class="fw-semibold">{{ room.building.name }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Room Type</small>
+                            <div class="fw-semibold">{{ room.get_room_type_display }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Capacity</small>
+                            <div class="fw-semibold">{{ room.capacity }} people</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Floor</small>
+                            <div class="fw-semibold">{{ room.floor }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if room.description %}
+                    <div class="mt-3">
+                        <small class="text-muted text-uppercase fw-semibold">Description</small>
+                        <div class="text-muted">{{ room.description }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'facilities:booking_create' %}?room={{ room.id }}" class="btn btn-outline-success">
+                            <i class="fas fa-calendar-plus me-2"></i>Book This Room
+                        </a>
+                        <a href="{% url 'facilities:rooms_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-2"></i>View All Rooms
+                        </a>
+                        <a href="{% url 'facilities:buildings_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-building me-2"></i>View Buildings
+                        </a>
+                        <a href="{% url 'facilities:dashboard' %}" class="btn btn-outline-info">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Equipment -->
+    {% if room.equipment.exists %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-microchip me-2"></i>Equipment in this Room
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for equipment in room.equipment.all %}
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="card-title mb-0 fw-bold">
+                                        {{ equipment.name }}
+                                    </h6>
+                                    {% if equipment.is_available %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">In Use</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small mb-2">{{ equipment.get_equipment_type_display }}</p>
+                                    {% if equipment.description %}
+                                        <p class="text-muted small">{{ equipment.description|truncatechars:100 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Bookings for this Room -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Recent Bookings for this Room
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if room.bookings.exists %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Event</th>
+                                        <th>Date & Time</th>
+                                        <th>Created By</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in room.bookings.all|slice:":10" %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">{{ booking.title }}</div>
+                                            {% if booking.purpose %}
+                                                <small class="text-muted">{{ booking.purpose|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">{{ booking.starts_at|date:"M d, Y" }}</div>
+                                            <small class="text-muted">
+                                                {{ booking.starts_at|time:"H:i" }} - {{ booking.ends_at|time:"H:i" }}
+                                            </small>
+                                        </td>
+                                        <td>{{ booking.created_by.username }}</td>
+                                        <td>
+                                            {% if booking.is_approved %}
+                                                <span class="badge bg-success">Approved</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="#" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted mb-3">No bookings found for this room</h5>
+                            <p class="text-muted">This room hasn't been booked yet.</p>
+                            <a href="{% url 'facilities:booking_create' %}?room={{ room.id }}" class="btn btn-primary">
+                                <i class="fas fa-calendar-plus me-2"></i>Book This Room
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Add hover effects to table rows
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="container">
+  <h2>Placements Overview</h2>
+  <div class="row g-3">
+    <div class="col">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Companies</h5>
+        <p class="card-text">{{ companies_count }}</p>
+        <a href="{% url 'dashboard:placements_companies' %}" class="btn btn-primary btn-sm">Manage</a>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Jobs</h5>
+        <p class="card-text">{{ jobs_count }}</p>
+        <a href="{% url 'dashboard:placements_jobs' %}" class="btn btn-primary btn-sm">Manage</a>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Applications</h5>
+        <p class="card-text">{{ applications_count }}</p>
+        <a href="{% url 'dashboard:placements_applications' %}" class="btn btn-primary btn-sm">View</a>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Drives</h5>
+        <p class="card-text">{{ drives_count }}</p>
+        <a href="{% url 'dashboard:placements_drives' %}" class="btn btn-primary btn-sm">Manage</a>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Rounds</h5>
+        <p class="card-text">{{ rounds_count }}</p>
+        <a href="{% url 'dashboard:placements_rounds' %}" class="btn btn-primary btn-sm">Manage</a>
+      </div></div>
+    </div>
+    <div class="col">
+      <div class="card"><div class="card-body">
+        <h5 class="card-title">Offers</h5>
+        <p class="card-text">{{ offers_count }}</p>
+        <a href="{% url 'dashboard:placements_offers' %}" class="btn btn-primary btn-sm">Manage</a>
+      </div></div>
+    </div>
+  </div>
+  <div class="mt-4">
+    <a href="{% url 'dashboard:placements_companies' %}" class="btn btn-outline-secondary">Companies</a>
+    <a href="{% url 'dashboard:placements_jobs' %}" class="btn btn-outline-secondary">Jobs</a>
+    <a href="{% url 'dashboard:placements_applications' %}" class="btn btn-outline-secondary">Applications</a>
+    <a href="{% url 'dashboard:placements_drives' %}" class="btn btn-outline-secondary">Drives</a>
+    <a href="{% url 'dashboard:placements_rounds' %}" class="btn btn-outline-secondary">Rounds</a>
+    <a href="{% url 'dashboard:placements_offers' %}" class="btn btn-outline-secondary">Offers</a>
+  </div>
+</div>
+{% endblock %}
+
+

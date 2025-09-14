@@ -1,0 +1,339 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Submit Assignment - {{ assignment.title }} - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignment_detail' assignment.id %}">{{ assignment.title }}</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Submit</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-upload text-success me-2"></i>
+                        Submit Assignment
+                    </h1>
+                    <p class="text-muted mb-0">{{ assignment.title }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'dashboard:assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Assignment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Assignment Details -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Assignment Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Title:</strong>
+                        <p class="mb-0">{{ assignment.title }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Faculty:</strong>
+                        <p class="mb-0">{{ assignment.faculty.name }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Due Date:</strong>
+                        <p class="mb-0 {% if assignment.is_overdue %}text-danger{% endif %}">
+                            {{ assignment.due_date|date:"M d, Y H:i" }}
+                            {% if assignment.is_overdue %}
+                                <span class="badge bg-danger ms-2">Overdue</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Max Marks:</strong>
+                        <p class="mb-0">{{ assignment.max_marks }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Type:</strong>
+                        <p class="mb-0">
+                            {% if assignment.is_group_assignment %}
+                                <span class="badge bg-info">Group Assignment</span>
+                            {% else %}
+                                <span class="badge bg-primary">Individual Assignment</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Late Submission:</strong>
+                        <p class="mb-0">
+                            {% if assignment.late_submission_allowed %}
+                                <span class="badge bg-success">Allowed</span>
+                            {% else %}
+                                <span class="badge bg-danger">Not Allowed</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Description -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-alt me-2"></i>Description
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ assignment.description|linebreaks }}
+                    </div>
+                    
+                    {% if assignment.instructions %}
+                    <div class="mb-3">
+                        <strong>Instructions:</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ assignment.instructions|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submission Form -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-edit me-2"></i>Submission Form
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Submission Content -->
+                        <div class="mb-4">
+                            <label for="content" class="form-label">
+                                Your Submission <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="content" name="content" rows="10" required
+                                      placeholder="Enter your assignment content here. You can include text, code, explanations, or any other content required for the assignment."></textarea>
+                            <div class="form-text">
+                                Provide your complete assignment solution, including any code, explanations, or other required content.
+                            </div>
+                        </div>
+
+                        <!-- Additional Notes -->
+                        <div class="mb-4">
+                            <label for="notes" class="form-label">Additional Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"
+                                      placeholder="Add any additional notes, comments, or clarifications about your submission."></textarea>
+                            <div class="form-text">
+                                Use this space to add any additional information, assumptions, or notes about your work.
+                            </div>
+                        </div>
+
+                        <!-- File Upload Section -->
+                        <div class="mb-4">
+                            <label class="form-label">File Attachments (Optional)</label>
+                            <div class="border rounded p-3">
+                                <div class="text-center">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted mb-3">File upload functionality will be available in the next update</p>
+                                    <button type="button" class="btn btn-outline-primary" disabled>
+                                        <i class="fas fa-plus me-1"></i>Add Files
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                You can attach supporting files like documents, images, or code files to your submission.
+                            </div>
+                        </div>
+
+                        <!-- Submission Warning -->
+                        {% if assignment.is_overdue and not assignment.late_submission_allowed %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Warning:</strong> This assignment is overdue and late submissions are not allowed. 
+                            Your submission may not be accepted.
+                        </div>
+                        {% elif assignment.is_overdue and assignment.late_submission_allowed %}
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Note:</strong> This assignment is overdue. Late submissions are allowed but may be subject to penalties.
+                        </div>
+                        {% endif %}
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard:assignment_detail' assignment.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-upload me-1"></i>Submit Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Submission Guidelines -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-lightbulb me-2"></i>Submission Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Review your work carefully before submitting
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Ensure all required content is included
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Follow any specific formatting requirements
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Submit before the due date to avoid penalties
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Keep a copy of your submission for your records
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            Once submitted, you cannot edit your submission
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Character counter for content
+    const contentTextarea = document.getElementById('content');
+    const notesTextarea = document.getElementById('notes');
+    
+    function addCharacterCounter(textarea, maxLength = null) {
+        const counter = document.createElement('div');
+        counter.className = 'form-text text-end';
+        textarea.parentNode.appendChild(counter);
+        
+        function updateCounter() {
+            const length = textarea.value.length;
+            counter.textContent = `${length} characters`;
+            if (maxLength) {
+                counter.textContent += ` / ${maxLength}`;
+                if (length > maxLength) {
+                    counter.classList.add('text-danger');
+                } else {
+                    counter.classList.remove('text-danger');
+                }
+            }
+        }
+        
+        textarea.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+    
+    addCharacterCounter(contentTextarea);
+    addCharacterCounter(notesTextarea);
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const content = contentTextarea.value.trim();
+        
+        if (!content) {
+            e.preventDefault();
+            alert('Please provide your assignment content before submitting.');
+            contentTextarea.focus();
+            return;
+        }
+        
+        if (content.length < 10) {
+            e.preventDefault();
+            alert('Please provide more detailed content for your submission.');
+            contentTextarea.focus();
+            return;
+        }
+        
+        // Confirm submission
+        if (!confirm('Are you sure you want to submit this assignment? You cannot edit it after submission.')) {
+            e.preventDefault();
+            return;
+        }
+    });
+    
+    // Auto-save draft (localStorage)
+    function saveDraft() {
+        const content = contentTextarea.value;
+        const notes = notesTextarea.value;
+        
+        if (content || notes) {
+            localStorage.setItem('assignment_draft_{{ assignment.id }}', JSON.stringify({
+                content: content,
+                notes: notes,
+                timestamp: new Date().toISOString()
+            }));
+        }
+    }
+    
+    function loadDraft() {
+        const draft = localStorage.getItem('assignment_draft_{{ assignment.id }}');
+        if (draft) {
+            try {
+                const data = JSON.parse(draft);
+                const draftDate = new Date(data.timestamp);
+                const now = new Date();
+                const hoursDiff = (now - draftDate) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24) { // Only load drafts less than 24 hours old
+                    if (confirm('A draft was found from ' + draftDate.toLocaleString() + '. Would you like to restore it?')) {
+                        contentTextarea.value = data.content;
+                        notesTextarea.value = data.notes;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading draft:', e);
+            }
+        }
+    }
+    
+    // Load draft on page load
+    loadDraft();
+    
+    // Save draft every 30 seconds
+    setInterval(saveDraft, 30000);
+    
+    // Save draft on form submit
+    document.querySelector('form').addEventListener('submit', function() {
+        localStorage.removeItem('assignment_draft_{{ assignment.id }}');
+    });
+</script>
+{% endblock %}

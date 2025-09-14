@@ -1,0 +1,279 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Academics API Testing - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-vial text-success"></i>
+            Academics API Testing
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-secondary disabled" onclick="return false;">
+                    Back to API Endpoints
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Testing Interface -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs text-info"></i>
+                        API Testing Interface
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="apiUrl" class="form-label">API URL</label>
+                            <input type="text" class="form-control" id="apiUrl" value="{{ api_base_url }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="httpMethod" class="form-label">HTTP Method</label>
+                            <select class="form-select" id="httpMethod">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="PATCH">PATCH</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="endpoint" class="form-label">Endpoint</label>
+                            <select class="form-select" id="endpoint">
+                                <option value="courses/">Courses</option>
+                                <option value="syllabi/">Syllabi</option>
+                                <option value="syllabus-topics/">Syllabus Topics</option>
+                                <option value="timetables/">Timetables</option>
+                                <option value="enrollments/">Enrollments</option>
+                                <option value="academic-calendar/">Academic Calendar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="authToken" class="form-label">Authorization Token</label>
+                            <input type="text" class="form-control" id="authToken" placeholder="Bearer YOUR_TOKEN">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="contentType" class="form-label">Content-Type</label>
+                            <select class="form-select" id="contentType">
+                                <option value="application/json">application/json</option>
+                                <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="requestBody" class="form-label">Request Body (for POST/PUT/PATCH)</label>
+                            <textarea class="form-control" id="requestBody" rows="6" placeholder='{"key": "value"}'></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="queryParams" class="form-label">Query Parameters</label>
+                            <input type="text" class="form-control" id="queryParams" placeholder="param1=value1&param2=value2">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" onclick="sendRequest()">
+                                <i class="fas fa-paper-plane"></i> Send Request
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearResponse()">
+                                <i class="fas fa-eraser"></i> Clear Response
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Display -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-reply text-success"></i>
+                        Response
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <strong>Status Code:</strong>
+                            <span id="statusCode" class="badge bg-secondary">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Response Time:</strong>
+                            <span id="responseTime">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Content Length:</strong>
+                            <span id="contentLength">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Content Type:</strong>
+                            <span id="responseContentType">-</span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="responseBody" class="form-label">Response Body</label>
+                            <textarea class="form-control" id="responseBody" rows="15" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Test Endpoints -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt text-warning"></i>
+                        Quick Test Endpoints
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for test_endpoint in test_endpoints %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ test_endpoint.name }}</h6>
+                                    <p class="card-text text-muted">{{ test_endpoint.description }}</p>
+                                    <p class="mb-2"><strong>Method:</strong> <span class="badge bg-success">{{ test_endpoint.method }}</span></p>
+                                    <p class="mb-2"><strong>URL:</strong> <code>{{ test_endpoint.url }}</code></p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                                            onclick="quickTest('{{ test_endpoint.url }}', '{{ test_endpoint.method }}')">
+                                        <i class="fas fa-play"></i> Test
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendRequest() {
+    const method = document.getElementById('httpMethod').value;
+    const endpoint = document.getElementById('endpoint').value;
+    const authToken = document.getElementById('authToken').value;
+    const contentType = document.getElementById('contentType').value;
+    const requestBody = document.getElementById('requestBody').value;
+    const queryParams = document.getElementById('queryParams').value;
+    
+    const url = document.getElementById('apiUrl').value + endpoint;
+    const fullUrl = queryParams ? `${url}?${queryParams}` : url;
+    
+    const startTime = Date.now();
+    
+    // Clear previous response
+    clearResponse();
+    
+    // Show loading state
+    document.getElementById('statusCode').textContent = 'Loading...';
+    document.getElementById('statusCode').className = 'badge bg-warning';
+    
+    const headers = {
+        'Content-Type': contentType
+    };
+    
+    if (authToken) {
+        headers['Authorization'] = authToken.startsWith('Bearer ') ? authToken : `Bearer ${authToken}`;
+    }
+    
+    const options = {
+        method: method,
+        headers: headers
+    };
+    
+    if (method !== 'GET' && requestBody) {
+        options.body = requestBody;
+    }
+    
+    fetch(fullUrl, options)
+        .then(response => {
+            const endTime = Date.now();
+            const responseTime = endTime - startTime;
+            
+            document.getElementById('statusCode').textContent = response.status;
+            document.getElementById('statusCode').className = `badge bg-${response.status >= 200 && response.status < 300 ? 'success' : 'danger'}`;
+            document.getElementById('responseTime').textContent = `${responseTime}ms`;
+            document.getElementById('responseContentType').textContent = response.headers.get('content-type') || '-';
+            
+            return response.text();
+        })
+        .then(data => {
+            try {
+                // Try to format JSON
+                const jsonData = JSON.parse(data);
+                document.getElementById('responseBody').value = JSON.stringify(jsonData, null, 2);
+            } catch (e) {
+                // If not JSON, display as text
+                document.getElementById('responseBody').value = data;
+            }
+            document.getElementById('contentLength').textContent = data.length;
+        })
+        .catch(error => {
+            document.getElementById('statusCode').textContent = 'Error';
+            document.getElementById('statusCode').className = 'badge bg-danger';
+            document.getElementById('responseBody').value = `Error: ${error.message}`;
+        });
+}
+
+function quickTest(url, method) {
+    document.getElementById('httpMethod').value = method;
+    document.getElementById('endpoint').value = url.replace('{{ api_base_url }}', '');
+    sendRequest();
+}
+
+function clearResponse() {
+    document.getElementById('statusCode').textContent = '-';
+    document.getElementById('statusCode').className = 'badge bg-secondary';
+    document.getElementById('responseTime').textContent = '-';
+    document.getElementById('contentLength').textContent = '-';
+    document.getElementById('responseContentType').textContent = '-';
+    document.getElementById('responseBody').value = '';
+}
+
+// Auto-update endpoint when method changes
+document.getElementById('httpMethod').addEventListener('change', function() {
+    const method = this.value;
+    const requestBody = document.getElementById('requestBody');
+    
+    if (method === 'GET') {
+        requestBody.placeholder = 'No body needed for GET requests';
+        requestBody.disabled = true;
+    } else {
+        requestBody.placeholder = '{"key": "value"}';
+        requestBody.disabled = false;
+    }
+});
+</script>
+{% endblock %}

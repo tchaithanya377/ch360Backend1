@@ -1,0 +1,75 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Sessions Management - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-clock text-primary"></i>
+        User Sessions
+    </h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>User</th>
+                        <th>Device Info</th>
+                        <th>IP Address</th>
+                        <th>Created</th>
+                        <th>Expires</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td>{{ session.user.email }}</td>
+                        <td>{{ session.device_info|default:"-" }}</td>
+                        <td>{{ session.ip|default:"-" }}</td>
+                        <td>{{ session.created_at|date:"M d, Y H:i" }}</td>
+                        <td>{{ session.expires_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if session.revoked %}
+                                <span class="badge bg-danger">Revoked</span>
+                            {% elif session.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-warning">Expired</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not session.revoked %}
+                            <button class="btn btn-sm btn-outline-danger" onclick="revokeSession('{{ session.id }}')">
+                                <i class="fas fa-ban"></i> Revoke
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-clock fa-2x mb-2"></i><br>
+                            No sessions found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function revokeSession(sessionId) {
+    if (confirm('Are you sure you want to revoke this session?')) {
+        // Implementation would require an API endpoint
+        alert('Session revoke functionality would be implemented here');
+    }
+}
+</script>
+{% endblock %}

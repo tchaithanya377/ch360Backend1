@@ -1,0 +1,67 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Researcher Detail{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <a class="btn btn-sm btn-outline-secondary mb-3" href="{% url 'dashboard:rnd_researchers' %}">Back to Researchers</a>
+  <div class="card p-3 mb-3">
+    <h3 class="mb-1">{{ researcher.user.get_full_name|default:researcher.user.username }}</h3>
+    <p class="mb-1">{{ researcher.title|default:'-' }} | {{ researcher.department|default:'-' }}</p>
+    <p class="text-muted mb-0">ORCID: {{ researcher.orcid|default:'-' }} | Google Scholar: {{ researcher.google_scholar_id|default:'-' }}</p>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Projects (PI)</h5>
+        <ul class="mb-0">
+          {% for p in led_projects %}
+            <li><a href="{% url 'dashboard:rnd_project_detail' p.id %}">{{ p.title }}</a></li>
+          {% empty %}
+            <li class="text-muted">None</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Projects (Member)</h5>
+        <ul class="mb-0">
+          {% for p in member_projects %}
+            <li><a href="{% url 'dashboard:rnd_project_detail' p.id %}">{{ p.title }}</a></li>
+          {% empty %}
+            <li class="text-muted">None</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Publications</h5>
+        <ul class="mb-0">
+          {% for pub in publications %}
+            <li>{{ pub.title }} ({{ pub.year|default:'-' }})</li>
+          {% empty %}
+            <li class="text-muted">None</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Patents</h5>
+        <ul class="mb-0">
+          {% for pt in patents %}
+            <li>{{ pt.title }} ({{ pt.grant_number|default:'-' }})</li>
+          {% empty %}
+            <li class="text-muted">None</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

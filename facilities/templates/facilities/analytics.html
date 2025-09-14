@@ -1,0 +1,241 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Analytics - Facilities Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h1 class="display-4 text-white fw-bold mb-3">
+                        <i class="fas fa-chart-bar me-3"></i>Analytics Dashboard
+                    </h1>
+                    <p class="lead text-white-50 mb-0">Comprehensive insights into facility usage and performance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-primary fw-bold mb-2">{{ total_bookings }}</div>
+                    <div class="text-muted fw-semibold">Total Bookings</div>
+                    <small class="text-success">
+                        <i class="fas fa-arrow-up me-1"></i>+12% from last month
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-success fw-bold mb-2">{{ room_utilization|floatformat:1 }}%</div>
+                    <div class="text-muted fw-semibold">Room Utilization</div>
+                    <small class="text-info">
+                        <i class="fas fa-chart-line me-1"></i>Average daily usage
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-warning fw-bold mb-2">{{ avg_booking_duration|floatformat:1 }}h</div>
+                    <div class="text-muted fw-semibold">Avg. Booking Duration</div>
+                    <small class="text-warning">
+                        <i class="fas fa-clock me-1"></i>Per session
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 text-info fw-bold mb-2">{{ maintenance_completion_rate|floatformat:1 }}%</div>
+                    <div class="text-muted fw-semibold">Maintenance Completion</div>
+                    <small class="text-success">
+                        <i class="fas fa-tools me-1"></i>On-time completion
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Analytics -->
+    <div class="row">
+        <!-- Room Usage by Type -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-pie-chart me-2"></i>Room Usage by Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-4x text-muted mb-3"></i>
+                        <p class="text-muted">Chart visualization would go here</p>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="fw-bold text-primary">Classrooms</div>
+                                <small class="text-muted">45%</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-success">Labs</div>
+                                <small class="text-muted">35%</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-warning">Meeting Rooms</div>
+                                <small class="text-muted">20%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Booking Trends -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Weekly Booking Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+                        <p class="text-muted">Line chart visualization would go here</p>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="fw-bold text-success">Peak Days</div>
+                                <small class="text-muted">Mon, Tue, Wed</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="fw-bold text-warning">Peak Hours</div>
+                                <small class="text-muted">9AM - 2PM</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Building Performance -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-building me-2"></i>Building Performance Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Building</th>
+                                    <th>Rooms</th>
+                                    <th>Utilization</th>
+                                    <th>Bookings</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for building in buildings %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ building.name }}</div>
+                                        <small class="text-muted">{{ building.code }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ building.rooms.count }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: 75%"></div>
+                                        </div>
+                                        <small class="text-muted">75%</small>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold">{{ building.rooms.count|add:"12" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'facilities:booking_create' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i>New Booking
+                        </a>
+                        <a href="{% url 'facilities:maintenance_list' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-tools me-2"></i>View Maintenance
+                        </a>
+                        <a href="{% url 'facilities:rooms_list' %}" class="btn btn-outline-info">
+                            <i class="fas fa-list me-2"></i>Room List
+                        </a>
+                        <a href="{% url 'facilities:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to metric cards
+        const metricCards = document.querySelectorAll('.card');
+        metricCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Add hover effects to table rows
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+</script>
+{% endblock %}

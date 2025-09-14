@@ -1,0 +1,314 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Grade Assignment - {{ submission.assignment.title }} - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignment_detail' submission.assignment.id %}">{{ submission.assignment.title }}</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Grade Submission</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-graduation-cap text-success me-2"></i>
+                        Grade Assignment
+                    </h1>
+                    <p class="text-muted mb-0">{{ submission.student.name }} - {{ submission.assignment.title }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'dashboard:assignment_detail' submission.assignment.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Assignment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Student Submission -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user me-2"></i>Student Submission
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Student:</strong>
+                            <p class="mb-0">{{ submission.student.name }} ({{ submission.student.apaar_student_id }})</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Submission Date:</strong>
+                            <p class="mb-0 {% if submission.is_late %}text-danger{% endif %}">
+                                {{ submission.submission_date|date:"M d, Y H:i" }}
+                                {% if submission.is_late %}
+                                    <span class="badge bg-danger ms-2">Late</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if submission.content %}
+                    <div class="mb-3">
+                        <strong>Submission Content:</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ submission.content|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if submission.notes %}
+                    <div class="mb-3">
+                        <strong>Student Notes:</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ submission.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if submission.grade %}
+                    <div class="mb-3">
+                        <strong>Current Grade:</strong>
+                        <div class="mt-2 p-3 bg-success text-white rounded">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Marks:</strong> {{ submission.grade.marks_obtained }}/{{ submission.assignment.max_marks }}
+                                </div>
+                                {% if submission.grade.grade_letter %}
+                                <div class="col-md-6">
+                                    <strong>Grade:</strong> {{ submission.grade.grade_letter }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if submission.grade.feedback %}
+                            <div class="mt-2">
+                                <strong>Feedback:</strong>
+                                <p class="mb-0">{{ submission.grade.feedback|linebreaks }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Grading Form -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-edit me-2"></i>Grading Form
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Marks -->
+                        <div class="mb-3">
+                            <label for="marks_obtained" class="form-label">
+                                Marks Obtained <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="marks_obtained" name="marks_obtained" 
+                                       min="0" max="{{ submission.assignment.max_marks }}" step="0.01" required
+                                       value="{% if submission.grade %}{{ submission.grade.marks_obtained }}{% endif %}"
+                                       placeholder="0">
+                                <span class="input-group-text">/ {{ submission.assignment.max_marks }}</span>
+                            </div>
+                            <div class="form-text">
+                                Enter the marks obtained out of {{ submission.assignment.max_marks }}.
+                            </div>
+                        </div>
+
+                        <!-- Grade Letter -->
+                        <div class="mb-3">
+                            <label for="grade_letter" class="form-label">Grade Letter</label>
+                            <select class="form-select" id="grade_letter" name="grade_letter">
+                                <option value="">Select Grade</option>
+                                {% for value, label in grade_choices %}
+                                    <option value="{{ value }}" 
+                                            {% if submission.grade and submission.grade.grade_letter == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Optional: Select a letter grade for this submission.
+                            </div>
+                        </div>
+
+                        <!-- Feedback -->
+                        <div class="mb-4">
+                            <label for="feedback" class="form-label">Feedback</label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="4"
+                                      placeholder="Provide constructive feedback to help the student improve...">{% if submission.grade %}{{ submission.grade.feedback }}{% endif %}</textarea>
+                            <div class="form-text">
+                                Provide detailed feedback to help the student understand their performance.
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>
+                                {% if submission.grade %}Update Grade{% else %}Submit Grade{% endif %}
+                            </button>
+                            <a href="{% url 'dashboard:assignment_detail' submission.assignment.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Assignment Info -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Assignment Info
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Title:</strong>
+                        <p class="mb-0">{{ submission.assignment.title }}</p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Due Date:</strong>
+                        <p class="mb-0">{{ submission.assignment.due_date|date:"M d, Y H:i" }}</p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Max Marks:</strong>
+                        <p class="mb-0">{{ submission.assignment.max_marks }}</p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Type:</strong>
+                        <p class="mb-0">
+                            {% if submission.assignment.is_group_assignment %}
+                                <span class="badge bg-info">Group Assignment</span>
+                            {% else %}
+                                <span class="badge bg-primary">Individual Assignment</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grading Tips -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-lightbulb me-2"></i>Grading Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Be fair and consistent in your grading
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Provide constructive feedback
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Highlight both strengths and areas for improvement
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Consider late submission penalties if applicable
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Be specific about what was done well or poorly
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-calculate grade letter based on percentage
+    function calculateGradeLetter(marks, maxMarks) {
+        const percentage = (marks / maxMarks) * 100;
+        
+        if (percentage >= 97) return 'A+';
+        if (percentage >= 93) return 'A';
+        if (percentage >= 90) return 'A-';
+        if (percentage >= 87) return 'B+';
+        if (percentage >= 83) return 'B';
+        if (percentage >= 80) return 'B-';
+        if (percentage >= 77) return 'C+';
+        if (percentage >= 73) return 'C';
+        if (percentage >= 70) return 'C-';
+        if (percentage >= 67) return 'D+';
+        if (percentage >= 63) return 'D';
+        return 'F';
+    }
+    
+    // Update grade letter when marks change
+    document.getElementById('marks_obtained').addEventListener('input', function() {
+        const marks = parseFloat(this.value);
+        const maxMarks = {{ submission.assignment.max_marks }};
+        
+        if (marks >= 0 && marks <= maxMarks) {
+            const suggestedGrade = calculateGradeLetter(marks, maxMarks);
+            const gradeSelect = document.getElementById('grade_letter');
+            
+            // Update the select to show the suggested grade
+            gradeSelect.value = suggestedGrade;
+        }
+    });
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const marks = parseFloat(document.getElementById('marks_obtained').value);
+        const maxMarks = {{ submission.assignment.max_marks }};
+        
+        if (marks < 0 || marks > maxMarks) {
+            e.preventDefault();
+            alert(`Marks must be between 0 and ${maxMarks}.`);
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to submit this grade?')) {
+            e.preventDefault();
+            return;
+        }
+    });
+    
+    // Character counter for feedback
+    const feedbackTextarea = document.getElementById('feedback');
+    const counter = document.createElement('div');
+    counter.className = 'form-text text-end';
+    feedbackTextarea.parentNode.appendChild(counter);
+    
+    function updateCounter() {
+        const length = feedbackTextarea.value.length;
+        counter.textContent = `${length} characters`;
+    }
+    
+    feedbackTextarea.addEventListener('input', updateCounter);
+    updateCounter();
+</script>
+{% endblock %}

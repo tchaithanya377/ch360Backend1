@@ -1,0 +1,677 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Fee Structures{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin: 0.5rem 0 0 0;
+    }
+    
+    .structure-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .structure-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .structure-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .structure-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .action-buttons {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .structure-card:hover .action-buttons {
+        opacity: 1;
+    }
+    
+    .btn-action {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-edit {
+        background: #007bff;
+        color: white;
+    }
+    
+    .btn-edit:hover {
+        background: #0056b3;
+        transform: scale(1.1);
+    }
+    
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-delete:hover {
+        background: #c82333;
+        transform: scale(1.1);
+    }
+    
+    .btn-view {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-view:hover {
+        background: #218838;
+        transform: scale(1.1);
+    }
+    
+    .modal-content {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        border: none;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .search-box {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-summary {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin: 0;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .grade-badge {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .academic-year-badge {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="page-title">
+                    <i class="fas fa-layer-group me-3"></i>
+                    Fee Structures
+                </h1>
+                <p class="page-subtitle">Manage fee structures for different academic years and grade levels</p>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#addStructureModal">
+                    <i class="fas fa-plus me-2"></i>Add Structure
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Statistics Summary -->
+    <div class="stats-summary">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="stat-number">{{ structures.count }}</h3>
+                    <p class="stat-label">Total Structures</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="stat-number">{{ active_structures.count }}</h3>
+                    <p class="stat-label">Active Structures</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="stat-number">{{ total_grade_levels }}</h3>
+                    <p class="stat-label">Grade Levels</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <h3 class="stat-number">{{ total_academic_years }}</h3>
+                    <p class="stat-label">Academic Years</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="search-box">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Search structures...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="gradeFilter">
+                    <option value="">All Grades</option>
+                    <option value="1">Grade 1</option>
+                    <option value="2">Grade 2</option>
+                    <option value="3">Grade 3</option>
+                    <option value="4">Grade 4</option>
+                    <option value="5">Grade 5</option>
+                    <option value="6">Grade 6</option>
+                    <option value="7">Grade 7</option>
+                    <option value="8">Grade 8</option>
+                    <option value="9">Grade 9</option>
+                    <option value="10">Grade 10</option>
+                    <option value="11">Grade 11</option>
+                    <option value="12">Grade 12</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="yearFilter">
+                    <option value="">All Years</option>
+                    <option value="2023-2024">2023-2024</option>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2026-2027">2026-2027</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="sortOrder">
+                    <option value="name">Sort by Name</option>
+                    <option value="academic_year">Sort by Year</option>
+                    <option value="grade_level">Sort by Grade</option>
+                    <option value="created_at">Sort by Date</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Structures Grid -->
+    <div class="row" id="structuresGrid">
+        {% for structure in structures %}
+        <div class="col-xl-4 col-lg-6 col-md-6 mb-4 structure-item" 
+             data-name="{{ structure.name|lower }}" 
+             data-status="{{ structure.is_active|yesno:'active,inactive' }}"
+             data-grade="{{ structure.grade_level }}"
+             data-year="{{ structure.academic_year }}">
+            <div class="structure-card card">
+                <div class="card-body text-center">
+                    <div class="structure-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    
+                    <h5 class="card-title mb-2">{{ structure.name }}</h5>
+                    <p class="card-text text-muted mb-3">
+                        {{ structure.description|default:"No description available"|truncatechars:80 }}
+                    </p>
+                    
+                    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                        <span class="grade-badge">
+                            <i class="fas fa-graduation-cap me-1"></i>
+                            Grade {{ structure.grade_level }}
+                        </span>
+                        <span class="academic-year-badge">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            {{ structure.academic_year }}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <span class="status-badge {% if structure.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if structure.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center align-items-center mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Created: {{ structure.created_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                    
+                    <div class="action-buttons d-flex justify-content-center gap-2">
+                        <button class="btn-action btn-view" 
+                                onclick="window.location.href='{% url 'dashboard:fees_structure_detail' structure.id %}'">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn-action btn-edit" 
+                                onclick="editStructure('{{ structure.id }}', '{{ structure.name }}', '{{ structure.description }}', '{{ structure.academic_year }}', '{{ structure.grade_level }}', {{ structure.is_active|yesno:'true,false' }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action btn-delete" 
+                                onclick="deleteStructure('{{ structure.id }}', '{{ structure.name }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No fee structures found</h4>
+                <p class="text-muted">Create your first fee structure to get started</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStructureModal">
+                    <i class="fas fa-plus me-2"></i>Add Structure
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Structure Modal -->
+<div class="modal fade" id="addStructureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>Add New Fee Structure
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'dashboard:fees_structures_list' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Structure Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="academic_year" class="form-label">Academic Year *</label>
+                                <select class="form-select" id="academic_year" name="academic_year" required>
+                                    <option value="">Select Academic Year</option>
+                                    <option value="2023-2024">2023-2024</option>
+                                    <option value="2024-2025">2024-2025</option>
+                                    <option value="2025-2026">2025-2026</option>
+                                    <option value="2026-2027">2026-2027</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="grade_level" class="form-label">Grade Level *</label>
+                                <select class="form-select" id="grade_level" name="grade_level" required>
+                                    <option value="">Select Grade Level</option>
+                                    <option value="1">Grade 1</option>
+                                    <option value="2">Grade 2</option>
+                                    <option value="3">Grade 3</option>
+                                    <option value="4">Grade 4</option>
+                                    <option value="5">Grade 5</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="7">Grade 7</option>
+                                    <option value="8">Grade 8</option>
+                                    <option value="9">Grade 9</option>
+                                    <option value="10">Grade 10</option>
+                                    <option value="11">Grade 11</option>
+                                    <option value="12">Grade 12</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="is_active" class="form-label">Status</label>
+                                <select class="form-select" id="is_active" name="is_active">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Structure
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Structure Modal -->
+<div class="modal fade" id="editStructureModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit Fee Structure
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'dashboard:fees_structures_list' %}">
+                {% csrf_token %}
+                <input type="hidden" id="edit_structure_id" name="structure_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_name" class="form-label">Structure Name *</label>
+                                <input type="text" class="form-control" id="edit_name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_academic_year" class="form-label">Academic Year *</label>
+                                <select class="form-select" id="edit_academic_year" name="academic_year" required>
+                                    <option value="2023-2024">2023-2024</option>
+                                    <option value="2024-2025">2024-2025</option>
+                                    <option value="2025-2026">2025-2026</option>
+                                    <option value="2026-2027">2026-2027</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_grade_level" class="form-label">Grade Level *</label>
+                                <select class="form-select" id="edit_grade_level" name="grade_level" required>
+                                    <option value="1">Grade 1</option>
+                                    <option value="2">Grade 2</option>
+                                    <option value="3">Grade 3</option>
+                                    <option value="4">Grade 4</option>
+                                    <option value="5">Grade 5</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="7">Grade 7</option>
+                                    <option value="8">Grade 8</option>
+                                    <option value="9">Grade 9</option>
+                                    <option value="10">Grade 10</option>
+                                    <option value="11">Grade 11</option>
+                                    <option value="12">Grade 12</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_is_active" class="form-label">Status</label>
+                                <select class="form-select" id="edit_is_active" name="is_active">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Structure
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteStructureModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Structure
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the structure "<strong id="deleteStructureName"></strong>"?</p>
+                <p class="text-danger mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    This action cannot be undone and will affect all related student fees.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'dashboard:fees_structures_list' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" id="delete_structure_id" name="delete_structure_id">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Structure
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Search and filter functionality
+document.getElementById('searchInput').addEventListener('input', filterStructures);
+document.getElementById('statusFilter').addEventListener('change', filterStructures);
+document.getElementById('gradeFilter').addEventListener('change', filterStructures);
+document.getElementById('yearFilter').addEventListener('change', filterStructures);
+document.getElementById('sortOrder').addEventListener('change', filterStructures);
+
+function filterStructures() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const gradeFilter = document.getElementById('gradeFilter').value;
+    const yearFilter = document.getElementById('yearFilter').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+    
+    const structures = document.querySelectorAll('.structure-item');
+    const structuresArray = Array.from(structures);
+    
+    // Filter structures
+    structuresArray.forEach(structure => {
+        const name = structure.dataset.name;
+        const status = structure.dataset.status;
+        const grade = structure.dataset.grade;
+        const year = structure.dataset.year;
+        
+        const matchesSearch = name.includes(searchTerm);
+        const matchesStatus = !statusFilter || status === statusFilter;
+        const matchesGrade = !gradeFilter || grade === gradeFilter;
+        const matchesYear = !yearFilter || year === yearFilter;
+        
+        if (matchesSearch && matchesStatus && matchesGrade && matchesYear) {
+            structure.style.display = 'block';
+        } else {
+            structure.style.display = 'none';
+        }
+    });
+    
+    // Sort structures
+    structuresArray.sort((a, b) => {
+        if (sortOrder === 'name') {
+            return a.dataset.name.localeCompare(b.dataset.name);
+        } else if (sortOrder === 'academic_year') {
+            return a.dataset.year.localeCompare(b.dataset.year);
+        } else if (sortOrder === 'grade_level') {
+            return parseInt(a.dataset.grade) - parseInt(b.dataset.grade);
+        }
+        return 0;
+    });
+    
+    // Reorder in DOM
+    const grid = document.getElementById('structuresGrid');
+    structuresArray.forEach(structure => {
+        if (structure.style.display !== 'none') {
+            grid.appendChild(structure);
+        }
+    });
+}
+
+// Edit structure function
+function editStructure(id, name, description, academicYear, gradeLevel, isActive) {
+    document.getElementById('edit_structure_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_academic_year').value = academicYear;
+    document.getElementById('edit_grade_level').value = gradeLevel;
+    document.getElementById('edit_is_active').value = isActive.toString();
+    
+    new bootstrap.Modal(document.getElementById('editStructureModal')).show();
+}
+
+// Delete structure function
+function deleteStructure(id, name) {
+    document.getElementById('delete_structure_id').value = id;
+    document.getElementById('deleteStructureName').textContent = name;
+    
+    new bootstrap.Modal(document.getElementById('deleteStructureModal')).show();
+}
+
+// Success message handling
+{% if messages %}
+    {% for message in messages %}
+        {% if message.tags == 'success' %}
+            // Show success toast or alert
+            setTimeout(function() {
+                const toast = new bootstrap.Toast(document.createElement('div'));
+                toast.show();
+            }, 100);
+        {% endif %}
+    {% endfor %}
+{% endif %}
+</script>
+{% endblock %}

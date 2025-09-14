@@ -1,0 +1,576 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Room Allocation Detail - Exam Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-map-marker-alt text-primary"></i> Room Allocation Details
+            </h1>
+            <p class="text-muted">View and manage room allocation information</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:exams_room_allocations' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Allocations
+            </a>
+            <a href="{% url 'dashboard:exams_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Status
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if allocation.status == 'assigned' %}
+                                    <span class="badge bg-warning fs-6 px-3 py-2">
+                                        <i class="fas fa-clock me-1"></i>Assigned
+                                    </span>
+                                {% elif allocation.status == 'confirmed' %}
+                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                        <i class="fas fa-check me-1"></i>Confirmed
+                                    </span>
+                                {% elif allocation.status == 'cancelled' %}
+                                    <span class="badge bg-danger fs-6 px-3 py-2">
+                                        <i class="fas fa-times me-1"></i>Cancelled
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Seat Number
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                <span class="badge bg-info fs-5 px-3 py-2">{{ allocation.seat_number }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chair fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Assigned Date
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ allocation.assigned_date|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Room Capacity
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ allocation.room.capacity }} seats
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Allocation Details -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-gradient-primary text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-info-circle me-2"></i>Allocation Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-primary fw-bold mb-3">
+                                    <i class="fas fa-user text-primary me-2"></i>Student Information
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold text-muted">Name:</td>
+                                            <td class="fw-bold">{{ allocation.student.full_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Roll Number:</td>
+                                            <td class="fw-bold">{{ allocation.student.roll_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Email:</td>
+                                            <td>{{ allocation.student.email }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Phone:</td>
+                                            <td>{{ allocation.student.phone_number|default:"Not provided" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-success fw-bold mb-3">
+                                    <i class="fas fa-calendar text-success me-2"></i>Exam Information
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold text-muted">Exam Name:</td>
+                                            <td class="fw-bold">{{ allocation.exam_schedule.exam_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Session:</td>
+                                            <td class="fw-bold">{{ allocation.exam_schedule.exam_session.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Date:</td>
+                                            <td>{{ allocation.exam_schedule.exam_date|date:"M d, Y" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Time:</td>
+                                            <td>{{ allocation.exam_schedule.start_time|time:"H:i" }} - {{ allocation.exam_schedule.end_time|time:"H:i" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-info fw-bold mb-3">
+                                    <i class="fas fa-building text-info me-2"></i>Room Information
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold text-muted">Room Number:</td>
+                                            <td class="fw-bold">{{ allocation.room.room_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Building:</td>
+                                            <td class="fw-bold">{{ allocation.room.building }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Floor:</td>
+                                            <td>{{ allocation.room.floor|default:"Ground" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Capacity:</td>
+                                            <td>{{ allocation.room.capacity }} students</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-warning fw-bold mb-3">
+                                    <i class="fas fa-cog text-warning me-2"></i>Allocation Details
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold text-muted">Seat Number:</td>
+                                            <td><span class="badge bg-info fs-6 px-3 py-2">{{ allocation.seat_number }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Status:</td>
+                                            <td>
+                                                {% if allocation.status == 'assigned' %}
+                                                    <span class="badge bg-warning fs-6 px-3 py-2">
+                                                        <i class="fas fa-clock me-1"></i>Assigned
+                                                    </span>
+                                                {% elif allocation.status == 'confirmed' %}
+                                                    <span class="badge bg-success fs-6 px-3 py-2">
+                                                        <i class="fas fa-check me-1"></i>Confirmed
+                                                    </span>
+                                                {% elif allocation.status == 'cancelled' %}
+                                                    <span class="badge bg-danger fs-6 px-3 py-2">
+                                                        <i class="fas fa-times me-1"></i>Cancelled
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Assigned Date:</td>
+                                            <td>{{ allocation.assigned_date|date:"M d, Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted">Notes:</td>
+                                            <td>{{ allocation.notes|default:"No notes" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-gradient-success text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        {% if allocation.status == 'assigned' %}
+                            <button class="btn btn-success btn-lg" onclick="confirmAllocation('{{ allocation.id }}')">
+                                <i class="fas fa-check me-2"></i>Confirm Allocation
+                            </button>
+                        {% endif %}
+                        
+                        {% if allocation.status != 'cancelled' %}
+                            <button class="btn btn-danger btn-lg" onclick="cancelAllocation('{{ allocation.id }}')">
+                                <i class="fas fa-times me-2"></i>Cancel Allocation
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'dashboard:exams_hall_ticket_detail' allocation.hall_ticket.id %}" 
+                           class="btn btn-info btn-lg">
+                            <i class="fas fa-ticket-alt me-2"></i>View Hall Ticket
+                        </a>
+                        
+                        <button class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#editAllocationModal">
+                            <i class="fas fa-edit me-2"></i>Edit Allocation
+                        </button>
+                        
+                        <a href="{% url 'dashboard:exams_room_detail' allocation.room.id %}" 
+                           class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-building me-2"></i>View Room Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-gradient-info text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-link me-2"></i>Related Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="related-info-item mb-3">
+                        <h6 class="text-primary fw-bold">
+                            <i class="fas fa-user-graduate me-2"></i>Student's Other Allocations
+                        </h6>
+                        <p class="text-muted mb-2">This student has {{ allocation.student.room_allocations.count }} total room allocations</p>
+                        <a href="{% url 'dashboard:exams_room_allocations' %}?student={{ allocation.student.id }}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i>View All
+                        </a>
+                    </div>
+                    
+                    <div class="related-info-item mb-3">
+                        <h6 class="text-success fw-bold">
+                            <i class="fas fa-building me-2"></i>Room Occupancy
+                        </h6>
+                        <p class="text-muted mb-2">{{ allocation.room.allocations.count }} students assigned to this room</p>
+                        <a href="{% url 'dashboard:exams_room_detail' allocation.room.id %}" 
+                           class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-eye me-1"></i>View Room
+                        </a>
+                    </div>
+                    
+                    <div class="related-info-item">
+                        <h6 class="text-info fw-bold">
+                            <i class="fas fa-calendar me-2"></i>Exam Schedule
+                        </h6>
+                        <p class="text-muted mb-2">{{ allocation.exam_schedule.registrations.count }} students registered for this exam</p>
+                        <a href="{% url 'dashboard:exams_schedule_detail' allocation.exam_schedule.id %}" 
+                           class="btn btn-sm btn-outline-info">
+                            <i class="fas fa-eye me-1"></i>View Schedule
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Allocation Modal -->
+<div class="modal fade" id="editAllocationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit Room Allocation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'dashboard:exams_room_allocation_detail' allocation.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="room" class="form-label fw-bold">
+                                    <i class="fas fa-building text-info me-1"></i>Room
+                                </label>
+                                <select name="room" id="room" class="form-select" required>
+                                    {% for room in exam_rooms %}
+                                    <option value="{{ room.id }}" {% if room.id == allocation.room.id %}selected{% endif %}>
+                                        {{ room.room_number }} - {{ room.building }} ({{ room.capacity }} seats)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="seat_number" class="form-label fw-bold">
+                                    <i class="fas fa-chair text-warning me-1"></i>Seat Number
+                                </label>
+                                <input type="number" name="seat_number" id="seat_number" class="form-control" 
+                                       value="{{ allocation.seat_number }}" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label fw-bold">
+                            <i class="fas fa-sticky-note text-secondary me-1"></i>Notes
+                        </label>
+                        <textarea name="notes" id="notes" class="form-control" rows="3">{{ allocation.notes|default:"" }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>Update Allocation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Confirm Action
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="confirmAction">
+                    <i class="fas fa-check me-1"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Confirmation Functions
+function confirmAllocation(allocationId) {
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to confirm this room allocation?';
+    document.getElementById('confirmAction').onclick = function() {
+        // Send confirmation request
+        fetch(`/dashboard/exams/room-allocations/${allocationId}/confirm/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    };
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+function cancelAllocation(allocationId) {
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to cancel this room allocation? This action cannot be undone.';
+    document.getElementById('confirmAction').onclick = function() {
+        // Send cancellation request
+        fetch(`/dashboard/exams/room-allocations/${allocationId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    };
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+</script>
+
+<style>
+.border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+.border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+.border-left-info { border-left: 0.25rem solid #36b9cc !important; }
+.border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+.text-gray-300 { color: #dddfeb !important; }
+.text-gray-800 { color: #5a5c69 !important; }
+.font-weight-bold { font-weight: 700 !important; }
+.text-xs { font-size: 0.7rem; }
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);
+}
+
+.info-section {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+    border-left: 4px solid #dee2e6;
+}
+
+.info-section:hover {
+    background-color: #e9ecef;
+    border-left-color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.related-info-item {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.related-info-item:hover {
+    background-color: #e9ecef;
+    border-color: #6c757d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+.table-borderless td {
+    padding: 0.5rem 0;
+    border: none;
+}
+
+.badge {
+    font-size: 0.75rem !important;
+    padding: 0.5rem 1rem !important;
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+.modal-footer {
+    border-top: none;
+}
+</style>
+{% endblock %}

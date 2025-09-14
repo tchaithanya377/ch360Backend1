@@ -1,0 +1,65 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Test Suites{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>Test Suites</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if suites %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Collection</th>
+                                        <th>Tests</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for suite in suites %}
+                                    <tr>
+                                        <td>{{ suite.name }}</td>
+                                        <td>{{ suite.collection.name }}</td>
+                                        <td>{{ suite.tests.count }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ suite.enabled|yesno:'success,secondary' }}">
+                                                {{ suite.enabled|yesno:'Enabled,Disabled' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'dashboard:api_test_suite_detail' suite.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-list fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Test Suites Yet</h4>
+                            <p class="text-muted">Create test suites to group and automate your tests.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

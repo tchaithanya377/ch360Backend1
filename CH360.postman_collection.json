@@ -1,0 +1,266 @@
+{
+  "info": {
+    "_postman_id": "7a4a0bb2-2d5b-4b2a-9a8b-0e9bf2b8a001",
+    "name": "CH360 API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Consolidated Postman collection for CH360 APIs. Set collection variables: baseUrl, jwt."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "username", "value": "admin@example.com" },
+    { "key": "password", "value": "admin123" },
+    { "key": "jwt", "value": "" },
+    { "key": "refresh", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [ { "key": "token", "value": "{{jwt}}", "type": "string" } ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "(function() {",
+          "  const coll = pm.collectionVariables;",
+          "  const env = pm.environment;",
+          "  const baseUrl = env.get('baseUrl') || coll.get('baseUrl');",
+          "  const username = env.get('username') || coll.get('username');",
+          "  const password = env.get('password') || coll.get('password');",
+          "  function isExpired(token) {",
+          "    if (!token) return true;",
+          "    try {",
+          "      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));",
+          "      if (!payload.exp) return false;",
+          "      const now = Math.floor(Date.now() / 1000);",
+          "      return payload.exp <= now + 10;",
+          "    } catch(e) { return true; }",
+          "  }",
+          "  function setTokens(json) {",
+          "    if (json && json.access) coll.set('jwt', json.access);",
+          "    if (json && json.refresh) coll.set('refresh', json.refresh);",
+          "  }",
+          "  const current = coll.get('jwt');",
+          "  if (!current || isExpired(current)) {",
+          "    const refresh = coll.get('refresh');",
+          "    if (refresh) {",
+          "      pm.sendRequest({",
+          "        url: baseUrl + '/api/auth/token/refresh/',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' },",
+          "        body: { mode: 'raw', raw: JSON.stringify({ refresh }) }",
+          "      }, function(err, res) {",
+          "        if (!err && res && res.code === 200) {",
+          "          try { setTokens(res.json()); } catch(e) {}",
+          "        } else if (username && password) {",
+          "          pm.sendRequest({",
+          "            url: baseUrl + '/api/auth/token/',",
+          "            method: 'POST',",
+          "            header: { 'Content-Type': 'application/json' },",
+          "            body: { mode: 'raw', raw: JSON.stringify({ username, password }) }",
+          "          }, function(err2, res2) {",
+          "            if (!err2 && res2 && res2.code === 200) {",
+          "              try { setTokens(res2.json()); } catch(e) {}",
+          "            }",
+          "          });",
+          "        }",
+          "      });",
+          "    } else if (username && password) {",
+          "      pm.sendRequest({",
+          "        url: baseUrl + '/api/auth/token/',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' },",
+          "        body: { mode: 'raw', raw: JSON.stringify({ username, password }) }",
+          "      }, function(err, res) {",
+          "        if (!err && res && res.code === 200) {",
+          "          try { setTokens(res.json()); } catch(e) {}",
+          "        }",
+          "      });",
+          "    }",
+          "  }",
+          "})();"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Obtain JWT",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/token/", "host": ["{{baseUrl}}"], "path": ["api","auth","token","" ] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Got tokens', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('access');",
+                  "  pm.collectionVariables.set('jwt', json.access);",
+                  "  if (json.refresh) pm.collectionVariables.set('refresh', json.refresh);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh JWT",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/token/refresh/", "host": ["{{baseUrl}}"], "path": ["api","auth","token","refresh","" ] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"<refresh_token>\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/accounts/register/", "host": ["{{baseUrl}}"], "path": ["api","accounts","register","" ] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Passw0rd!\"\n}" }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ],
+            "url": { "raw": "{{baseUrl}}/api/accounts/me/", "host": ["{{baseUrl}}"], "path": ["api","accounts","me","" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students (v1)",
+      "item": [
+        { "name": "List Students", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/students/students/", "host": ["{{baseUrl}}"], "path": ["api","v1","students","students","" ] } } },
+        { "name": "Create Student", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" }, { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/students/students/", "host": ["{{baseUrl}}"], "path": ["api","v1","students","students","" ] }, "body": { "mode": "raw", "raw": "{\n  \"roll_number\": \"R2025-0001\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"date_of_birth\": \"2002-07-20\",\n  \"gender\": \"M\",\n  \"email\": \"john.doe@example.com\"\n}" } } },
+        { "name": "Student Search", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/students/students/search/?q=John", "host": ["{{baseUrl}}"], "path": ["api","v1","students","students","search","" ], "query": [ {"key":"q","value":"John"} ] } } },
+        { "name": "Student Stats", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/students/students/stats/", "host": ["{{baseUrl}}"], "path": ["api","v1","students","students","stats","" ] } } },
+        { "name": "Enrollment History (list)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/students/enrollment-history/", "host": ["{{baseUrl}}"], "path": ["api","v1","students","enrollment-history","" ] } } }
+      ]
+    },
+    {
+      "name": "Faculty",
+      "item": [
+        { "name": "List Faculty", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/faculty/api/faculty/", "host": ["{{baseUrl}}"], "path": ["api","v1","faculty","api","faculty","" ] } } },
+        { "name": "Create Faculty", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" }, { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/faculty/api/faculty/", "host": ["{{baseUrl}}"], "path": ["api","v1","faculty","api","faculty","" ] }, "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Alice\",\n  \"last_name\": \"Smith\",\n  \"email\": \"alice.smith@example.com\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Academics",
+      "item": [
+        { "name": "List Courses", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/academics/api/courses/", "host": ["{{baseUrl}}"], "path": ["api","v1","academics","api","courses","" ] } } },
+        { "name": "Create Course", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" }, { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/academics/api/courses/", "host": ["{{baseUrl}}"], "path": ["api","v1","academics","api","courses","" ] }, "body": { "mode": "raw", "raw": "{\n  \"code\": \"CS101\",\n  \"title\": \"Intro to CS\",\n  \"level\": \"UG\",\n  \"credits\": 3\n}" } } }
+      ]
+    },
+    {
+      "name": "Departments",
+      "item": [
+        { "name": "List Departments", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/departments/", "host": ["{{baseUrl}}"], "path": ["api","v1","departments","" ] } } },
+        { "name": "Department Resources", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/departments/resources/", "host": ["{{baseUrl}}"], "path": ["api","v1","departments","resources","" ] } } }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        { "name": "Sessions", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/attendance/attendance/sessions/", "host": ["{{baseUrl}}"], "path": ["api","v1","attendance","attendance","sessions","" ] } } },
+        { "name": "Records", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/attendance/attendance/records/", "host": ["{{baseUrl}}"], "path": ["api","v1","attendance","attendance","records","" ] } } }
+      ]
+    },
+    {
+      "name": "Placements",
+      "item": [
+        { "name": "Companies", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/placements/api/companies/", "host": ["{{baseUrl}}"], "path": ["api","v1","placements","api","companies","" ] } } },
+        { "name": "Jobs", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/placements/api/jobs/", "host": ["{{baseUrl}}"], "path": ["api","v1","placements","api","jobs","" ] } } }
+      ]
+    },
+    {
+      "name": "Grads",
+      "item": [
+        { "name": "Terms", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/terms/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","terms","" ] } } },
+        { "name": "Graduates", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/graduates/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","graduates","" ] } } }
+      ]
+    },
+    {
+      "name": "R&D",
+      "item": [
+        { "name": "Researchers", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/rnd/researchers/", "host": ["{{baseUrl}}"], "path": ["api","v1","rnd","researchers","" ] } } },
+        { "name": "Projects", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/rnd/projects/", "host": ["{{baseUrl}}"], "path": ["api","v1","rnd","projects","" ] } } }
+      ]
+    },
+    {
+      "name": "Fees",
+      "item": [
+        { "name": "Categories", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/fees/api/categories/", "host": ["{{baseUrl}}"], "path": ["api","v1","fees","api","categories","" ] } } },
+        { "name": "Payments", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/fees/api/payments/", "host": ["{{baseUrl}}"], "path": ["api","v1","fees","api","payments","" ] } } }
+      ]
+    },
+    {
+      "name": "Transport",
+      "item": [
+        { "name": "Vehicles", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/transport/vehicles/", "host": ["{{baseUrl}}"], "path": ["api","v1","transport","vehicles","" ] } } },
+        { "name": "Routes", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/transport/routes/", "host": ["{{baseUrl}}"], "path": ["api","v1","transport","routes","" ] } } }
+      ]
+    },
+    {
+      "name": "Mentoring",
+      "item": [
+        { "name": "Mentorships", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/mentoring/mentorships/", "host": ["{{baseUrl}}"], "path": ["api","v1","mentoring","mentorships","" ] } } },
+        { "name": "Projects", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/mentoring/projects/", "host": ["{{baseUrl}}"], "path": ["api","v1","mentoring","projects","" ] } } }
+      ]
+    },
+    {
+      "name": "Feedback",
+      "item": [
+        { "name": "Items", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/feedback/items/", "host": ["{{baseUrl}}"], "path": ["api","v1","feedback","items","" ] } } },
+        { "name": "Comments", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/feedback/comments/", "host": ["{{baseUrl}}"], "path": ["api","v1","feedback","comments","" ] } } }
+      ]
+    },
+    {
+      "name": "Assignments",
+      "item": [
+        { "name": "List Assignments", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/assignments/", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","" ] } } },
+        { "name": "Create Assignment", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" }, { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/assignments/", "host": ["{{baseUrl}}"], "path": ["api","v1","assignments","" ] }, "body": { "mode": "raw", "raw": "{\n  \"title\": \"Assignment 1\",\n  \"description\": \"Intro assignment\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Exams",
+      "item": [
+        { "name": "Exam Sessions", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/exams/api/exam-sessions/", "host": ["{{baseUrl}}"], "path": ["api","v1","exams","api","exam-sessions","" ] } } },
+        { "name": "Dashboard Stats", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/exams/api/dashboard/stats/", "host": ["{{baseUrl}}"], "path": ["api","v1","exams","api","dashboard","stats","" ] } } }
+      ]
+    },
+    {
+      "name": "Health & Metrics",
+      "item": [
+        { "name": "Health", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/health/", "host": ["{{baseUrl}}"], "path": ["health","" ] } } },
+        { "name": "Metrics", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/metrics/app", "host": ["{{baseUrl}}"], "path": ["metrics","app" ] } } }
+      ]
+    }
+  ]
+}
+
+

@@ -1,0 +1,66 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Enrollment Details - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-user-graduate text-warning"></i>
+            Enrollment Details
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_enrollments' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Enrollments
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ student.first_name }} {{ student.last_name }}</p>
+                    <p><strong>Roll Number:</strong> {{ student.roll_number }}</p>
+                    <p><strong>Email:</strong> {{ student.email }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Course Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Code:</strong> {{ course.code }}</p>
+                    <p><strong>Title:</strong> {{ course.title }}</p>
+                    <p><strong>Credits:</strong> {{ course.credits }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Enrollment Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Academic Year:</strong> {{ enrollment.academic_year }}</p>
+                    <p><strong>Semester:</strong> {{ enrollment.semester }}</p>
+                    <p><strong>Status:</strong> {{ enrollment.get_status_display }}</p>
+                    <p><strong>Grade:</strong> {{ enrollment.grade|default:"Not assigned" }}</p>
+                    <p><strong>Enrollment Date:</strong> {{ enrollment.enrollment_date }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

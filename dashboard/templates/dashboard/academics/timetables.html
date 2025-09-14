@@ -1,0 +1,268 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Timetables Management - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-calendar-alt text-info"></i>
+            Timetables Management
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <a href="/admin/academics/timetable/add/" class="btn btn-sm btn-success">
+                    <i class="fas fa-plus"></i> Add New Timetable
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ total_timetables }}</h4>
+                            <small>Total Timetables</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ active_timetables }}</h4>
+                            <small>Active Timetables</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ total_timetables|add:"-"|add:active_timetables|add:"1" }}</h4>
+                            <small>Inactive Timetables</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-pause-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter text-info"></i>
+                Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="academic_year" class="form-label">Academic Year</label>
+                    <select class="form-select" id="academic_year" name="academic_year">
+                        <option value="">All Years</option>
+                        {% for year in academic_years %}
+                            <option value="{{ year }}" {% if current_filters.academic_year == year %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="semester" class="form-label">Semester</label>
+                    <select class="form-select" id="semester" name="semester">
+                        <option value="">All Semesters</option>
+                        {% for semester in semesters %}
+                            <option value="{{ semester }}" {% if current_filters.semester == semester %}selected{% endif %}>
+                                {{ semester }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="day" class="form-label">Day of Week</label>
+                    <select class="form-select" id="day" name="day">
+                        <option value="">All Days</option>
+                        {% for day_code, day_name in days_of_week %}
+                            <option value="{{ day_code }}" {% if current_filters.day == day_code %}selected{% endif %}>
+                                {{ day_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'dashboard:academics_timetables' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Timetables Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list text-primary"></i>
+                Timetables List
+                {% if current_filters.academic_year or current_filters.semester or current_filters.day %}
+                    <span class="badge bg-info ms-2">Filtered</span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if timetables %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Course</th>
+                                <th>Day</th>
+                                <th>Time</th>
+                                <th>Room</th>
+                                <th>Faculty</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for timetable in timetables %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'dashboard:academics_course_detail' timetable.course.id %}" class="text-decoration-none">
+                                            <strong class="text-primary">{{ timetable.course.code }}</strong><br>
+                                            <small class="text-muted">{{ timetable.course.title }}</small>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ timetable.get_day_of_week_display }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ timetable.start_time|time:"H:i" }} - {{ timetable.end_time|time:"H:i" }}</strong><br>
+                                        <small class="text-muted">{{ timetable.get_duration_minutes }} minutes</small>
+                                    </td>
+                                    <td>{{ timetable.room }}</td>
+                                    <td>
+                                        <a href="{% url 'dashboard:faculty_detail' timetable.faculty.id %}" class="text-decoration-none">
+                                            {{ timetable.faculty.first_name }} {{ timetable.faculty.last_name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ timetable.get_timetable_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if timetable.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'dashboard:academics_timetable_detail' timetable.id %}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="/admin/academics/timetable/{{ timetable.id }}/change/" 
+                                               class="btn btn-sm btn-outline-warning" 
+                                               title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="/admin/academics/timetable/{{ timetable.id }}/delete/" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               title="Delete"
+                                               onclick="return confirm('Are you sure you want to delete this timetable?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No timetables found</h5>
+                    <p class="text-muted">
+                        {% if current_filters.academic_year or current_filters.semester or current_filters.day %}
+                            No timetables match the current filters. Try adjusting your search criteria.
+                        {% else %}
+                            No timetables have been created yet. 
+                            <a href="/admin/academics/timetable/add/" class="text-decoration-none">Create your first timetable</a>.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt text-warning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="/admin/academics/timetable/add/" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> Add New Timetable
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_courses' %}" class="btn btn-primary w-100">
+                                <i class="fas fa-graduation-cap"></i> Manage Courses
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_syllabi' %}" class="btn btn-success w-100">
+                                <i class="fas fa-file-alt"></i> Manage Syllabi
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_calendar' %}" class="btn btn-warning w-100">
+                                <i class="fas fa-calendar-day"></i> Manage Calendar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

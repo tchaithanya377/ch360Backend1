@@ -1,0 +1,112 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}FAQ - CampusHub 360 Documentation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'docs:home' %}">Home</a></li>
+            <li class="breadcrumb-item active">FAQ</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-question-circle me-2"></i>Frequently Asked Questions</h1>
+            <p class="lead">Find answers to common questions about CampusHub 360 APIs and integration.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- FAQ Content -->
+        <div class="col-lg-8">
+            {% if faqs %}
+            <div class="accordion" id="faqAccordion">
+                {% for faq in faqs %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ faq.id }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ faq.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ faq.id }}">
+                            {{ faq.question }}
+                        </button>
+                    </h2>
+                    <div id="collapse{{ faq.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ faq.id }}" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            {{ faq.answer|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                <h4>No FAQs available</h4>
+                <p class="text-muted">We're working on adding frequently asked questions. Check back soon!</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Categories -->
+            {% if categories %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-th-large me-2"></i>Browse by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for category in categories %}
+                        <a href="{% url 'docs:category_detail' category.slug %}" class="list-group-item list-group-item-action">
+                            <i class="{{ category.icon|default:'fas fa-folder' }} me-2"></i>{{ category.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Links -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-link me-2"></i>Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'docs:tutorials' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-book me-2"></i>View Tutorials
+                        </a>
+                        <a href="{% url 'docs:apis' %}" class="btn btn-outline-success">
+                            <i class="fas fa-code me-2"></i>API Reference
+                        </a>
+                        <a href="{% url 'docs:search' %}" class="btn btn-outline-info">
+                            <i class="fas fa-search me-2"></i>Search Docs
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Support -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-headset me-2"></i>Need Help?</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Can't find what you're looking for? Our support team is here to help!</p>
+                    <div class="d-grid gap-2">
+                        <a href="mailto:support@campushub360.com" class="btn btn-primary">
+                            <i class="fas fa-envelope me-2"></i>Contact Support
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary">
+                            <i class="fas fa-comments me-2"></i>Live Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

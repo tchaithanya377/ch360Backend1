@@ -1,0 +1,47 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mentoring Feedback - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h3"><i class="fas fa-comment-dots text-primary"></i> Feedback</h1>
+    <a href="{% url 'dashboard:mentoring_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+    
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Mentor</th>
+                        <th>Student</th>
+                        <th>Rating</th>
+                        <th>Comment</th>
+                        <th>Project</th>
+                        <th>Meeting</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in feedback %}
+                    <tr>
+                        <td>{{ f.mentorship.mentor.name }}</td>
+                        <td>{{ f.mentorship.student.full_name }}</td>
+                        <td><span class="badge bg-info">{{ f.rating }}</span></td>
+                        <td>{{ f.comments|default:"-" }}</td>
+                        <td>{{ f.project.title|default:"-" }}</td>
+                        <td>{{ f.meeting.scheduled_at|date:"M d, Y H:i"|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">No feedback found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+

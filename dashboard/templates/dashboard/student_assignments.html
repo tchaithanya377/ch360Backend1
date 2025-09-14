@@ -1,0 +1,269 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Student Assignments - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-plus"></i> Student Assignments
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'dashboard:student_divisions' %}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-sitemap"></i> View Divisions
+            </a>
+            <a href="{% url 'dashboard:student_division_statistics' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-chart-bar"></i> Statistics
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Assignment Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-edit"></i> Assign Students to Programs and Sections
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="post" id="assignmentForm">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="department_id" class="form-label">Department</label>
+                    <select class="form-select" id="department_id" name="department_id">
+                        <option value="">Select Department</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="academic_program_id" class="form-label">Academic Program</label>
+                    <select class="form-select" id="academic_program_id" name="academic_program_id">
+                        <option value="">Select Program</option>
+                        {% for program in programs %}
+                        <option value="{{ program.id }}">{{ program.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="academic_year" class="form-label">Academic Year</label>
+                    <input type="text" class="form-control" id="academic_year" name="academic_year" 
+                           placeholder="2023-2024">
+                </div>
+                <div class="col-md-3">
+                    <label for="year_of_study" class="form-label">Year of Study</label>
+                    <select class="form-select" id="year_of_study" name="year_of_study">
+                        <option value="">Select Year</option>
+                        {% for year, name in year_choices %}
+                        <option value="{{ year }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="semester" class="form-label">Semester</label>
+                    <select class="form-select" id="semester" name="semester">
+                        <option value="">Select Semester</option>
+                        {% for sem, name in semester_choices %}
+                        <option value="{{ sem }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="section" class="form-label">Section</label>
+                    <select class="form-select" id="section" name="section">
+                        <option value="">Select Section</option>
+                        {% for sec, name in section_choices %}
+                        <option value="{{ sec }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary" id="assignBtn" disabled>
+                        <i class="fas fa-save"></i> Assign Selected Students
+                    </button>
+                    <span class="ms-2 text-muted" id="selectedCount">0 students selected</span>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Students List -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-users"></i> Select Students to Assign
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAll">
+                    <label class="form-check-label" for="selectAll">
+                        Select All Students
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="badge bg-info" id="totalStudents">{{ students.count }} total students</span>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" id="selectAllHeader" class="form-check-input">
+                        </th>
+                        <th>Roll Number</th>
+                        <th>Name</th>
+                        <th>Current Program</th>
+                        <th>Current Year</th>
+                        <th>Current Semester</th>
+                        <th>Current Section</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="student_ids" value="{{ student.id }}" 
+                                   class="form-check-input student-checkbox">
+                        </td>
+                        <td><strong>{{ student.roll_number }}</strong></td>
+                        <td>{{ student.full_name }}</td>
+                        <td>
+                            {% if student.academic_program %}
+                                <span class="badge bg-primary">{{ student.academic_program.name }}</span>
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if student.year_of_study %}
+                                {% for year, name in year_choices %}
+                                    {% if year == student.year_of_study %}{{ name }}{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if student.semester %}
+                                {% for sem, name in semester_choices %}
+                                    {% if sem == student.semester %}{{ name }}{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if student.section %}
+                                <span class="badge bg-secondary">{{ student.section }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if student.status == 'ACTIVE' %}
+                                <span class="badge bg-success">{{ student.status }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ student.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'dashboard:student_detail' student.id %}" 
+                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No students found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const selectAllHeader = document.getElementById('selectAllHeader');
+    const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+    const assignBtn = document.getElementById('assignBtn');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    // Select all functionality
+    function updateSelectAll() {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        const totalBoxes = studentCheckboxes.length;
+        
+        selectAllCheckbox.checked = checkedBoxes.length === totalBoxes && totalBoxes > 0;
+        selectAllHeader.checked = selectAllCheckbox.checked;
+        
+        selectedCount.textContent = `${checkedBoxes.length} students selected`;
+        assignBtn.disabled = checkedBoxes.length === 0;
+    }
+    
+    // Select all checkbox
+    selectAllCheckbox.addEventListener('change', function() {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        selectAllHeader.checked = this.checked;
+        updateSelectAll();
+    });
+    
+    // Header select all checkbox
+    selectAllHeader.addEventListener('change', function() {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        selectAllCheckbox.checked = this.checked;
+        updateSelectAll();
+    });
+    
+    // Individual student checkboxes
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectAll);
+    });
+    
+    // Form submission
+    document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one student to assign.');
+            return false;
+        }
+        
+        if (!confirm(`Are you sure you want to assign ${checkedBoxes.length} students?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Initialize
+    updateSelectAll();
+});
+</script>
+{% endblock %}
+
+
+

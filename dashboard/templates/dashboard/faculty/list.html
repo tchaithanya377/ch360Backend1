@@ -1,0 +1,328 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Faculty Management - CampsHub360{% endblock %}
+
+{% block extra_css %}
+<style>
+    .faculty-card {
+        transition: transform 0.2s;
+    }
+    .faculty-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .search-box {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-chalkboard-teacher mr-2"></i>
+                Faculty Management
+            </h1>
+            <p class="text-muted">Manage faculty members and their information</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:faculty_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus mr-1"></i> Add Faculty
+            </a>
+            <a href="{% url 'dashboard:faculty_performance' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-chart-line mr-1"></i> Performance Stats
+            </a>
+            <a href="{% url 'dashboard:faculty_leaves' %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-calendar-alt mr-1"></i> Leave Management
+            </a>
+            <a href="{% url 'dashboard:faculty_custom_fields' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-cogs mr-1"></i> Custom Fields
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Faculty
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_faculty }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Faculty
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_faculty }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Departments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ department_choices|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                On Leave
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ faculties|length|add:"-1"|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-times fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-box">
+        <form method="GET" class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="search">Search Faculty</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ request.GET.search }}" placeholder="Name, ID, Email, Phone...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <select class="form-control" id="department" name="department">
+                        <option value="">All Departments</option>
+                        {% for department in departments %}
+                        <option value="{{ department.id }}" {% if request.GET.department == department.id|stringformat:"s" %}selected{% endif %}>
+                            {{ department.name }}
+                        </option>
+                        {% endfor %}
+                        <!-- Fallback to old department choices if no departments from table -->
+                        {% if not departments %}
+                        {% for value, label in department_choices %}
+                        <option value="{{ value }}" {% if request.GET.department == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select class="form-control" id="status" name="status">
+                        <option value="">All Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search mr-1"></i> Search
+                        </button>
+                        <a href="{% url 'dashboard:faculty_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times mr-1"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Faculty List -->
+    <div class="row">
+        {% for faculty in faculties %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card faculty-card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ faculty.name }}</h6>
+                    <span class="badge status-badge 
+                        {% if faculty.status == 'ACTIVE' %}badge-success
+                        {% elif faculty.status == 'INACTIVE' %}badge-secondary
+                        {% elif faculty.status == 'ON_LEAVE' %}badge-warning
+                        {% else %}badge-danger{% endif %}">
+                        {{ faculty.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="mb-1">
+                                <strong>ID:</strong> {{ faculty.apaar_faculty_id }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Employee ID:</strong> {{ faculty.employee_id }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Department:</strong> 
+                                {% if faculty.department_ref %}
+                                    {{ faculty.department_ref.name }}
+                                {% else %}
+                                    {{ faculty.get_department_display }}
+                                {% endif %}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Designation:</strong> {{ faculty.present_designation }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Email:</strong> 
+                                <a href="mailto:{{ faculty.email }}">{{ faculty.email }}</a>
+                            </p>
+                            <p class="mb-1">
+                                <strong>Phone:</strong> {{ faculty.phone_number }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Joined:</strong> {{ faculty.date_of_joining_institution|date:"M d, Y" }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Experience:</strong> {{ faculty.experience_in_current_institute }} years
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'dashboard:faculty_detail' faculty.id %}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </a>
+                            <a href="{% url 'dashboard:faculty_update' faculty.id %}" 
+                               class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </a>
+                        </div>
+                        <div>
+                            {% if faculty.is_head_of_department %}
+                            <span class="badge badge-info">HOD</span>
+                            {% endif %}
+                            {% if faculty.is_mentor %}
+                            <span class="badge badge-success">Mentor</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
+                <h4 class="text-gray-500">No Faculty Found</h4>
+                <p class="text-gray-400">No faculty members match your search criteria.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if faculties.has_other_pages %}
+    <nav aria-label="Faculty pagination">
+        <ul class="pagination justify-content-center">
+            {% if faculties.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ faculties.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in faculties.paginator.page_range %}
+            <li class="page-item {% if faculties.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endfor %}
+
+            {% if faculties.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ faculties.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter change
+    $('#department, #status').change(function() {
+        $(this).closest('form').submit();
+    });
+});
+</script>
+{% endblock %}

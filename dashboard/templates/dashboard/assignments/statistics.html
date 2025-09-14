@@ -1,0 +1,520 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Assignment Statistics - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Statistics</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-chart-bar text-primary me-2"></i>
+                        Assignment Statistics
+                    </h1>
+                    <p class="text-muted mb-0">Comprehensive analytics and insights for assignments</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="exportStatistics()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                    <a href="{% url 'dashboard:assignments_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Assignments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.total_assignments }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Published Assignments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.published_assignments }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Draft Assignments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.draft_assignments }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-edit fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Overdue Assignments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.overdue_assignments }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Submissions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.total_submissions }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-inbox fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Graded Submissions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.graded_submissions }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-graduation-cap fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Grades
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.pending_grades }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Average Grade
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if stats.average_grade %}
+                                    {{ stats.average_grade|floatformat:1 }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row">
+        <!-- Assignment Status Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Assignment Status Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="assignmentStatusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submission Trends Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Submission Trends
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="submissionTrendsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Distribution -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Grade Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="gradeDistributionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tachometer-alt me-2"></i>Performance Metrics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-primary">
+                                    {% if stats.total_submissions > 0 %}
+                                        {{ stats.graded_submissions|floatformat:0 }}/{{ stats.total_submissions }}
+                                    {% else %}
+                                        0/0
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Grading Progress</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-success">
+                                    {% if stats.total_assignments > 0 %}
+                                        {{ stats.published_assignments|floatformat:0 }}/{{ stats.total_assignments }}
+                                    {% else %}
+                                        0/0
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Publication Rate</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-warning">
+                                    {% if stats.total_submissions > 0 %}
+                                        {{ stats.pending_grades|floatformat:0 }}/{{ stats.total_submissions }}
+                                    {% else %}
+                                        0/0
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Pending Reviews</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 text-info">
+                                    {% if stats.total_assignments > 0 %}
+                                        {{ stats.overdue_assignments|floatformat:0 }}/{{ stats.total_assignments }}
+                                    {% else %}
+                                        0/0
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Overdue Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-table me-2"></i>Detailed Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Percentage</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Assignments</td>
+                                    <td>{{ stats.total_assignments }}</td>
+                                    <td>100%</td>
+                                    <td>All assignments created</td>
+                                </tr>
+                                <tr>
+                                    <td>Published Assignments</td>
+                                    <td>{{ stats.published_assignments }}</td>
+                                    <td>
+                                        {% if stats.total_assignments > 0 %}
+                                            {{ stats.published_assignments|floatformat:1 }}/{{ stats.total_assignments|floatformat:1 }} * 100|floatformat:1 }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                    <td>Assignments available to students</td>
+                                </tr>
+                                <tr>
+                                    <td>Draft Assignments</td>
+                                    <td>{{ stats.draft_assignments }}</td>
+                                    <td>
+                                        {% if stats.total_assignments > 0 %}
+                                            {{ stats.draft_assignments|floatformat:1 }}/{{ stats.total_assignments|floatformat:1 }} * 100|floatformat:1 }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                    <td>Assignments still in draft status</td>
+                                </tr>
+                                <tr>
+                                    <td>Overdue Assignments</td>
+                                    <td>{{ stats.overdue_assignments }}</td>
+                                    <td>
+                                        {% if stats.total_assignments > 0 %}
+                                            {{ stats.overdue_assignments|floatformat:1 }}/{{ stats.total_assignments|floatformat:1 }} * 100|floatformat:1 }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                    <td>Assignments past due date</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Submissions</td>
+                                    <td>{{ stats.total_submissions }}</td>
+                                    <td>100%</td>
+                                    <td>All student submissions</td>
+                                </tr>
+                                <tr>
+                                    <td>Graded Submissions</td>
+                                    <td>{{ stats.graded_submissions }}</td>
+                                    <td>
+                                        {% if stats.total_submissions > 0 %}
+                                            {{ stats.graded_submissions|floatformat:1 }}/{{ stats.total_submissions|floatformat:1 }} * 100|floatformat:1 }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                    <td>Submissions that have been graded</td>
+                                </tr>
+                                <tr>
+                                    <td>Pending Grades</td>
+                                    <td>{{ stats.pending_grades }}</td>
+                                    <td>
+                                        {% if stats.total_submissions > 0 %}
+                                            {{ stats.pending_grades|floatformat:1 }}/{{ stats.total_submissions|floatformat:1 }} * 100|floatformat:1 }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                    <td>Submissions awaiting grading</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Assignment Status Chart
+    const assignmentStatusCtx = document.getElementById('assignmentStatusChart').getContext('2d');
+    new Chart(assignmentStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Published', 'Draft', 'Overdue'],
+            datasets: [{
+                data: [{{ stats.published_assignments }}, {{ stats.draft_assignments }}, {{ stats.overdue_assignments }}],
+                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Submission Trends Chart (Mock data - replace with real data)
+    const submissionTrendsCtx = document.getElementById('submissionTrendsChart').getContext('2d');
+    new Chart(submissionTrendsCtx, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Submissions',
+                data: [12, 19, 15, 25],
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Grade Distribution Chart (Mock data - replace with real data)
+    const gradeDistributionCtx = document.getElementById('gradeDistributionChart').getContext('2d');
+    new Chart(gradeDistributionCtx, {
+        type: 'bar',
+        data: {
+            labels: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'],
+            datasets: [{
+                label: 'Number of Students',
+                data: [5, 12, 18, 25, 30, 20, 15, 10, 8, 5, 2],
+                backgroundColor: [
+                    '#28a745', '#28a745', '#28a745',
+                    '#17a2b8', '#17a2b8', '#17a2b8',
+                    '#ffc107', '#ffc107', '#ffc107',
+                    '#fd7e14', '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Export statistics function
+    function exportStatistics() {
+        // Create a simple CSV export
+        const csvContent = "Metric,Value,Percentage,Description\n" +
+            "Total Assignments,{{ stats.total_assignments }},100%,All assignments created\n" +
+            "Published Assignments,{{ stats.published_assignments }},{{ stats.published_assignments|floatformat:1 }}/{{ stats.total_assignments|floatformat:1 }} * 100|floatformat:1 }}%,Assignments available to students\n" +
+            "Draft Assignments,{{ stats.draft_assignments }},{{ stats.draft_assignments|floatformat:1 }}/{{ stats.total_assignments|floatformat:1 }} * 100|floatformat:1 }}%,Assignments still in draft status\n" +
+            "Overdue Assignments,{{ stats.overdue_assignments }},{{ stats.overdue_assignments|floatformat:1 }}/{{ stats.total_assignments|floatformat:1 }} * 100|floatformat:1 }}%,Assignments past due date\n" +
+            "Total Submissions,{{ stats.total_submissions }},100%,All student submissions\n" +
+            "Graded Submissions,{{ stats.graded_submissions }},{{ stats.graded_submissions|floatformat:1 }}/{{ stats.total_submissions|floatformat:1 }} * 100|floatformat:1 }}%,Submissions that have been graded\n" +
+            "Pending Grades,{{ stats.pending_grades }},{{ stats.pending_grades|floatformat:1 }}/{{ stats.total_submissions|floatformat:1 }} * 100|floatformat:1 }}%,Submissions awaiting grading";
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'assignment_statistics.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+{% endblock %}

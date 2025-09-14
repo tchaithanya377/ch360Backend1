@@ -1,0 +1,20 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block submit_buttons_top %}
+  {{ block.super }}
+  {% if original and original.pk %}
+  <div class="submit-row">
+    <a class="button" href="{% url 'admin:accounts_user_reset_password' object_id=original.pk %}">{% trans "Reset password to default (Campus@360)" %}</a>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+  {{ block.super }}
+  {% if original and original.pk %}
+  <div class="submit-row">
+    <a class="button" href="{% url 'admin:accounts_user_reset_password' object_id=original.pk %}">{% trans "Reset password to default (Campus@360)" %}</a>
+  </div>
+  {% endif %}
+{% endblock %}

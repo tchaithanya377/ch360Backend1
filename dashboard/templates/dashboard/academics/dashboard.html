@@ -1,0 +1,428 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Academics Dashboard - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-book-open text-primary"></i>
+            Academics Dashboard
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_courses' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list"></i> View All Courses
+                </a>
+                <a href="{% url 'dashboard:academics_syllabi' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-file-alt"></i> View All Syllabi
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academics Sub-navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav class="nav nav-pills nav-fill bg-light rounded p-2">
+                <a class="nav-link {% if request.resolver_match.url_name == 'academics_dashboard' %}active{% endif %}" 
+                   href="{% url 'dashboard:academics_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'academics_courses' %}active{% endif %}" 
+                   href="{% url 'dashboard:academics_courses' %}">
+                    <i class="fas fa-graduation-cap"></i> Courses
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'academics_syllabi' %}active{% endif %}" 
+                   href="{% url 'dashboard:academics_syllabi' %}">
+                    <i class="fas fa-file-alt"></i> Syllabi
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'academics_timetables' %}active{% endif %}" 
+                   href="{% url 'dashboard:academics_timetables' %}">
+                    <i class="fas fa-clock"></i> Timetables
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'academics_enrollments' %}active{% endif %}" 
+                   href="{% url 'dashboard:academics_enrollments' %}">
+                    <i class="fas fa-user-graduate"></i> Enrollments
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'academics_calendar' %}active{% endif %}" 
+                   href="{% url 'dashboard:academics_calendar' %}">
+                    <i class="fas fa-calendar-day"></i> Calendar
+                </a>
+                <a class="nav-link disabled" href="#" onclick="return false;">
+                    <i class="fas fa-code"></i> API
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Courses
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_courses }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-graduation-cap fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Courses
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_courses }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Syllabi
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_syllabi }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Approved Syllabi
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ approved_syllabi }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-stamp fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt text-warning"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="#" class="btn btn-outline-secondary btn-sm w-100 disabled" onclick="return false;">
+                                View API Endpoints
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'dashboard:academics_api_test' %}" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-vial"></i> Test APIs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'dashboard:academics_courses' %}" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-plus"></i> Add Course
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'dashboard:academics_syllabi' %}" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-plus"></i> Add Syllabus
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                Active Timetables
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_timetables }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Total Enrollments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_enrollments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-dark shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                Calendar Events
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_calendar_events }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Upcoming Events
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ upcoming_events }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt text-warning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_courses' %}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-graduation-cap"></i><br>
+                                Manage Courses
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_syllabi' %}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-file-alt"></i><br>
+                                Manage Syllabi
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_timetables' %}" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-calendar-alt"></i><br>
+                                Manage Timetables
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'dashboard:academics_calendar' %}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-calendar-day"></i><br>
+                                Manage Calendar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <!-- Recent Courses -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-graduation-cap text-primary"></i>
+                        Recent Courses
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_courses %}
+                        <div class="list-group list-group-flush">
+                            {% for course in recent_courses %}
+                                <a href="{% url 'dashboard:academics_course_detail' course.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ course.code }} - {{ course.title }}</h6>
+                                        <small class="text-muted">{{ course.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ course.description|truncatewords:20 }}</p>
+                                    <small class="text-muted">
+                                        Level: {{ course.get_level_display }} | 
+                                        Credits: {{ course.credits }} | 
+                                        Status: <span class="badge bg-{% if course.status == 'ACTIVE' %}success{% elif course.status == 'DRAFT' %}warning{% else %}secondary{% endif %}">{{ course.get_status_display }}</span>
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No courses created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Syllabi -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-alt text-success"></i>
+                        Recent Syllabi
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_syllabi %}
+                        <div class="list-group list-group-flush">
+                            {% for syllabus in recent_syllabi %}
+                                <a href="{% url 'dashboard:academics_syllabus_detail' syllabus.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ syllabus.course.code }} Syllabus</h6>
+                                        <small class="text-muted">{{ syllabus.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ syllabus.course.title }}</p>
+                                    <small class="text-muted">
+                                        {{ syllabus.academic_year }} {{ syllabus.semester }} | 
+                                        Version: {{ syllabus.version }} | 
+                                        Status: <span class="badge bg-{% if syllabus.status == 'APPROVED' %}success{% elif syllabus.status == 'DRAFT' %}warning{% else %}info{% endif %}">{{ syllabus.get_status_display }}</span>
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No syllabi created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Enrollments -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-graduate text-danger"></i>
+                        Recent Enrollments
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_enrollments %}
+                        <div class="list-group list-group-flush">
+                            {% for enrollment in recent_enrollments %}
+                                <a href="{% url 'dashboard:academics_enrollment_detail' enrollment.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ enrollment.student.roll_number }} - {{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</h6>
+                                        <small class="text-muted">{{ enrollment.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ enrollment.course.code }} - {{ enrollment.course.title }}</p>
+                                    <small class="text-muted">
+                                        {{ enrollment.academic_year }} {{ enrollment.semester }} | 
+                                        Status: <span class="badge bg-{% if enrollment.status == 'ENROLLED' %}success{% elif enrollment.status == 'COMPLETED' %}info{% else %}warning{% endif %}">{{ enrollment.get_status_display }}</span>
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No enrollments yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Calendar Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-calendar-day text-warning"></i>
+                        Recent Calendar Events
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_events %}
+                        <div class="list-group list-group-flush">
+                            {% for event in recent_events %}
+                                <a href="{% url 'dashboard:academics_calendar_detail' event.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ event.title }}</h6>
+                                        <small class="text-muted">{{ event.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ event.description|truncatewords:15 }}</p>
+                                    <small class="text-muted">
+                                        {{ event.start_date|date:"M d" }} - {{ event.end_date|date:"M d, Y" }} | 
+                                        Type: <span class="badge bg-secondary">{{ event.get_event_type_display }}</span>
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No calendar events created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mentoring Meetings - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h3"><i class="fas fa-calendar text-primary"></i> Meetings</h1>
+    <div>
+        <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#scheduleMeetingModal"><i class="fas fa-plus"></i> Schedule</button>
+        <a href="{% url 'dashboard:mentoring_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+    
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Mentor</th>
+                        <th>Student</th>
+                        <th>When</th>
+                        <th>Agenda</th>
+                        <th>Minutes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in meetings %}
+                    <tr>
+                        <td>{{ m.mentorship.mentor.name }}</td>
+                        <td>{{ m.mentorship.student.full_name }}</td>
+                        <td>{{ m.scheduled_at|date:"M d, Y H:i" }}</td>
+                        <td>{{ m.agenda|default:"-" }}</td>
+                        <td>{{ m.duration_minutes }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">No meetings found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Schedule Meeting Modal -->
+<div class="modal fade" id="scheduleMeetingModal" tabindex="-1" aria-labelledby="scheduleMeetingModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="scheduleMeetingModalLabel">Schedule Meeting</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="scheduleMeetingForm">
+          <div class="mb-2">
+            <label class="form-label">Mentorship ID</label>
+            <input type="text" class="form-control" name="mentorship" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">When</label>
+            <input type="datetime-local" class="form-control" name="scheduled_at" required>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="form-label">Duration (mins)</label>
+              <input type="number" class="form-control" name="duration_minutes" value="30">
+            </div>
+            <div class="col">
+              <label class="form-label">Agenda</label>
+              <input type="text" class="form-control" name="agenda">
+            </div>
+          </div>
+        </form>
+        <div id="scheduleMeetingResult" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="submitScheduleMeeting()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+async function submitScheduleMeeting() {
+  const form = document.getElementById('scheduleMeetingForm');
+  const payload = Object.fromEntries(new FormData(form).entries());
+  const resEl = document.getElementById('scheduleMeetingResult');
+  resEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/v1/mentoring/meetings/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }, body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (resp.ok) { resEl.innerHTML = '<div class="alert alert-success">Meeting scheduled.</div>'; setTimeout(()=>location.reload(),800);} else { resEl.innerHTML = `<div class="alert alert-danger">${JSON.stringify(data)}</div>`; }
+  } catch(e) { resEl.innerHTML = `<div class="alert alert-danger">${e}</div>`; }
+}
+function getCookie(name){let v=null;if(document.cookie&&document.cookie!==''){const cs=document.cookie.split(';');for(let i=0;i<cs.length;i++){const c=cs[i].trim();if(c.substring(0,name.length+1)===(name+'=')){v=decodeURIComponent(c.substring(name.length+1));break;}}}return v;}
+</script>
+{% endblock %}
+{% endblock %}
+
+

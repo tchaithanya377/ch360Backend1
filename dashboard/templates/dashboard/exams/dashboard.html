@@ -1,0 +1,405 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Exam Management Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-file-alt text-primary"></i> Exam Management Dashboard
+            </h1>
+            <p class="text-muted">Comprehensive exam management and administration system</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:home' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Main Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Active Sessions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_sessions_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Upcoming Exams
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ upcoming_exams_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Registrations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_registrations_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Approvals
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_approvals_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hourglass-half fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt text-warning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_sessions' %}" class="btn btn-outline-primary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-calendar-alt fa-3x mb-2"></i>
+                                <span class="fw-bold">Exam Sessions</span>
+                                <small class="text-muted">Manage exam periods</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_schedules' %}" class="btn btn-outline-success btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-clock fa-3x mb-2"></i>
+                                <span class="fw-bold">Exam Schedules</span>
+                                <small class="text-muted">Plan exam timings</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_rooms' %}" class="btn btn-outline-info btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-building fa-3x mb-2"></i>
+                                <span class="fw-bold">Exam Rooms</span>
+                                <small class="text-muted">Manage venues</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_registrations' %}" class="btn btn-outline-warning btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-user-plus fa-3x mb-2"></i>
+                                <span class="fw-bold">Registrations</span>
+                                <small class="text-muted">Student sign-ups</small>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_room_allocations' %}" class="btn btn-outline-danger btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
+                                <span class="fw-bold">Room Allocations</span>
+                                <small class="text-muted">Assign students to rooms</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_staff_assignments' %}" class="btn btn-outline-secondary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-user-tie fa-3x mb-2"></i>
+                                <span class="fw-bold">Staff Assignments</span>
+                                <small class="text-muted">Assign invigilators</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_hall_tickets' %}" class="btn btn-outline-dark btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-ticket-alt fa-3x mb-2"></i>
+                                <span class="fw-bold">Hall Tickets</span>
+                                <small class="text-muted">Generate tickets</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'dashboard:exams_results' %}" class="btn btn-outline-success btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                <i class="fas fa-chart-line fa-3x mb-2"></i>
+                                <span class="fw-bold">Results</span>
+                                <small class="text-muted">Manage scores</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity & Upcoming Exams -->
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history text-info"></i> Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                        <div class="list-group list-group-flush">
+                            {% for activity in recent_activity %}
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        {% if activity.type == 'session' %}
+                                            <i class="fas fa-calendar text-primary"></i>
+                                        {% elif activity.type == 'schedule' %}
+                                            <i class="fas fa-clock text-success"></i>
+                                        {% elif activity.type == 'registration' %}
+                                            <i class="fas fa-user-plus text-warning"></i>
+                                        {% elif activity.type == 'allocation' %}
+                                            <i class="fas fa-map-marker-alt text-danger"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-info"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="fw-bold">{{ activity.title }}</div>
+                                        <small class="text-muted">{{ activity.description }}</small>
+                                        <div class="text-muted small">{{ activity.timestamp|timesince }} ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No recent activity</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Exams -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calendar-check text-success"></i> Upcoming Exams
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_exams %}
+                        <div class="list-group list-group-flush">
+                            {% for exam in upcoming_exams %}
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-file-alt text-success"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="fw-bold">{{ exam.exam_name }}</div>
+                                        <small class="text-muted">{{ exam.exam_session.name }}</small>
+                                        <div class="text-muted small">
+                                            <i class="fas fa-calendar"></i> {{ exam.exam_date|date:"M d, Y" }}
+                                            <i class="fas fa-clock ms-2"></i> {{ exam.start_time|time:"H:i" }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="badge bg-{% if exam.is_registration_open %}success{% else %}secondary{% endif %}">
+                                            {% if exam.is_registration_open %}Open{% else %}Closed{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                            <p>No upcoming exams</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar text-warning"></i> Quick Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <div class="h4 mb-0">{{ total_students_count }}</div>
+                                <small class="text-muted">Total Students</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-book fa-2x text-success mb-2"></i>
+                                <div class="h4 mb-0">{{ total_courses_count }}</div>
+                                <small class="text-muted">Total Courses</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-building fa-2x text-info mb-2"></i>
+                                <div class="h4 mb-0">{{ total_rooms_count }}</div>
+                                <small class="text-muted">Total Rooms</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-user-tie fa-2x text-warning mb-2"></i>
+                                <div class="h4 mb-0">{{ total_faculty_count }}</div>
+                                <small class="text-muted">Total Faculty</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                                <div class="h4 mb-0">{{ total_violations_count }}</div>
+                                <small class="text-muted">Violations</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                                <div class="h4 mb-0">{{ total_results_count }}</div>
+                                <small class="text-muted">Results</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Allocation Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-map-marker-alt text-danger"></i> Room Allocation Status
+                    </h6>
+                    <a href="{% url 'dashboard:exams_room_allocations' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                <div class="h4 mb-0">{{ confirmed_allocations_count|default:"0" }}</div>
+                                <small class="text-muted">Confirmed</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                <div class="h4 mb-0">{{ pending_allocations_count|default:"0" }}</div>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                                <div class="h4 mb-0">{{ cancelled_allocations_count|default:"0" }}</div>
+                                <small class="text-muted">Cancelled</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                                <div class="h4 mb-0">{{ allocation_completion_rate|default:"0" }}%</div>
+                                <small class="text-muted">Completion Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to quick action buttons
+    const quickActionBtns = document.querySelectorAll('.btn-outline-primary, .btn-outline-success, .btn-outline-info, .btn-outline-warning, .btn-outline-danger, .btn-outline-secondary, .btn-outline-dark');
+    
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+
+    // Add click animation
+    quickActionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+});
+</script>
+{% endblock %}

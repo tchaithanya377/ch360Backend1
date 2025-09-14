@@ -1,0 +1,276 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Student Dues - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-money-bill-wave text-primary"></i>
+            Student Dues
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createDueModal">
+                    <i class="fas fa-plus"></i> New Due
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'dashboard:exams_dashboard' %}'">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search dues...">
+                <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="PAID">Paid</option>
+                <option value="OVERDUE">Overdue</option>
+                <option value="CANCELLED">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="dueTypeFilter">
+                <option value="">All Types</option>
+                <option value="EXAM_FEE">Exam Fee</option>
+                <option value="REGISTRATION_FEE">Registration Fee</option>
+                <option value="LATE_FEE">Late Fee</option>
+                <option value="OTHER">Other</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Dues List -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if student_dues %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="duesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Due Type</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Remaining</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for due in student_dues %}
+                            <tr>
+                                <td>
+                                    <strong>{{ due.student.roll_number }}</strong><br>
+                                    <small class="text-muted">{{ due.student.first_name }} {{ due.student.last_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ due.get_due_type_display }}</span><br>
+                                    <small class="text-muted">{{ due.description|truncatechars:30 }}</small>
+                                </td>
+                                <td>
+                                    <strong>${{ due.total_amount }}</strong><br>
+                                    <small class="text-muted">Paid: ${{ due.paid_amount }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ due.due_date|date:"M d, Y" }}</strong><br>
+                                    {% if due.is_overdue %}
+                                        <small class="text-danger">Overdue by {{ due.days_overdue }} days</small>
+                                    {% else %}
+                                        <small class="text-muted">{{ due.days_remaining }} days left</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if due.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif due.status == 'PAID' %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% elif due.status == 'OVERDUE' %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% elif due.status == 'CANCELLED' %}
+                                        <span class="badge bg-secondary">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if due.remaining_amount > 0 %}
+                                        <span class="badge bg-danger">${{ due.remaining_amount }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">$0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'dashboard:exams_due_detail' due.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if due.status == 'PENDING' %}
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="markAsPaid('{{ due.id }}')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDue('{{ due.id }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="recordPayment('{{ due.id }}')">
+                                            <i class="fas fa-credit-card"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No student dues found</h5>
+                    <p class="text-muted">Create student dues to get started.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createDueModal">
+                        <i class="fas fa-plus"></i> Create Due
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Due Modal -->
+<div class="modal fade" id="createDueModal" tabindex="-1" aria-labelledby="createDueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createDueModalLabel">Create New Student Due</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'dashboard:exams_dues' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="student" class="form-label">Student *</label>
+                            <select class="form-select" id="student" name="student" required>
+                                <option value="">Select Student</option>
+                                {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.roll_number }} - {{ student.first_name }} {{ student.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="due_type" class="form-label">Due Type *</label>
+                            <select class="form-select" id="due_type" name="due_type" required>
+                                <option value="">Select Type</option>
+                                <option value="EXAM_FEE">Exam Fee</option>
+                                <option value="REGISTRATION_FEE">Registration Fee</option>
+                                <option value="LATE_FEE">Late Fee</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="total_amount" class="form-label">Total Amount *</label>
+                            <input type="number" class="form-control" id="total_amount" name="total_amount" min="0" step="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="due_date" class="form-label">Due Date *</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Description of the due..."></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Due</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const table = document.getElementById('duesTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    }
+});
+
+// Status filter
+document.getElementById('statusFilter').addEventListener('change', function() {
+    const filterValue = this.value.toLowerCase();
+    const table = document.getElementById('duesTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const statusCell = row.querySelector('td:nth-child(5)');
+        if (statusCell) {
+            const status = statusCell.textContent.toLowerCase();
+            row.style.display = !filterValue || status.includes(filterValue) ? '' : 'none';
+        }
+    }
+});
+
+// Due type filter
+document.getElementById('dueTypeFilter').addEventListener('change', function() {
+    const filterValue = this.value.toLowerCase();
+    const table = document.getElementById('duesTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const typeCell = row.querySelector('td:nth-child(2)');
+        if (typeCell) {
+            const type = typeCell.textContent.toLowerCase();
+            row.style.display = !filterValue || type.includes(filterValue) ? '' : 'none';
+        }
+    }
+});
+
+// Mark as paid function
+function markAsPaid(dueId) {
+    if (confirm('Mark this due as paid?')) {
+        // Implement mark as paid functionality
+        console.log('Mark as paid:', dueId);
+    }
+}
+
+// Edit due function
+function editDue(dueId) {
+    // Implement edit functionality
+    console.log('Edit due:', dueId);
+}
+
+// Record payment function
+function recordPayment(dueId) {
+    // Implement record payment functionality
+    console.log('Record payment:', dueId);
+}
+</script>
+{% endblock %}

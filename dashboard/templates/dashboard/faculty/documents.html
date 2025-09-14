@@ -1,0 +1,257 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Faculty Documents - CampsHub360{% endblock %}
+
+{% block extra_css %}
+<style>
+    .document-card {
+        transition: transform 0.2s;
+        border-left: 4px solid #4e73df;
+    }
+    .document-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .document-type-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-file-alt mr-2"></i>
+                Faculty Documents
+            </h1>
+            <p class="text-muted">Manage faculty documents and files</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard:faculty_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Faculty
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Documents
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ documents.count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Recent Uploads
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ documents.count|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-upload fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Document Types
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ documents.count|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Size
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ documents.count|default:0 }} MB
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hdd fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents List -->
+    <div class="row">
+        {% for document in documents %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card document-card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ document.get_document_type_display }}</h6>
+                    <span class="badge document-type-badge badge-info">
+                        {{ document.file.name|slice:"-3:"|upper }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="mb-1">
+                                <strong>Faculty:</strong> {{ document.faculty.name }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>File Name:</strong> {{ document.file.name|slice:"13:" }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Uploaded:</strong> {{ document.created_at|date:"M d, Y" }}
+                            </p>
+                            <p class="mb-1">
+                                <strong>Uploaded By:</strong> {{ document.uploaded_by.get_full_name|default:"System" }}
+                            </p>
+                            {% if document.description %}
+                            <p class="mb-1">
+                                <strong>Description:</strong> {{ document.description }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ document.file.url }}" class="btn btn-primary btn-sm" target="_blank">
+                            <i class="fas fa-download mr-1"></i> Download
+                        </a>
+                        <a href="{{ document.file.url }}" class="btn btn-info btn-sm" target="_blank">
+                            <i class="fas fa-eye mr-1"></i> View
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm" 
+                                onclick="deleteDocument('{{ document.id }}', '{{ document.file.name|slice:"13:" }}')">
+                            <i class="fas fa-trash mr-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                <h4 class="text-gray-500">No Documents</h4>
+                <p class="text-gray-400">No faculty documents have been uploaded yet.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Document Type Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Document Type Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Document Type</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc_type in documents %}
+                                <tr>
+                                    <td>{{ doc_type.get_document_type_display }}</td>
+                                    <td>1</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: 100%">
+                                                100%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No document statistics available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteDocument(id, fileName) {
+    if (confirm(`Are you sure you want to delete the document "${fileName}"?`)) {
+        fetch(`/dashboard/faculty/documents/${id}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting document: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting document');
+        });
+    }
+}
+</script>
+{% endblock %}

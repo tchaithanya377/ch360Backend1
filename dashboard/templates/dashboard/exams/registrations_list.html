@@ -1,0 +1,269 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Exam Registrations - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-user-check text-primary"></i>
+            Exam Registrations
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createRegistrationModal">
+                    <i class="fas fa-plus"></i> New Registration
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'dashboard:exams_dashboard' %}'">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search registrations...">
+                <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="CANCELLED">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="examFilter">
+                <option value="">All Exams</option>
+                {% for schedule in exam_schedules %}
+                    <option value="{{ schedule.id }}">{{ schedule.course.code }} - {{ schedule.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Registrations List -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if exam_registrations %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="registrationsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Exam</th>
+                                <th>Registration Date</th>
+                                <th>Status</th>
+                                <th>Special Requirements</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for registration in exam_registrations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ registration.student.roll_number }}</strong><br>
+                                    <small class="text-muted">{{ registration.student.first_name }} {{ registration.student.last_name }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ registration.exam_schedule.course.code }}</strong><br>
+                                    <small class="text-muted">{{ registration.exam_schedule.title }}</small>
+                                </td>
+                                <td>{{ registration.registration_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if registration.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif registration.status == 'APPROVED' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif registration.status == 'REJECTED' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% elif registration.status == 'CANCELLED' %}
+                                        <span class="badge bg-secondary">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if registration.special_requirements %}
+                                        <span class="badge bg-info">Special Needs</span>
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'dashboard:exams_registration_detail' registration.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if registration.status == 'PENDING' %}
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="approveRegistration('{{ registration.id }}')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="rejectRegistration('{{ registration.id }}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="editRegistration('{{ registration.id }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-check fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No exam registrations found</h5>
+                    <p class="text-muted">Create your first exam registration to get started.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRegistrationModal">
+                        <i class="fas fa-plus"></i> Create Registration
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Registration Modal -->
+<div class="modal fade" id="createRegistrationModal" tabindex="-1" aria-labelledby="createRegistrationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createRegistrationModalLabel">Create New Exam Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'dashboard:exams_registrations' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="student" class="form-label">Student *</label>
+                            <select class="form-select" id="student" name="student" required>
+                                <option value="">Select Student</option>
+                                {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.roll_number }} - {{ student.first_name }} {{ student.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="exam_schedule" class="form-label">Exam Schedule *</label>
+                            <select class="form-select" id="exam_schedule" name="exam_schedule" required>
+                                <option value="">Select Exam</option>
+                                {% for schedule in exam_schedules %}
+                                    <option value="{{ schedule.id }}">{{ schedule.course.code }} - {{ schedule.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="registration_date" class="form-label">Registration Date *</label>
+                            <input type="date" class="form-control" id="registration_date" name="registration_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">Status *</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="PENDING">Pending</option>
+                                <option value="APPROVED">Approved</option>
+                                <option value="REJECTED">Rejected</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="special_requirements" class="form-label">Special Requirements</label>
+                        <textarea class="form-control" id="special_requirements" name="special_requirements" rows="3" placeholder="Any special accommodations or requirements..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Additional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Registration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const table = document.getElementById('registrationsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    }
+});
+
+// Status filter
+document.getElementById('statusFilter').addEventListener('change', function() {
+    const filterValue = this.value.toLowerCase();
+    const table = document.getElementById('registrationsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const statusCell = row.querySelector('td:nth-child(4)');
+        if (statusCell) {
+            const status = statusCell.textContent.toLowerCase();
+            row.style.display = !filterValue || status.includes(filterValue) ? '' : 'none';
+        }
+    }
+});
+
+// Exam filter
+document.getElementById('examFilter').addEventListener('change', function() {
+    const filterValue = this.value.toLowerCase();
+    const table = document.getElementById('registrationsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let row of rows) {
+        const examCell = row.querySelector('td:nth-child(2)');
+        if (examCell) {
+            const exam = examCell.textContent.toLowerCase();
+            row.style.display = !filterValue || exam.includes(filterValue) ? '' : 'none';
+        }
+    }
+});
+
+// Approve registration function
+function approveRegistration(registrationId) {
+    if (confirm('Are you sure you want to approve this registration?')) {
+        // Implement approve functionality
+        console.log('Approve registration:', registrationId);
+        // You can add AJAX call here to update the status
+    }
+}
+
+// Reject registration function
+function rejectRegistration(registrationId) {
+    if (confirm('Are you sure you want to reject this registration?')) {
+        // Implement reject functionality
+        console.log('Reject registration:', registrationId);
+        // You can add AJAX call here to update the status
+    }
+}
+
+// Edit registration function
+function editRegistration(registrationId) {
+    // Implement edit functionality
+    console.log('Edit registration:', registrationId);
+}
+</script>
+{% endblock %}

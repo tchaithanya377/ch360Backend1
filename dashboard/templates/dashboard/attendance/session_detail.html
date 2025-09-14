@@ -1,0 +1,61 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Session: {{ session.course_section }} — {{ session.date }} {{ session.start_time }}-{{ session.end_time }}</h2>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:attendance_sessions' %}">Back</a>
+  </div>
+
+  {% if session.is_cancelled %}
+  <div class="alert alert-warning">This session is cancelled.</div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header">Mark Attendance</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Roll No</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Remarks</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in records %}
+            <tr>
+              <td>{{ record.student.roll_number }}</td>
+              <td>{{ record.student.full_name }}</td>
+              <td>
+                <form class="d-flex gap-2" method="post" action="{% url 'dashboard:attendance_mark' session.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="student_id" value="{{ record.student.id }}" />
+                  <select name="status" class="form-select form-select-sm" style="width: 160px;">
+                    {% for value,label in status_choices %}
+                      <option value="{{ value }}" {% if record.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <input class="form-control form-control-sm" type="text" name="remarks" value="{{ record.remarks }}" placeholder="Remarks" />
+                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                </form>
+              </td>
+              <td></td>
+              <td></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted">No records yet. Use the API to generate or create manually.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

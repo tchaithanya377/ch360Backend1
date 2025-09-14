@@ -1,0 +1,341 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Bulk Student Import - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-upload"></i> Bulk Student Import
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'dashboard:students' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Students
+            </a>
+            <a href="{% url 'dashboard:download_template' %}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-download"></i> Download Template
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Import Instructions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Required Fields:</h6>
+                        <ul>
+                            <li><strong>roll_number</strong> - Unique student identifier</li>
+                            <li><strong>first_name</strong> - Student's first name</li>
+                            <li><strong>last_name</strong> - Student's last name</li>
+                            <li><strong>date_of_birth</strong> - Format: YYYY-MM-DD</li>
+                            <li><strong>gender</strong> - M (Male), F (Female), O (Other)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Optional Fields:</h6>
+                        <ul>
+                            <li><strong>grade_level</strong> - 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12</li>
+                            <li><strong>middle_name</strong> - Student's middle name</li>
+                            <li><strong>email</strong> - Student's email address</li>
+                            <li><strong>student_mobile</strong> - Student's phone number</li>
+                            <li><strong>section</strong> - A, B, C, D, E</li>
+                            <li><strong>academic_year</strong> - e.g., 2023-2024</li>
+                            <li><strong>quota</strong> - GENERAL, SC, ST, OBC, EWS, etc.</li>
+                            <li><strong>rank</strong> - Academic rank (number)</li>
+                            <li><strong>status</strong> - ACTIVE, INACTIVE, GRADUATED</li>
+                            <li><strong>father_name</strong> - Father's name</li>
+                            <li><strong>mother_name</strong> - Mother's name</li>
+                            <li><strong>father_mobile</strong> - Father's phone</li>
+                            <li><strong>mother_mobile</strong> - Mother's phone</li>
+                            <li><strong>address</strong> - Full address</li>
+                            <li><strong>city</strong> - City name</li>
+                            <li><strong>state</strong> - State name</li>
+                            <li><strong>country</strong> - Country name</li>
+                            <li><strong>postal_code</strong> - Postal/ZIP code</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> Download the template file to see the exact format and required field names. 
+                    Make sure all required fields are filled and the data format is correct.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Form -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-upload"></i> Upload Student Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="importForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">Supported formats: Excel (.xlsx, .xls) or CSV (.csv)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="skip_errors" name="skip_errors">
+                            <label class="form-check-label" for="skip_errors">
+                                Skip rows with errors and continue importing
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="create_login" name="create_login" checked>
+                            <label class="form-check-label" for="create_login">
+                                Automatically create login accounts for students
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="update_existing" name="update_existing">
+                            <label class="form-check-label" for="update_existing">
+                                Update existing students (by roll number)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-upload"></i> Import Students
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar"></i> Import Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-success" id="successCount">0</h4>
+                        <small class="text-muted">Successfully Imported</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-danger" id="errorCount">0</h4>
+                        <small class="text-muted">Errors</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="progress mb-3" style="display: none;" id="progressBar">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="importStatus" class="text-muted">
+                    Ready to import
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Imports -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> Recent Imports
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for import in recent_imports %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ import.filename }}</h6>
+                            <small>{{ import.created_at|date:"M d, H:i" }}</small>
+                        </div>
+                        <p class="mb-1">
+                            <span class="badge bg-success">{{ import.success_count }}</span> imported,
+                            <span class="badge bg-danger">{{ import.error_count }}</span> errors
+                        </p>
+                        <small class="text-muted">By {{ import.created_by.email }}</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No recent imports</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultsContent">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{% url 'dashboard:students' %}" class="btn btn-primary">View Students</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progressBar');
+    const importStatus = document.getElementById('importStatus');
+    
+    // Disable submit button and show progress
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+    progressBar.style.display = 'block';
+    importStatus.textContent = 'Uploading file...';
+    
+    fetch('{% url "dashboard:student_import" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update statistics
+            document.getElementById('successCount').textContent = data.success_count;
+            document.getElementById('errorCount').textContent = data.error_count;
+            
+            // Show results modal
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="alert alert-success">
+                    <h6>Import Completed Successfully!</h6>
+                    <p><strong>${data.success_count}</strong> students imported successfully</p>
+                    <p><strong>${data.error_count}</strong> errors encountered</p>
+                </div>
+                
+                ${data.errors.length > 0 ? `
+                <h6>Errors:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Field</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.errors.map(error => `
+                                <tr>
+                                    <td>${error.row}</td>
+                                    <td>${error.field}</td>
+                                    <td>${error.message}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+                
+                ${data.warnings.length > 0 ? `
+                <h6>Warnings:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Field</th>
+                                <th>Warning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.warnings.map(warning => `
+                                <tr>
+                                    <td>${warning.row}</td>
+                                    <td>${warning.field}</td>
+                                    <td>${warning.message}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+            `;
+            
+            new bootstrap.Modal(document.getElementById('resultsModal')).show();
+        } else {
+            alert('Import failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during import.');
+    })
+    .finally(() => {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-upload"></i> Import Students';
+        progressBar.style.display = 'none';
+        importStatus.textContent = 'Import completed';
+    });
+});
+
+// File validation
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (file) {
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv'
+        ];
+        
+        if (!allowedTypes.includes(file.type)) {
+            alert('Please select a valid Excel or CSV file.');
+            this.value = '';
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.disabled = false;
+        }
+    }
+});
+</script>
+{% endblock %}

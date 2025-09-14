@@ -1,0 +1,200 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Bookings - Facilities Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h1 class="display-4 text-white fw-bold mb-3">
+                        <i class="fas fa-calendar-alt me-3"></i>Bookings Management
+                    </h1>
+                    <p class="lead text-white-50 mb-0">View and manage all room bookings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>Filter Bookings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Room</label>
+                            <select name="room" class="form-select">
+                                <option value="">All Rooms</option>
+                                {% for room in rooms %}
+                                    <option value="{{ room.id }}" {% if filters.room == room.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ room.building.code }}-{{ room.code }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Date</label>
+                            <input type="date" name="date" class="form-control" value="{{ filters.date|default:'' }}">
+                        </div>
+                        
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>Apply Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bookings List -->
+    {% if bookings %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>Bookings ({{ bookings.count }})
+                        </h5>
+                        <a href="{% url 'facilities:booking_create' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus me-2"></i>New Booking
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Event</th>
+                                        <th>Room</th>
+                                        <th>Date & Time</th>
+                                        <th>Created By</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in bookings %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">{{ booking.title }}</div>
+                                            {% if booking.purpose %}
+                                                <small class="text-muted">{{ booking.purpose|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ booking.room.building.code }}-{{ booking.room.code }}</span>
+                                            <br>
+                                            <small class="text-muted">{{ booking.room.name }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">{{ booking.starts_at|date:"M d, Y" }}</div>
+                                            <small class="text-muted">
+                                                {{ booking.starts_at|time:"H:i" }} - {{ booking.ends_at|time:"H:i" }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                    <i class="fas fa-user text-white small"></i>
+                                                </div>
+                                                <span>{{ booking.created_by.username }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if booking.is_approved %}
+                                                <span class="badge bg-success">Approved</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="#" class="btn btn-outline-primary btn-sm" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if not booking.is_approved %}
+                                                    <form method="post" action="{% url 'facilities:booking_approve' booking.id %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-outline-success btn-sm" title="Approve">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">No bookings found matching your criteria</h4>
+                        <a href="{% url 'facilities:booking_create' %}" class="btn btn-primary me-2">
+                            <i class="fas fa-plus me-2"></i>Create First Booking
+                        </a>
+                        <a href="{% url 'facilities:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit form when filters change
+        const filterInputs = document.querySelectorAll('.form-select');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                this.closest('form').submit();
+            });
+        });
+        
+        // Add hover effects to table rows
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,390 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Assignments Dashboard - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-tasks text-primary me-2"></i>
+                        Assignments Dashboard
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if user_role == 'faculty' %}
+                            Manage your assignments and track student submissions
+                        {% elif user_role == 'student' %}
+                            View your assignments and track submission status
+                        {% else %}
+                            Overview of all assignments and submissions
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if user_role == 'faculty' %}
+                        <a href="{% url 'dashboard:assignment_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Create Assignment
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'dashboard:assignments_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>View All
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Assignments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.total_assignments }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                {% if user_role == 'faculty' %}
+                                    Published Assignments
+                                {% elif user_role == 'student' %}
+                                    Submitted Assignments
+                                {% else %}
+                                    Published Assignments
+                                {% endif %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if user_role == 'student' %}
+                                    {{ stats.submitted_assignments }}
+                                {% else %}
+                                    {{ stats.published_assignments }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                {% if user_role == 'faculty' %}
+                                    Pending Grades
+                                {% elif user_role == 'student' %}
+                                    Pending Assignments
+                                {% else %}
+                                    Draft Assignments
+                                {% endif %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if user_role == 'student' %}
+                                    {{ stats.pending_assignments }}
+                                {% else %}
+                                    {{ stats.pending_grades|default:stats.draft_assignments }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                {% if user_role == 'student' %}
+                                    Late Submissions
+                                {% else %}
+                                    Overdue Assignments
+                                {% endif %}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if user_role == 'student' %}
+                                    {{ stats.late_submissions }}
+                                {% else %}
+                                    {{ stats.overdue_assignments }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Recent Assignments -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list me-2"></i>Recent Assignments
+                    </h6>
+                    <a href="{% url 'dashboard:assignments_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Faculty</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in recent_assignments %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-2">
+                                                    {% if assignment.category %}
+                                                        <span class="badge" style="background-color: {{ assignment.category.color_code }};">
+                                                            {{ assignment.category.name }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ assignment.title }}</strong>
+                                                    {% if assignment.is_group_assignment %}
+                                                        <span class="badge bg-info ms-1">Group</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ assignment.faculty.name }}</td>
+                                        <td>
+                                            <span class="{% if assignment.is_overdue %}text-danger{% endif %}">
+                                                {{ assignment.due_date|date:"M d, Y H:i" }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if assignment.status == 'PUBLISHED' %}bg-success
+                                                {% elif assignment.status == 'DRAFT' %}bg-warning
+                                                {% elif assignment.status == 'CLOSED' %}bg-secondary
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ assignment.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'dashboard:assignment_detail' assignment.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if user_role == 'faculty' and assignment.faculty == user.faculty_profile %}
+                                                <a href="{% url 'dashboard:assignment_edit' assignment.id %}" 
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No assignments found</h5>
+                            <p class="text-muted">
+                                {% if user_role == 'faculty' %}
+                                    Create your first assignment to get started.
+                                {% else %}
+                                    No assignments have been assigned to you yet.
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if user_role == 'faculty' %}
+                            <a href="{% url 'dashboard:assignment_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Assignment
+                            </a>
+                            <a href="{% url 'dashboard:assignment_templates' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-template me-2"></i>Manage Templates
+                            </a>
+                        {% elif user_role == 'student' %}
+                            <a href="{% url 'dashboard:assignments_list' %}?status=PUBLISHED" class="btn btn-primary">
+                                <i class="fas fa-list me-2"></i>View Active Assignments
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'dashboard:assignment_statistics' %}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar me-2"></i>View Statistics
+                        </a>
+                        {% if user.is_staff %}
+                            <a href="{% url 'dashboard:assignment_categories' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-tags me-2"></i>Manage Categories
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tags me-2"></i>Categories
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if categories %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for category in categories %}
+                                <span class="badge" style="background-color: {{ category.color_code }};">
+                                    {{ category.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No categories available</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Submissions (Faculty only) -->
+            {% if user_role == 'faculty' and recent_submissions %}
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-inbox me-2"></i>Recent Submissions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for submission in recent_submissions %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">{{ submission.student.name }}</h6>
+                                <small class="text-muted">{{ submission.assignment.title }}</small>
+                                <div class="mt-1">
+                                    <span class="badge 
+                                        {% if submission.is_late %}bg-danger
+                                        {% elif submission.grade %}bg-success
+                                        {% else %}bg-warning{% endif %}">
+                                        {% if submission.is_late %}Late
+                                        {% elif submission.grade %}Graded
+                                        {% else %}Pending{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- My Submissions (Student only) -->
+            {% if user_role == 'student' and my_submissions %}
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-upload me-2"></i>My Recent Submissions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for submission in my_submissions %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">{{ submission.assignment.title }}</h6>
+                                <small class="text-muted">Submitted {{ submission.submission_date|date:"M d, Y" }}</small>
+                                <div class="mt-1">
+                                    {% if submission.grade %}
+                                        <span class="badge bg-success">
+                                            {{ submission.grade.marks_obtained }}/{{ submission.assignment.max_marks }}
+                                        </span>
+                                    {% elif submission.is_late %}
+                                        <span class="badge bg-danger">Late</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

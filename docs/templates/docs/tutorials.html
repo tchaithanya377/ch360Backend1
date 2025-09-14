@@ -1,0 +1,227 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}Tutorials - CampusHub 360 Documentation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'docs:home' %}">Home</a></li>
+            <li class="breadcrumb-item active">Tutorials</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-book me-2"></i>Tutorials</h1>
+            <p class="lead">Step-by-step guides to help you integrate with CampusHub 360 APIs and build amazing applications.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="sidebar">
+                <h5><i class="fas fa-filter me-2"></i>Filters</h5>
+                
+                <!-- Search -->
+                <div class="mb-3">
+                    <form method="get" action="{% url 'docs:tutorials' %}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="search" placeholder="Search tutorials..." value="{{ request.GET.search }}">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="mb-3">
+                    <h6>Category</h6>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'docs:tutorials' %}" class="list-group-item list-group-item-action {% if not request.GET.category %}active{% endif %}">
+                            All Categories
+                        </a>
+                        {% for category in categories %}
+                        <a href="?category={{ category.slug }}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.category == category.slug %}active{% endif %}">
+                            <i class="{{ category.icon|default:'fas fa-folder' }} me-2"></i>{{ category.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Difficulty Filter -->
+                <div class="mb-3">
+                    <h6>Difficulty</h6>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'docs:tutorials' %}{% if request.GET.category %}?category={{ request.GET.category }}{% endif %}{% if request.GET.search %}{% if request.GET.category %}&{% else %}?{% endif %}search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if not request.GET.difficulty %}active{% endif %}">
+                            All Levels
+                        </a>
+                        {% for value, label in difficulty_choices %}
+                        <a href="?difficulty={{ value }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.difficulty == value %}active{% endif %}">
+                            <span class="badge difficulty-{{ value }} difficulty-badge me-2">{{ label }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="mt-4">
+                    <h6>Quick Stats</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-primary">{{ tutorials|length }}</div>
+                                <small class="text-muted">Tutorials</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-success">{{ categories|length }}</div>
+                                <small class="text-muted">Categories</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-warning">3</div>
+                                <small class="text-muted">Levels</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Active Filters -->
+            {% if request.GET.category or request.GET.difficulty or request.GET.search %}
+            <div class="mb-3">
+                <h6>Active Filters:</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if request.GET.category %}
+                    <span class="badge bg-primary">
+                        Category: {{ request.GET.category }}
+                        <a href="?{% if request.GET.difficulty %}difficulty={{ request.GET.difficulty }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}{% endif %}" class="text-white ms-1">×</a>
+                    </span>
+                    {% endif %}
+                    {% if request.GET.difficulty %}
+                    <span class="badge bg-secondary">
+                        Difficulty: {{ request.GET.difficulty }}
+                        <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}{% endif %}" class="text-white ms-1">×</a>
+                    </span>
+                    {% endif %}
+                    {% if request.GET.search %}
+                    <span class="badge bg-info">
+                        Search: "{{ request.GET.search }}"
+                        <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.difficulty %}difficulty={{ request.GET.difficulty }}{% endif %}" class="text-white ms-1">×</a>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Tutorials Grid -->
+            {% if tutorials %}
+            <div class="row">
+                {% for tutorial in tutorials %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge difficulty-{{ tutorial.difficulty }} difficulty-badge">
+                                    {{ tutorial.get_difficulty_display }}
+                                </span>
+                                <small class="text-muted">{{ tutorial.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            
+                            <h5 class="card-title">
+                                <a href="{% url 'docs:tutorial_detail' tutorial.slug %}" class="text-decoration-none">
+                                    {{ tutorial.title }}
+                                </a>
+                            </h5>
+                            
+                            <p class="card-text text-muted">{{ tutorial.description|truncatewords:25 }}</p>
+                            
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-tag text-muted me-2"></i>
+                                <span class="badge bg-light text-dark">{{ tutorial.category.name }}</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-clock text-muted me-1"></i>
+                                    <small class="text-muted">{{ tutorial.estimated_time }} min</small>
+                                    <i class="fas fa-eye text-muted ms-3 me-1"></i>
+                                    <small class="text-muted">{{ tutorial.view_count }}</small>
+                                </div>
+                                <a href="{% url 'docs:tutorial_detail' tutorial.slug %}" class="btn btn-primary btn-sm">
+                                    Start Tutorial <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Tutorials pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.difficulty %}&difficulty={{ request.GET.difficulty }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- No Results -->
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No tutorials found</h4>
+                <p class="text-muted">
+                    {% if request.GET.search %}
+                    No tutorials match your search criteria. Try adjusting your filters or search terms.
+                    {% else %}
+                    No tutorials are available yet. Check back soon for new content!
+                    {% endif %}
+                </p>
+                {% if request.GET.category or request.GET.difficulty or request.GET.search %}
+                <a href="{% url 'docs:tutorials' %}" class="btn btn-primary">
+                    <i class="fas fa-refresh me-2"></i>Clear Filters
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

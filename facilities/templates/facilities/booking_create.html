@@ -1,0 +1,277 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Create Booking - Facilities Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h1 class="display-4 text-white fw-bold mb-3">
+                        <i class="fas fa-calendar-plus me-3"></i>Create New Booking
+                    </h1>
+                    <p class="lead text-white-50 mb-0">Schedule a room for your event or class</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Booking Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Messages -->
+                    <div class="alert alert-danger d-none" id="errorMessage" role="alert"></div>
+                    <div class="alert alert-success d-none" id="successMessage" role="alert"></div>
+                    
+                    <!-- Selected Room Info -->
+                    {% if request.GET.room %}
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>Selected Room
+                            </h6>
+                            {% for room in rooms %}
+                                {% if room.id|stringformat:"s" == request.GET.room %}
+                                    <strong>{{ room.building.code }}-{{ room.code }}</strong> - {{ room.name }}<br>
+                                    <small class="text-muted">
+                                        Type: {{ room.get_room_type_display }} | Capacity: {{ room.capacity }} people
+                                    </small>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Booking Form -->
+                    <form id="bookingForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Room <span class="text-danger">*</span></label>
+                                <select name="room_id" class="form-select" required>
+                                    <option value="">Select a room</option>
+                                    {% for room in rooms %}
+                                        <option value="{{ room.id }}" {% if request.GET.room == room.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ room.building.code }}-{{ room.code }} - {{ room.name }} ({{ room.get_room_type_display }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Event Title <span class="text-danger">*</span></label>
+                                <input type="text" name="title" class="form-control" placeholder="Enter event title" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Purpose/Description</label>
+                                <textarea name="purpose" class="form-control" rows="3" placeholder="Describe the purpose of this booking"></textarea>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Start Date & Time <span class="text-danger">*</span></label>
+                                <input type="text" name="starts_at" class="form-control datetime-picker" placeholder="Select start time" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">End Date & Time <span class="text-danger">*</span></label>
+                                <input type="text" name="ends_at" class="form-control datetime-picker" placeholder="Select end time" required>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'facilities:dashboard' %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-calendar-plus me-2"></i>Create Booking
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Loading Spinner -->
+                    <div class="text-center d-none" id="loading">
+                        <div class="spinner-border text-primary mb-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="text-muted">Creating booking...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize datetime pickers
+        const datetimePickers = document.querySelectorAll('.datetime-picker');
+        datetimePickers.forEach(picker => {
+            flatpickr(picker, {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: "today",
+                time_24hr: true,
+                minuteIncrement: 15,
+                onChange: function(selectedDates, dateStr, instance) {
+                    validateDateTime();
+                }
+            });
+        });
+        
+        // Form submission
+        const form = document.getElementById('bookingForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
+            // Show loading
+            submitBtn.classList.add('d-none');
+            loading.classList.remove('d-none');
+            hideMessages();
+            
+            try {
+                const formData = new FormData(form);
+                const data = {
+                    room_id: formData.get('room_id'),
+                    title: formData.get('title'),
+                    purpose: formData.get('purpose'),
+                    starts_at: formData.get('starts_at'),
+                    ends_at: formData.get('ends_at')
+                };
+                
+                const response = await fetch('{% url "facilities:booking_create" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('Booking created successfully!');
+                    form.reset();
+                    // Reset datetime pickers
+                    datetimePickers.forEach(picker => {
+                        picker._flatpickr.clear();
+                    });
+                } else {
+                    showError(result.error || 'Failed to create booking');
+                }
+            } catch (error) {
+                showError('An error occurred while creating the booking');
+            } finally {
+                // Hide loading
+                submitBtn.classList.remove('d-none');
+                loading.classList.add('d-none');
+            }
+        });
+        
+        function validateForm() {
+            const roomId = form.querySelector('[name="room_id"]').value;
+            const title = form.querySelector('[name="title"]').value;
+            const startsAt = form.querySelector('[name="starts_at"]').value;
+            const endsAt = form.querySelector('[name="ends_at"]').value;
+            
+            if (!roomId || !title || !startsAt || !endsAt) {
+                showError('Please fill in all required fields');
+                return false;
+            }
+            
+            if (!validateDateTime()) {
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function validateDateTime() {
+            const startsAt = form.querySelector('[name="starts_at"]').value;
+            const endsAt = form.querySelector('[name="ends_at"]').value;
+            
+            if (startsAt && endsAt) {
+                const start = new Date(startsAt);
+                const end = new Date(endsAt);
+                const now = new Date();
+                
+                if (start < now) {
+                    showError('Start time cannot be in the past');
+                    return false;
+                }
+                
+                if (end <= start) {
+                    showError('End time must be after start time');
+                    return false;
+                }
+                
+                if (end - start < 15 * 60 * 1000) { // 15 minutes minimum
+                    showError('Booking must be at least 15 minutes long');
+                    return false;
+                }
+                
+                hideMessages();
+                return true;
+            }
+            
+            return true;
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('d-none');
+            successMessage.classList.add('d-none');
+        }
+        
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.remove('d-none');
+            errorMessage.classList.add('d-none');
+        }
+        
+        function hideMessages() {
+            errorMessage.classList.add('d-none');
+            successMessage.classList.add('d-none');
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

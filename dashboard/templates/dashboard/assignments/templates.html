@@ -1,0 +1,445 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Assignment Templates - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Templates</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-template text-primary me-2"></i>
+                        Assignment Templates
+                    </h1>
+                    <p class="text-muted mb-0">Create and manage reusable assignment templates</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
+                        <i class="fas fa-plus me-1"></i>Create Template
+                    </button>
+                    <a href="{% url 'dashboard:assignments_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Grid -->
+    <div class="row">
+        {% if templates %}
+            {% for template in templates %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-template me-2"></i>{{ template.name }}
+                        </h6>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <button class="dropdown-item" onclick="useTemplate('{{ template.id }}')">
+                                        <i class="fas fa-plus me-2"></i>Use Template
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="editTemplate('{{ template.id }}', '{{ template.name }}', '{{ template.description }}', '{{ template.instructions }}', '{{ template.max_marks }}', '{{ template.category.id|default:"" }}', {{ template.is_group_assignment|yesno:"true,false" }}, '{{ template.max_group_size }}', {{ template.is_public|yesno:"true,false" }})">
+                                        <i class="fas fa-edit me-2"></i>Edit
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" onclick="deleteTemplate('{{ template.id }}', '{{ template.name }}')">
+                                        <i class="fas fa-trash me-2"></i>Delete
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {% if template.description %}
+                                <p class="text-muted">{{ template.description|truncatechars:100 }}</p>
+                            {% else %}
+                                <p class="text-muted">No description provided</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Max Marks:</small>
+                                <div class="fw-bold">{{ template.max_marks }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Type:</small>
+                                <div>
+                                    {% if template.is_group_assignment %}
+                                        <span class="badge bg-info">Group</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">Individual</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if template.category %}
+                        <div class="mb-3">
+                            <small class="text-muted">Category:</small>
+                            <div>
+                                <span class="badge" style="background-color: {{ template.category.color_code }};">
+                                    {{ template.category.name }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                Created by {{ template.created_by.email }}
+                            </small>
+                            {% if template.is_public %}
+                                <span class="badge bg-success">Public</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Private</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">{{ template.created_at|date:"M d, Y" }}</small>
+                            <button class="btn btn-sm btn-primary" onclick="useTemplate('{{ template.id }}')">
+                                <i class="fas fa-plus me-1"></i>Use Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-template fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No templates found</h5>
+                    <p class="text-muted">Create your first template to save time when creating assignments.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
+                        <i class="fas fa-plus me-1"></i>Create Template
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Template Modal -->
+<div class="modal fade" id="createTemplateModal" tabindex="-1" aria-labelledby="createTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTemplateModalLabel">
+                        <i class="fas fa-plus me-2"></i>Create New Template
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="create_name" class="form-label">Template Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="create_name" name="name" required
+                                       placeholder="Enter template name">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="create_max_marks" class="form-label">Max Marks <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="create_max_marks" name="max_marks" 
+                                       min="0.01" step="0.01" required placeholder="100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="create_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="create_description" name="description" rows="3"
+                                  placeholder="Enter template description"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="create_instructions" class="form-label">Instructions</label>
+                        <textarea class="form-control" id="create_instructions" name="instructions" rows="4"
+                                  placeholder="Enter default instructions for this template"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="create_category" class="form-label">Category</label>
+                                <select class="form-select" id="create_category" name="category">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="create_max_group_size" class="form-label">Max Group Size</label>
+                                <input type="number" class="form-control" id="create_max_group_size" name="max_group_size" 
+                                       min="1" value="1" placeholder="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="create_is_group_assignment" name="is_group_assignment">
+                                <label class="form-check-label" for="create_is_group_assignment">
+                                    Group Assignment Template
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="create_is_public" name="is_public">
+                                <label class="form-check-label" for="create_is_public">
+                                    Make Public (available to all faculty)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Create Template
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Template Modal -->
+<div class="modal fade" id="editTemplateModal" tabindex="-1" aria-labelledby="editTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="template_id" id="edit_template_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTemplateModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit Template
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="edit_name" class="form-label">Template Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit_name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_max_marks" class="form-label">Max Marks <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="edit_max_marks" name="max_marks" 
+                                       min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_instructions" class="form-label">Instructions</label>
+                        <textarea class="form-control" id="edit_instructions" name="instructions" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_category" class="form-label">Category</label>
+                                <select class="form-select" id="edit_category" name="category">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_max_group_size" class="form-label">Max Group Size</label>
+                                <input type="number" class="form-control" id="edit_max_group_size" name="max_group_size" 
+                                       min="1" placeholder="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit_is_group_assignment" name="is_group_assignment">
+                                <label class="form-check-label" for="edit_is_group_assignment">
+                                    Group Assignment Template
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="edit_is_public" name="is_public">
+                                <label class="form-check-label" for="edit_is_public">
+                                    Make Public (available to all faculty)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Update Template
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Template Modal -->
+<div class="modal fade" id="deleteTemplateModal" tabindex="-1" aria-labelledby="deleteTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="template_id" id="delete_template_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteTemplateModalLabel">
+                        <i class="fas fa-trash me-2"></i>Delete Template
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    <p>Are you sure you want to delete the template <strong id="delete_template_name"></strong>?</p>
+                    <p class="text-muted">This will not affect any assignments created from this template.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete Template
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle group assignment checkbox
+    function handleGroupAssignment(checkbox, groupSizeInput) {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                groupSizeInput.value = 2;
+                groupSizeInput.min = 2;
+            } else {
+                groupSizeInput.value = 1;
+                groupSizeInput.min = 1;
+            }
+        });
+    }
+    
+    // Initialize group assignment handlers
+    handleGroupAssignment(document.getElementById('create_is_group_assignment'), document.getElementById('create_max_group_size'));
+    handleGroupAssignment(document.getElementById('edit_is_group_assignment'), document.getElementById('edit_max_group_size'));
+    
+    // Use template function
+    function useTemplate(templateId) {
+        // Redirect to create assignment page with template parameter
+        window.location.href = `{% url 'dashboard:assignment_create' %}?template=${templateId}`;
+    }
+    
+    // Edit template function
+    function editTemplate(id, name, description, instructions, maxMarks, categoryId, isGroup, maxGroupSize, isPublic) {
+        document.getElementById('edit_template_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_description').value = description || '';
+        document.getElementById('edit_instructions').value = instructions || '';
+        document.getElementById('edit_max_marks').value = maxMarks;
+        document.getElementById('edit_category').value = categoryId || '';
+        document.getElementById('edit_is_group_assignment').checked = isGroup;
+        document.getElementById('edit_max_group_size').value = maxGroupSize;
+        document.getElementById('edit_is_public').checked = isPublic;
+        
+        new bootstrap.Modal(document.getElementById('editTemplateModal')).show();
+    }
+    
+    // Delete template function
+    function deleteTemplate(id, name) {
+        document.getElementById('delete_template_id').value = id;
+        document.getElementById('delete_template_name').textContent = name;
+        
+        new bootstrap.Modal(document.getElementById('deleteTemplateModal')).show();
+    }
+    
+    // Form validation
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const nameInput = this.querySelector('input[name="name"]');
+            const maxMarksInput = this.querySelector('input[name="max_marks"]');
+            
+            if (nameInput && !nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Template name is required.');
+                nameInput.focus();
+                return;
+            }
+            
+            if (maxMarksInput && (!maxMarksInput.value || parseFloat(maxMarksInput.value) <= 0)) {
+                e.preventDefault();
+                alert('Please enter a valid maximum marks value.');
+                maxMarksInput.focus();
+                return;
+            }
+        });
+    });
+    
+    // Auto-focus on name input when modal opens
+    document.getElementById('createTemplateModal').addEventListener('shown.bs.modal', function() {
+        document.getElementById('create_name').focus();
+    });
+    
+    document.getElementById('editTemplateModal').addEventListener('shown.bs.modal', function() {
+        document.getElementById('edit_name').focus();
+    });
+</script>
+{% endblock %}

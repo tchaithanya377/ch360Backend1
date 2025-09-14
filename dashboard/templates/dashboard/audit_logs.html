@@ -1,0 +1,353 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Audit Logs - CampsHub360{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-clipboard-list text-primary me-2"></i>
+    Audit Logs
+{% endblock %}
+
+{% block page_subtitle %}
+    Monitor system activities and user actions
+{% endblock %}
+
+{% block header_actions %}
+    <button class="btn btn-outline-primary" onclick="refreshAuditLogs()" data-bs-toggle="tooltip" title="Refresh audit logs">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="filterLogs('all')">All Actions</a></li>
+            <li><a class="dropdown-item" href="#" onclick="filterLogs('LOGIN')">Login Events</a></li>
+            <li><a class="dropdown-item" href="#" onclick="filterLogs('USER')">User Actions</a></li>
+            <li><a class="dropdown-item" href="#" onclick="filterLogs('STUDENT')">Student Actions</a></li>
+            <li><a class="dropdown-item" href="#" onclick="filterLogs('FACULTY')">Faculty Actions</a></li>
+        </ul>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Logs</h6>
+                        <h3 class="mb-0">{{ logs|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Login Events</h6>
+                        <h3 class="mb-0">{{ logs|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-sign-in-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Failed Logins</h6>
+                        <h3 class="mb-0">0</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">System Events</h6>
+                        <h3 class="mb-0">0</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-cogs fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-history text-primary me-2"></i>
+            Recent Activity
+        </h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="exportLogs()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="auditLogsTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Object</th>
+                        <th>IP Address</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr data-action="{{ log.action }}">
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-medium">{{ log.created_at|date:"M d, Y" }}</span>
+                                <small class="text-muted">{{ log.created_at|date:"H:i:s" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if log.user %}
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ log.user.email|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ log.user.email }}</div>
+                                        <small class="text-muted">{{ log.user.username|default:"No username" }}</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">System</div>
+                                        <small class="text-muted">Automated</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if 'LOGIN' in log.action %}
+                                <span class="badge bg-success">{{ log.action }}</span>
+                            {% elif 'LOGOUT' in log.action %}
+                                <span class="badge bg-info">{{ log.action }}</span>
+                            {% elif 'FAILED' in log.action %}
+                                <span class="badge bg-danger">{{ log.action }}</span>
+                            {% elif 'CREATED' in log.action %}
+                                <span class="badge bg-primary">{{ log.action }}</span>
+                            {% elif 'UPDATED' in log.action %}
+                                <span class="badge bg-warning">{{ log.action }}</span>
+                            {% elif 'DELETED' in log.action %}
+                                <span class="badge bg-danger">{{ log.action }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ log.action }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.object_type %}
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ log.object_type }}</span>
+                                    {% if log.object_id %}
+                                        <small class="text-muted">{{ log.object_id|slice:":8" }}...</small>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.ip %}
+                                <span class="badge bg-light text-dark">{{ log.ip }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary" 
+                                    onclick="showLogDetails('{{ log.id }}')"
+                                    data-bs-toggle="tooltip" title="View details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="fas fa-clipboard-list fa-3x mb-3 d-block"></i>
+                            <h5>No audit logs found</h5>
+                            <p>Audit logs will appear here as system events occur.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3 d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i>
+                Showing last 100 entries. Logs are automatically created for important system events.
+            </small>
+            <div>
+                <small class="text-muted">Total: {{ logs|length }} entries</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logDetailsModalLabel">Audit Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="logDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function refreshAuditLogs() {
+    location.reload();
+}
+
+function filterLogs(filter) {
+    const table = document.getElementById('auditLogsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const action = row.getAttribute('data-action');
+        
+        if (filter === 'all' || action.includes(filter)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+    
+    // Update filter button text
+    const filterBtn = document.querySelector('[data-bs-toggle="dropdown"]');
+    const filterText = filter === 'all' ? 'All Actions' : 
+                      filter === 'LOGIN' ? 'Login Events' :
+                      filter === 'USER' ? 'User Actions' :
+                      filter === 'STUDENT' ? 'Student Actions' :
+                      filter === 'FACULTY' ? 'Faculty Actions' : 'Filter';
+    filterBtn.innerHTML = `<i class="fas fa-filter"></i> ${filterText}`;
+}
+
+function showLogDetails(logId) {
+    // This would typically make an AJAX call to get log details
+    // For now, we'll show a placeholder
+    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+    document.getElementById('logDetailsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+            <p>Loading log details...</p>
+        </div>
+    `;
+    modal.show();
+    
+    // Simulate loading
+    setTimeout(() => {
+        document.getElementById('logDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Log Information</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Log ID:</strong></td><td>${logId}</td></tr>
+                        <tr><td><strong>Timestamp:</strong></td><td>${new Date().toLocaleString()}</td></tr>
+                        <tr><td><strong>Action:</strong></td><td><span class="badge bg-primary">LOGIN</span></td></tr>
+                        <tr><td><strong>IP Address:</strong></td><td>127.0.0.1</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Additional Details</h6>
+                    <div class="bg-light p-3 rounded">
+                        <pre class="mb-0">{
+  "login_method": "password",
+  "success": true,
+  "session_id": "abc123"
+}</pre>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function exportLogs() {
+    // This would typically export logs to CSV/Excel
+    alert('Export functionality would be implemented here');
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add search functionality
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'form-control';
+    searchInput.placeholder = 'Search logs...';
+    searchInput.style.marginBottom = '1rem';
+    
+    const cardBody = document.querySelector('.card-body');
+    cardBody.insertBefore(searchInput, cardBody.firstChild);
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const table = document.getElementById('auditLogsTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const text = row.textContent.toLowerCase();
+            
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

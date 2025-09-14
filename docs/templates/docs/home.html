@@ -1,0 +1,263 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}CampusHub 360 Documentation - Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1>Welcome to CampusHub 360 Documentation</h1>
+                <p class="lead">Your comprehensive guide to integrating with the CampusHub 360 platform. Learn, explore, and build amazing applications with our APIs and tutorials.</p>
+                <div class="mt-4">
+                    <a href="{% url 'docs:tutorials' %}" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-book me-2"></i>Start Learning
+                    </a>
+                    <a href="{% url 'docs:apis' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-code me-2"></i>Explore APIs
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <i class="fas fa-graduation-cap" style="font-size: 8rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Categories Section -->
+    <section class="mb-5">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-th-large me-2"></i>Browse by Category
+                </h2>
+            </div>
+        </div>
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card category-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="category-icon">
+                            <i class="{{ category.icon|default:'fas fa-folder' }}"></i>
+                        </div>
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <p class="card-text flex-grow-1">{{ category.description|truncatewords:15 }}</p>
+                        <a href="{% url 'docs:category_detail' category.slug %}" class="btn btn-primary mt-auto">
+                            Explore <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No categories available yet. Check back soon!
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Featured Content -->
+    <div class="row">
+        <!-- Featured Tutorials -->
+        <div class="col-lg-6 mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Featured Tutorials
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% for tutorial in featured_tutorials %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge difficulty-{{ tutorial.difficulty }} difficulty-badge">
+                                {{ tutorial.get_difficulty_display }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">
+                                <a href="{% url 'docs:tutorial_detail' tutorial.slug %}" class="text-decoration-none">
+                                    {{ tutorial.title }}
+                                </a>
+                            </h6>
+                            <p class="text-muted small mb-1">{{ tutorial.description|truncatewords:20 }}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ tutorial.estimated_time }} min
+                                <i class="fas fa-tag ms-2 me-1"></i>{{ tutorial.category.name }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-book fa-2x mb-2"></i>
+                        <p>No featured tutorials available yet.</p>
+                    </div>
+                    {% endfor %}
+                    {% if featured_tutorials %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'docs:tutorials' %}" class="btn btn-outline-primary">
+                            View All Tutorials <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured APIs -->
+        <div class="col-lg-6 mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-code me-2"></i>Featured API Endpoints
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% for api in featured_apis %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge method-{{ api.method }} method-badge">
+                                {{ api.method }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">
+                                <a href="{% url 'docs:api_detail' api.id %}" class="text-decoration-none">
+                                    {{ api.title }}
+                                </a>
+                            </h6>
+                            <p class="text-muted small mb-1">{{ api.description|truncatewords:20 }}</p>
+                            <small class="text-muted">
+                                <code class="text-primary">{{ api.endpoint }}</code>
+                                {% if api.authentication_required %}
+                                <span class="badge bg-warning text-dark ms-2">Auth Required</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-code fa-2x mb-2"></i>
+                        <p>No featured APIs available yet.</p>
+                    </div>
+                    {% endfor %}
+                    {% if featured_apis %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'docs:apis' %}" class="btn btn-outline-primary">
+                            View All APIs <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Tutorials -->
+    {% if recent_tutorials %}
+    <section class="mb-5">
+        <div class="row">
+            <div class="col-12">
+                <h3 class="mb-4">
+                    <i class="fas fa-clock me-2"></i>Recently Added
+                </h3>
+            </div>
+        </div>
+        <div class="row">
+            {% for tutorial in recent_tutorials %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge difficulty-{{ tutorial.difficulty }} difficulty-badge">
+                                {{ tutorial.get_difficulty_display }}
+                            </span>
+                            <small class="text-muted">{{ tutorial.created_at|date:"M d" }}</small>
+                        </div>
+                        <h6 class="card-title">
+                            <a href="{% url 'docs:tutorial_detail' tutorial.slug %}" class="text-decoration-none">
+                                {{ tutorial.title }}
+                            </a>
+                        </h6>
+                        <p class="card-text text-muted small">{{ tutorial.description|truncatewords:15 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ tutorial.estimated_time }} min
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-eye me-1"></i>{{ tutorial.view_count }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Quick Start Section -->
+    <section class="mb-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3 class="mb-3">
+                            <i class="fas fa-rocket me-2"></i>Quick Start Guide
+                        </h3>
+                        <p class="lead mb-4">New to CampusHub 360? Follow our quick start guide to get up and running in minutes.</p>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold">1</span>
+                                    </div>
+                                    <h6>Get API Key</h6>
+                                    <small class="text-muted">Register and get your API credentials</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold">2</span>
+                                    </div>
+                                    <h6>Make First Request</h6>
+                                    <small class="text-muted">Test your connection with a simple API call</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold">3</span>
+                                    </div>
+                                    <h6>Explore Features</h6>
+                                    <small class="text-muted">Discover all available endpoints and features</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                        <span class="fw-bold">4</span>
+                                    </div>
+                                    <h6>Build & Deploy</h6>
+                                    <small class="text-muted">Create your application and go live</small>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{% url 'docs:tutorials' %}" class="btn btn-primary btn-lg mt-3">
+                            <i class="fas fa-play me-2"></i>Start Building
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

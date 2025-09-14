@@ -1,0 +1,28 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Grants{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h3 class="mb-3">Grants</h3>
+  <div class="card p-3">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover mb-0">
+        <thead><tr><th>Title</th><th>Sponsor</th><th>Ref</th><th>Amount</th><th>Period</th></tr></thead>
+        <tbody>
+          {% for g in grants %}
+          <tr>
+            <td>{{ g.title }}</td>
+            <td>{{ g.sponsor|default:'-' }}</td>
+            <td>{{ g.reference_code|default:'-' }}</td>
+            <td>{{ g.amount }}</td>
+            <td>{{ g.start_date|default:'-' }} - {{ g.end_date|default:'-' }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">No grants</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

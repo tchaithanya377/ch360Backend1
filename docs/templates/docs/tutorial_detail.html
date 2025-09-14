@@ -1,0 +1,293 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}{{ tutorial.title }} - CampusHub 360 Documentation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'docs:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'docs:tutorials' %}">Tutorials</a></li>
+            <li class="breadcrumb-item active">{{ tutorial.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Tutorial Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge difficulty-{{ tutorial.difficulty }} difficulty-badge me-2">
+                                {{ tutorial.get_difficulty_display }}
+                            </span>
+                            <span class="badge bg-light text-dark">{{ tutorial.category.name }}</span>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ tutorial.estimated_time }} min read
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <h1 class="card-title">{{ tutorial.title }}</h1>
+                    <p class="lead">{{ tutorial.description }}</p>
+                    
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        {% for tag in tutorial.get_tags_list %}
+                        <span class="badge bg-secondary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">
+                                <i class="fas fa-eye me-1"></i>{{ tutorial.view_count }} views
+                                <i class="fas fa-calendar ms-3 me-1"></i>{{ tutorial.created_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="shareTutorial()">
+                                <i class="fas fa-share me-1"></i>Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prerequisites -->
+            {% if tutorial.prerequisites %}
+            <div class="alert alert-info mb-4">
+                <h5><i class="fas fa-info-circle me-2"></i>Prerequisites</h5>
+                <p class="mb-0">{{ tutorial.prerequisites }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Tutorial Content -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3><i class="fas fa-file-text me-2"></i>Overview</h3>
+                    <div class="tutorial-content">
+                        {{ tutorial.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Steps -->
+            {% if steps %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-list-ol me-2"></i>Step-by-Step Guide</h3>
+                </div>
+                <div class="card-body">
+                    {% for step in steps %}
+                    <div class="step-item mb-4" id="step-{{ step.order }}">
+                        <div class="d-flex align-items-start">
+                            <div class="step-number">{{ step.order }}</div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-2">{{ step.title }}</h5>
+                                <div class="step-content">
+                                    {{ step.content|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Code Examples -->
+            {% if code_examples %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-code me-2"></i>Code Examples</h3>
+                </div>
+                <div class="card-body">
+                    {% for example in code_examples %}
+                    <div class="mb-4">
+                        <h5>{{ example.title }}</h5>
+                        {% if example.description %}
+                        <p class="text-muted">{{ example.description }}</p>
+                        {% endif %}
+                        <div class="code-block">
+                            <pre><code class="language-{{ example.language }}">{{ example.code }}</code></pre>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Navigation -->
+            <div class="d-flex justify-content-between mb-4">
+                <a href="{% url 'docs:tutorials' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Tutorials
+                </a>
+                <button class="btn btn-primary" onclick="scrollToTop()">
+                    <i class="fas fa-arrow-up me-2"></i>Back to Top
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Table of Contents -->
+            {% if steps %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Table of Contents</h5>
+                </div>
+                <div class="card-body">
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="#overview">
+                            <i class="fas fa-file-text me-2"></i>Overview
+                        </a>
+                        {% for step in steps %}
+                        <a class="nav-link" href="#step-{{ step.order }}">
+                            <i class="fas fa-list-ol me-2"></i>Step {{ step.order }}: {{ step.title }}
+                        </a>
+                        {% endfor %}
+                        {% if code_examples %}
+                        <a class="nav-link" href="#code-examples">
+                            <i class="fas fa-code me-2"></i>Code Examples
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Tutorial Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Tutorial Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-primary">{{ tutorial.estimated_time }}</div>
+                                <small class="text-muted">Minutes</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-success">{{ steps|length }}</div>
+                                <small class="text-muted">Steps</small>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Difficulty:</span>
+                        <span class="badge difficulty-{{ tutorial.difficulty }} difficulty-badge">
+                            {{ tutorial.get_difficulty_display }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Category:</span>
+                        <span class="badge bg-light text-dark">{{ tutorial.category.name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Views:</span>
+                        <span class="text-muted">{{ tutorial.view_count }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Tutorials -->
+            {% if related_tutorials %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Related Tutorials</h5>
+                </div>
+                <div class="card-body">
+                    {% for related in related_tutorials %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge difficulty-{{ related.difficulty }} difficulty-badge">
+                                {{ related.get_difficulty_display }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-2">
+                            <h6 class="mb-1">
+                                <a href="{% url 'docs:tutorial_detail' related.slug %}" class="text-decoration-none">
+                                    {{ related.title }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ related.estimated_time }} min
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="shareTutorial()">
+                            <i class="fas fa-share me-2"></i>Share Tutorial
+                        </button>
+                        <a href="{% url 'docs:apis' %}" class="btn btn-outline-success">
+                            <i class="fas fa-code me-2"></i>View APIs
+                        </a>
+                        <a href="{% url 'docs:faq' %}" class="btn btn-outline-info">
+                            <i class="fas fa-question-circle me-2"></i>FAQ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function shareTutorial() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ tutorial.title }}',
+            text: '{{ tutorial.description }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            alert('Link copied to clipboard!');
+        });
+    }
+}
+
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+// Add IDs to sections for navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Add ID to overview section
+    const overviewSection = document.querySelector('.tutorial-content');
+    if (overviewSection) {
+        overviewSection.id = 'overview';
+    }
+    
+    // Add ID to code examples section
+    const codeSection = document.querySelector('.card:has(.fa-code)');
+    if (codeSection) {
+        codeSection.id = 'code-examples';
+    }
+});
+</script>
+{% endblock %}

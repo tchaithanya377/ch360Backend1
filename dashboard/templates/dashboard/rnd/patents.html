@@ -1,0 +1,28 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Patents{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h3 class="mb-3">Patents</h3>
+  <div class="card p-3">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover mb-0">
+        <thead><tr><th>Title</th><th>Application #</th><th>Grant #</th><th>Filing</th><th>Grant</th></tr></thead>
+        <tbody>
+          {% for pt in patents %}
+          <tr>
+            <td>{{ pt.title }}</td>
+            <td>{{ pt.application_number|default:'-' }}</td>
+            <td>{{ pt.grant_number|default:'-' }}</td>
+            <td>{{ pt.filing_date|default:'-' }}</td>
+            <td>{{ pt.grant_date|default:'-' }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted">No patents</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

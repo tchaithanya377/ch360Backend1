@@ -1,0 +1,225 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}Search Results - CampusHub 360 Documentation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'docs:home' %}">Home</a></li>
+            <li class="breadcrumb-item active">Search Results</li>
+        </ol>
+    </nav>
+
+    <!-- Search Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-search me-2"></i>Search Results</h1>
+            {% if query %}
+            <p class="lead">Results for "<strong>{{ query }}</strong>"</p>
+            {% else %}
+            <p class="lead">Enter a search term to find tutorials, APIs, and documentation.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" action="{% url 'docs:search' %}">
+                        <div class="input-group input-group-lg">
+                            <input type="text" class="form-control" name="q" placeholder="Search documentation..." value="{{ query }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if query %}
+    <!-- Search Results -->
+    <div class="row">
+        <!-- Tutorials Results -->
+        {% if results.tutorials %}
+        <div class="col-12 mb-5">
+            <h2><i class="fas fa-book me-2"></i>Tutorials ({{ results.tutorials|length }})</h2>
+            <div class="row">
+                {% for tutorial in results.tutorials %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge difficulty-{{ tutorial.difficulty }} difficulty-badge">
+                                    {{ tutorial.get_difficulty_display }}
+                                </span>
+                                <small class="text-muted">{{ tutorial.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            
+                            <h5 class="card-title">
+                                <a href="{% url 'docs:tutorial_detail' tutorial.slug %}" class="text-decoration-none">
+                                    {{ tutorial.title }}
+                                </a>
+                            </h5>
+                            
+                            <p class="card-text text-muted">{{ tutorial.description|truncatewords:25 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tag text-muted me-2"></i>
+                                    <span class="badge bg-light text-dark">{{ tutorial.category.name }}</span>
+                                </div>
+                                <a href="{% url 'docs:tutorial_detail' tutorial.slug %}" class="btn btn-primary btn-sm">
+                                    View Tutorial <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- API Results -->
+        {% if results.apis %}
+        <div class="col-12 mb-5">
+            <h2><i class="fas fa-code me-2"></i>API Endpoints ({{ results.apis|length }})</h2>
+            <div class="row">
+                {% for api in results.apis %}
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge method-{{ api.method }} method-badge me-3">{{ api.method }}</span>
+                                    <h5 class="card-title mb-0">
+                                        <a href="{% url 'docs:api_detail' api.id %}" class="text-decoration-none">
+                                            {{ api.title }}
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div class="text-end">
+                                    {% if api.authentication_required %}
+                                    <span class="badge bg-warning text-dark me-2">Auth Required</span>
+                                    {% endif %}
+                                    <small class="text-muted">{{ api.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <code class="text-primary">{{ api.endpoint }}</code>
+                            </div>
+                            
+                            <p class="card-text text-muted mb-3">{{ api.description|truncatewords:30 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tag text-muted me-2"></i>
+                                    <span class="badge bg-light text-dark">{{ api.category.name }}</span>
+                                </div>
+                                <a href="{% url 'docs:api_detail' api.id %}" class="btn btn-primary btn-sm">
+                                    View API <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pages Results -->
+        {% if results.pages %}
+        <div class="col-12 mb-5">
+            <h2><i class="fas fa-file-text me-2"></i>Documentation Pages ({{ results.pages|length }})</h2>
+            <div class="row">
+                {% for page in results.pages %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'docs:page' page.slug %}" class="text-decoration-none">
+                                    {{ page.title }}
+                                </a>
+                            </h5>
+                            
+                            <p class="card-text text-muted">{{ page.content|truncatewords:25 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if page.category %}
+                                    <span class="badge bg-light text-dark">{{ page.category.name }}</span>
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'docs:page' page.slug %}" class="btn btn-primary btn-sm">
+                                    Read More <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- No Results -->
+        {% if not results.tutorials and not results.apis and not results.pages %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No results found</h4>
+                <p class="text-muted">We couldn't find any content matching your search. Try different keywords or browse our categories.</p>
+                <div class="mt-4">
+                    <a href="{% url 'docs:categories' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-th-large me-2"></i>Browse Categories
+                    </a>
+                    <a href="{% url 'docs:tutorials' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-book me-2"></i>View All Tutorials
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Search Tips -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3><i class="fas fa-lightbulb me-2"></i>Search Tips</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>What you can search for:</h5>
+                            <ul>
+                                <li>Tutorial titles and descriptions</li>
+                                <li>API endpoint names and descriptions</li>
+                                <li>Code examples and snippets</li>
+                                <li>Documentation page content</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Search suggestions:</h5>
+                            <ul>
+                                <li>Use specific keywords</li>
+                                <li>Try different variations</li>
+                                <li>Search for error messages</li>
+                                <li>Look for feature names</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

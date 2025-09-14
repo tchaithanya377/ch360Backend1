@@ -1,0 +1,57 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="container">
+  <h2>Job Postings</h2>
+  <form method="post" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-md-3">
+        <select class="form-select" name="company_id" required>
+          <option value="">Select company</option>
+          {% for c in companies %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><input class="form-control" name="title" placeholder="Title" required></div>
+      <div class="col-md-3"><input class="form-control" name="location" placeholder="Location"></div>
+      <div class="col-md-3">
+        <select class="form-select" name="work_mode">
+          {% for v, label in work_modes %}<option value="{{ v }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" name="job_type">
+          {% for v, label in job_types %}<option value="{{ v }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-12"><textarea class="form-control" name="description" placeholder="Description"></textarea></div>
+      <div class="col-12 form-check">
+        <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+        <label class="form-check-label" for="is_active">Active</label>
+      </div>
+      <div class="col-12"><button class="btn btn-primary mt-2" type="submit">Post Job</button></div>
+    </div>
+  </form>
+
+  <table class="table table-striped">
+    <thead><tr><th>Title</th><th>Company</th><th>Type</th><th>Mode</th><th>Location</th><th>Posted</th></tr></thead>
+    <tbody>
+      {% for j in jobs %}
+      <tr>
+        <td>{{ j.title }}</td>
+        <td>{{ j.company.name }}</td>
+        <td>{{ j.get_job_type_display }}</td>
+        <td>{{ j.get_work_mode_display }}</td>
+        <td>{{ j.location }}</td>
+        <td>{{ j.created_at|date:'Y-m-d' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center">No jobs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+

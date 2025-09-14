@@ -1,0 +1,42 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Generate Attendance Sessions</h2>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard:attendance_sessions' %}">Back</a>
+  </div>
+
+  {% if message %}
+    <div class="alert alert-success">{{ message }}</div>
+  {% endif %}
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" class="row g-3">
+    {% csrf_token %}
+    <div class="col-md-4">
+      <label class="form-label">Start date</label>
+      <input class="form-control" type="date" name="start" required />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">End date</label>
+      <input class="form-control" type="date" name="end" required />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Course Section (optional)</label>
+      <select class="form-select" name="section_id">
+        <option value="">All Sections</option>
+        {% for s in sections %}
+          <option value="{{ s.id }}">{{ s.course.code }}-{{ s.section_number }} ({{ s.academic_year }} {{ s.semester }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12">
+      <button class="btn btn-primary" type="submit">Generate</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

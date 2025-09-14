@@ -1,0 +1,87 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Project Detail{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <a class="btn btn-sm btn-outline-secondary mb-3" href="{% url 'dashboard:rnd_projects' %}">Back to Projects</a>
+  <div class="card p-3 mb-3">
+    <h3 class="mb-2">{{ project.title }}</h3>
+    <p class="text-muted mb-1">PI: {{ project.principal_investigator }}</p>
+    <p><span class="badge text-bg-secondary">{{ project.get_status_display }}</span></p>
+    <p>{{ project.abstract|default:'No abstract' }}</p>
+    <div>
+      <strong>Keywords:</strong>
+      {% for k in project.keywords %}
+        <span class="badge bg-light text-dark">{{ k }}</span>
+      {% empty %}
+        <span class="text-muted">None</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Members</h5>
+        <ul class="mb-0">
+          {% for m in project.members.all %}
+            <li>{{ m }}</li>
+          {% empty %}
+            <li class="text-muted">No members</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Grants</h5>
+        <ul class="mb-0">
+          {% for g in project.grants.all %}
+            <li>{{ g.title }} ({{ g.sponsor|default:'-' }})</li>
+          {% empty %}
+            <li class="text-muted">No grants</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Publications</h5>
+        <ul class="mb-0">
+          {% for pub in project.publications.all %}
+            <li>{{ pub.title }} ({{ pub.venue|default:'-' }}, {{ pub.year|default:'-' }})</li>
+          {% empty %}
+            <li class="text-muted">No publications</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Datasets</h5>
+        <ul class="mb-0">
+          {% for d in project.datasets.all %}
+            <li>{% if d.storage_url %}<a href="{{ d.storage_url }}" target="_blank">{{ d.name }}</a>{% else %}{{ d.name }}{% endif %}</li>
+          {% empty %}
+            <li class="text-muted">No datasets</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mt-3">
+    <h5>Collaborations</h5>
+    <ul class="mb-0">
+      {% for c in project.collaborations.all %}
+        <li>{{ c.partner_institution }} {% if c.contact_person %} - {{ c.contact_person }}{% endif %}</li>
+      {% empty %}
+        <li class="text-muted">No collaborations</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
+

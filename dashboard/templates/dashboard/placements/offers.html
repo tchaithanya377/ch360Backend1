@@ -1,0 +1,50 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="container">
+  <h2>Offers</h2>
+  <form method="post" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-md-4">
+        <select class="form-select" name="application_id" required>
+          <option value="">Select application</option>
+          {% for a in applications %}
+          <option value="{{ a.id }}">{{ a.student.full_name }} - {{ a.job.title }} ({{ a.job.company.name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><input class="form-control" name="offered_role" placeholder="Offered role" required></div>
+      <div class="col-md-2"><input type="number" step="0.01" class="form-control" name="package_annual_ctc" placeholder="CTC" required></div>
+      <div class="col-md-3"><input class="form-control" name="joining_location" placeholder="Joining location"></div>
+      <div class="col-md-2"><input type="date" class="form-control" name="joining_date"></div>
+      <div class="col-md-2">
+        <select class="form-select" name="status">
+          {% for v, label in status_choices %}<option value="{{ v }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-12"><button class="btn btn-primary mt-2" type="submit">Save Offer</button></div>
+    </div>
+  </form>
+
+  <table class="table table-striped">
+    <thead><tr><th>Student</th><th>Job</th><th>Company</th><th>Role</th><th>CTC</th><th>Status</th><th>Offered</th></tr></thead>
+    <tbody>
+      {% for o in offers %}
+      <tr>
+        <td>{{ o.application.student.full_name }}</td>
+        <td>{{ o.application.job.title }}</td>
+        <td>{{ o.application.job.company.name }}</td>
+        <td>{{ o.offered_role }}</td>
+        <td>{{ o.package_annual_ctc }}</td>
+        <td>{{ o.get_status_display }}</td>
+        <td>{{ o.offered_at|date:'Y-m-d' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center">No offers.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+

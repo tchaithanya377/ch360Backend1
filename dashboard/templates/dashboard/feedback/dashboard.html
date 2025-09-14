@@ -1,0 +1,62 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Feedback Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid">
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<h2 class="mb-0"><i class="fa fa-comments"></i> Feedback</h2>
+		<a href="{% url 'dashboard:feedback_item_create' %}" class="btn btn-primary"><i class="fa fa-plus"></i> New Feedback</a>
+	</div>
+	<div class="row g-3 mb-4">
+		<div class="col-md-3">
+			<div class="card stats-card p-3">
+				<div class="d-flex justify-content-between align-items-center">
+					<div>
+						<div class="small">Total</div>
+						<div class="h4">{{ stats.total }}</div>
+					</div>
+					<i class="fa fa-list fa-2x"></i>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-2"><div class="card p-3"><div class="small">Open</div><div class="h4">{{ stats.open }}</div></div></div>
+		<div class="col-md-2"><div class="card p-3"><div class="small">In Review</div><div class="h4">{{ stats.in_review }}</div></div></div>
+		<div class="col-md-2"><div class="card p-3"><div class="small">Resolved</div><div class="h4">{{ stats.resolved }}</div></div></div>
+		<div class="col-md-2"><div class="card p-3"><div class="small">Closed</div><div class="h4">{{ stats.closed }}</div></div></div>
+	</div>
+	<div class="card">
+		<div class="card-header d-flex justify-content-between align-items-center">
+			<span>Recent Feedback</span>
+			<a href="{% url 'dashboard:feedback_items_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+		</div>
+		<div class="table-responsive">
+			<table class="table table-striped mb-0">
+				<thead>
+					<tr>
+						<th>Title</th>
+						<th>Category</th>
+						<th>Status</th>
+						<th>Priority</th>
+						<th>Department/Course/Faculty</th>
+						<th>Created</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for f in recent %}
+					<tr>
+						<td><a href="{% url 'dashboard:feedback_item_detail' f.id %}">{{ f.title }}</a></td>
+						<td>{{ f.category }}</td>
+						<td><span class="badge bg-secondary">{{ f.get_status_display }}</span></td>
+						<td><span class="badge bg-info">{{ f.get_priority_display }}</span></td>
+						<td>{% if f.department %}{{ f.department.name }}{% endif %}{% if f.course %} / {{ f.course.code }}{% endif %}{% if f.faculty %} / {{ f.faculty.name }}{% endif %}</td>
+						<td>{{ f.created_at|date:'Y-m-d H:i' }}</td>
+					</tr>
+					{% empty %}
+					<tr><td colspan="6" class="text-center text-muted">No feedback yet.</td></tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+{% endblock %}
+

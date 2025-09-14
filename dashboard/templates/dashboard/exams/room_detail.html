@@ -1,0 +1,263 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Exam Room Detail - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-door-open text-primary"></i>
+            Exam Room: {{ exam_room.name }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'dashboard:exams_rooms' %}'">
+                    <i class="fas fa-arrow-left"></i> Back to Rooms
+                </button>
+                <button type="button" class="btn btn-sm btn-success" onclick="editRoom()">
+                    <i class="fas fa-edit"></i> Edit Room
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Room Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Room Name:</label>
+                            <p>{{ exam_room.name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Room Number:</label>
+                            <p>{{ exam_room.room_number }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Building:</label>
+                            <p>{{ exam_room.building }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Floor:</label>
+                            <p>{{ exam_room.floor }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Capacity:</label>
+                            <p><span class="badge bg-info">{{ exam_room.capacity }} seats</span></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Room Type:</label>
+                            <p><span class="badge bg-primary">{{ exam_room.get_room_type_display }}</span></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Available Seats:</label>
+                            <p><span class="badge bg-success">{{ exam_room.available_seats }} seats</span></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p>
+                                {% if exam_room.is_available %}
+                                    <span class="badge bg-success">Available</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Occupied</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Features:</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% if exam_room.has_projector %}
+                                    <span class="badge bg-success me-1">Projector</span>
+                                {% endif %}
+                                {% if exam_room.has_computers %}
+                                    <span class="badge bg-primary me-1">Computers</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if exam_room.has_air_conditioning %}
+                                    <span class="badge bg-warning me-1">Air Conditioning</span>
+                                {% endif %}
+                                {% if exam_room.is_wheelchair_accessible %}
+                                    <span class="badge bg-info me-1">Wheelchair Accessible</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if exam_room.description %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description:</label>
+                        <p>{{ exam_room.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="text-primary">{{ exam_room.room_allocations.count }}</h3>
+                        <p class="text-muted">Total Allocations</p>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-success">{{ exam_room.room_allocations.filter.status='ACTIVE'|length }}</h3>
+                        <p class="text-muted">Active</p>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-warning">{{ exam_room.room_allocations.filter.status='PENDING'|length }}</h3>
+                        <p class="text-muted">Pending</p>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-info">{{ exam_room.room_allocations.filter.status='COMPLETED'|length }}</h3>
+                        <p class="text-muted">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Allocations -->
+    <div class="card shadow mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Room Allocations</h5>
+            <button type="button" class="btn btn-sm btn-primary" onclick="location.href='{% url 'dashboard:exams_room_allocations' %}'">
+                <i class="fas fa-plus"></i> Add Allocation
+            </button>
+        </div>
+        <div class="card-body">
+            {% if exam_room.room_allocations.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Exam Schedule</th>
+                                <th>Date & Time</th>
+                                <th>Allocated Seats</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for allocation in exam_room.room_allocations.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ allocation.exam_schedule.course.code }}</strong><br>
+                                    <small class="text-muted">{{ allocation.exam_schedule.title }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ allocation.exam_schedule.exam_date|date:"M d, Y" }}</strong><br>
+                                    <small class="text-muted">{{ allocation.exam_schedule.start_time|time:"H:i" }} - {{ allocation.exam_schedule.end_time|time:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ allocation.allocated_seats }} seats</span>
+                                </td>
+                                <td>
+                                    {% if allocation.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif allocation.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif allocation.status == 'COMPLETED' %}
+                                        <span class="badge bg-info">Completed</span>
+                                    {% elif allocation.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'dashboard:exams_room_allocation_detail' allocation.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No room allocations found</h5>
+                    <p class="text-muted">This room hasn't been allocated to any exams yet.</p>
+                    <button type="button" class="btn btn-primary" onclick="location.href='{% url 'dashboard:exams_room_allocations' %}'">
+                        <i class="fas fa-plus"></i> Add Allocation
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Room Actions -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-cogs"></i> Room Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="location.href='{% url 'dashboard:exams_room_allocations' %}'">
+                        <i class="fas fa-calendar-check fa-2x mb-2"></i><br>
+                        Manage Allocations
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-success w-100" onclick="toggleRoomStatus()">
+                        <i class="fas fa-toggle-on fa-2x mb-2"></i><br>
+                        Toggle Status
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-info w-100" onclick="viewRoomSchedule()">
+                        <i class="fas fa-calendar fa-2x mb-2"></i><br>
+                        View Schedule
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-warning w-100" onclick="editRoom()">
+                        <i class="fas fa-edit fa-2x mb-2"></i><br>
+                        Edit Room
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editRoom() {
+    // Implement edit functionality
+    console.log('Edit room:', '{{ exam_room.id }}');
+    // You can redirect to edit page or show edit modal
+}
+
+function toggleRoomStatus() {
+    if (confirm('Are you sure you want to toggle this room\'s availability status?')) {
+        // Implement toggle functionality
+        console.log('Toggle room status:', '{{ exam_room.id }}');
+    }
+}
+
+function viewRoomSchedule() {
+    // Implement view schedule functionality
+    console.log('View room schedule:', '{{ exam_room.id }}');
+    // You can redirect to schedule page or show schedule modal
+}
+</script>
+{% endblock %}

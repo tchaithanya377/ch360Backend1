@@ -1,0 +1,901 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard Overview - CampsHub360{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-tachometer-alt text-primary me-2"></i>
+    Dashboard Overview
+{% endblock %}
+
+{% block page_subtitle %}
+    Monitor your institution's performance and manage all aspects of campus life
+{% endblock %}
+
+{% block header_actions %}
+    <button class="btn btn-outline-primary" onclick="refreshData()" data-bs-toggle="tooltip" title="Refresh dashboard data">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-download"></i> Export
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf"></i> PDF Report</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel"></i> Excel Data</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-file-csv"></i> CSV Export</a></li>
+        </ul>
+    </div>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-user-circle"></i> {{ request.user.email|truncatechars:20 }}
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-user"></i> Profile</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Settings</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'dashboard:logout' %}" 
+                   onclick="return confirm('Are you sure you want to logout?')">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a></li>
+        </ul>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<!-- Statistics Cards -->
+<div class="row mb-5">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: var(--primary-gradient);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Total Users</h6>
+                        <h2 class="mb-0">{{ total_users }}</h2>
+                        <small class="text-white-50">+12% from last month</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: var(--secondary-gradient);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Roles</h6>
+                        <h2 class="mb-0">{{ total_roles }}</h2>
+                        <small class="text-white-50">Active roles</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: var(--success-gradient);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Permissions</h6>
+                        <h2 class="mb-0">{{ total_permissions }}</h2>
+                        <small class="text-white-50">System permissions</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: var(--warning-gradient);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Active Sessions</h6>
+                        <h2 class="mb-0">{{ active_sessions }}</h2>
+                        <small class="text-white-50">Currently online</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Statistics Row -->
+<div class="row mb-5">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: var(--info-gradient);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Total Students</h6>
+                        <h2 class="mb-0">{{ total_students }}</h2>
+                        <small class="text-white-50">Enrolled students</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: var(--dark-gradient);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Active Students</h6>
+                        <h2 class="mb-0">{{ active_students }}</h2>
+                        <small class="text-white-50">Currently active</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50 mb-2">Custom Fields</h6>
+                        <h2 class="mb-0">{{ total_custom_fields }}</h2>
+                        <small class="text-white-50">Configured fields</small>
+                    </div>
+                    <div class="stats-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="card-title text-muted mb-3">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'dashboard:students' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-users me-1"></i> Manage Students
+                    </a>
+                    <a href="{% url 'dashboard:custom_fields' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-cogs me-1"></i> Custom Fields
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Overview -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line text-primary me-2"></i>
+                    System Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                            <h6 class="mb-1">Database Status</h6>
+                            <span class="badge bg-success">Healthy</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-server fa-2x text-success mb-2"></i>
+                            <h6 class="mb-1">Server Status</h6>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-shield-alt fa-2x text-warning mb-2"></i>
+                            <h6 class="mb-1">Security</h6>
+                            <span class="badge bg-success">Secure</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <i class="fas fa-sync-alt fa-2x text-info mb-2"></i>
+                            <h6 class="mb-1">Last Backup</h6>
+                            <span class="badge bg-info">2 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mb-5">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-plus text-primary me-2"></i>
+                    Recent Users
+                </h5>
+                <a href="{% url 'dashboard:users' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Joined</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                            {{ user.email|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium">{{ user.email }}</div>
+                                            <small class="text-muted">{{ user.username|default:"No username" }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                                    No users found
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sign-in-alt text-primary me-2"></i>
+                    Recent Login Activity
+                </h5>
+                <span class="badge bg-primary">{{ recent_logins|length }} activities</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logins %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                            {{ log.user.email|first|upper|default:"S" }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium">{{ log.user.email|default:"System" }}</div>
+                                            <small class="text-muted">{{ log.ip|default:"-" }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if log.action == 'login' %}success{% else %}warning{% endif %}">
+                                        {{ log.action|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ log.created_at|date:"M d, H:i" }}</small>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="fas fa-history fa-2x mb-2 d-block"></i>
+                                    No recent activity
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Analytics Section -->
+<div class="row mb-5">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar text-primary me-2"></i>
+                    User Activity Trends
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-pie-chart text-primary me-2"></i>
+                    System Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="distributionChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-graduation-cap text-primary"></i>
+                    Recent Students
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Roll Number</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in recent_students %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'dashboard:student_detail' student.id %}" class="text-decoration-none">
+                                        {{ student.full_name }}
+                                    </a>
+                                </td>
+                                <td><strong>{{ student.roll_number }}</strong></td>
+                                <td>
+                                    <span class="badge bg-info">{{ student.get_grade_level_display }}</span>
+                                </td>
+                                <td>
+                                    {% if student.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">{{ student.status }}</span>
+                                    {% elif student.status == 'INACTIVE' %}
+                                        <span class="badge bg-warning">{{ student.status }}</span>
+                                    {% elif student.status == 'GRADUATED' %}
+                                        <span class="badge bg-primary">{{ student.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ student.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No students found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Endpoints Info -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-code text-primary"></i>
+                    Available API Endpoints
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Authentication APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-shield-alt"></i> Authentication APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>POST /api/auth/token/</code> - JWT token obtain</li>
+                            <li><code>POST /api/auth/token/refresh/</code> - JWT token refresh</li>
+                            <li><code>POST /api/accounts/register/</code> - User registration</li>
+                            <li><code>POST /api/accounts/token/</code> - Login (get tokens)</li>
+                            <li><code>POST /api/accounts/token/refresh/</code> - Refresh token</li>
+                            <li><code>GET/PATCH /api/accounts/me/</code> - User profile</li>
+                            <li><code>POST /api/accounts/logout/</code> - Logout</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Dashboard APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET /dashboard/api/stats/</code> - Dashboard statistics</li>
+                            <li><code>GET /dashboard/api/schema/</code> - Database schema</li>
+                            <li><code>GET /dashboard/api/models/</code> - Django models info</li>
+                            <li><code>GET /dashboard/api/table/{name}/</code> - Table data</li>
+                            <li><code>GET /dashboard/api/er/</code> - ER diagram data</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Student Management APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-graduation-cap"></i> Student Management APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET/POST /api/v1/students/students/</code> - Students CRUD</li>
+                            <li><code>GET/PUT/DELETE /api/v1/students/students/{id}/</code> - Student detail</li>
+                            <li><code>GET /api/v1/students/students/{id}/documents/</code> - Student documents</li>
+                            <li><code>GET /api/v1/students/students/{id}/enrollment-history/</code> - Enrollment history</li>
+                            <li><code>GET /api/v1/students/students/{id}/custom-fields/</code> - Student custom fields</li>
+                            <li><code>POST /api/v1/students/students/{id}/create-login/</code> - Create student login</li>
+                            <li><code>POST /api/v1/students/students/bulk-create/</code> - Bulk create students</li>
+                            <li><code>POST /api/v1/students/students/bulk-update/</code> - Bulk update students</li>
+                            <li><code>DELETE /api/v1/students/students/bulk-delete/</code> - Bulk delete students</li>
+                            <li><code>GET /api/v1/students/students/stats/</code> - Student statistics</li>
+                            <li><code>GET /api/v1/students/students/search/</code> - Search students</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Student Custom Fields APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-cogs"></i> Student Custom Fields APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET/POST /api/v1/students/custom-fields/</code> - Custom fields CRUD</li>
+                            <li><code>GET/PUT/DELETE /api/v1/students/custom-fields/{id}/</code> - Custom field detail</li>
+                            <li><code>GET /api/v1/students/custom-fields/stats/</code> - Custom fields statistics</li>
+                            <li><code>GET /api/v1/students/custom-fields/types/</code> - Available field types</li>
+                            <li><code>GET/POST /api/v1/students/custom-field-values/</code> - Custom field values CRUD</li>
+                            <li><code>GET /api/v1/students/custom-field-values/by-student/</code> - Values by student</li>
+                            <li><code>GET /api/v1/students/custom-field-values/by-field/</code> - Values by field</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Student Documents & Imports APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-file-alt"></i> Student Documents & Imports APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET/POST /api/v1/students/documents/</code> - Student documents CRUD</li>
+                            <li><code>GET/PUT/DELETE /api/v1/students/documents/{id}/</code> - Document detail</li>
+                            <li><code>GET/POST /api/v1/students/imports/</code> - Import records CRUD</li>
+                            <li><code>GET /api/v1/students/imports/stats/</code> - Import statistics</li>
+                            <li><code>GET/POST /api/v1/students/enrollment-history/</code> - Enrollment history CRUD</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Faculty Management APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-chalkboard-teacher"></i> Faculty Management APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET/POST /api/v1/faculty/api/faculty/</code> - Faculty CRUD</li>
+                            <li><code>GET/PUT/DELETE /api/v1/faculty/api/faculty/{id}/</code> - Faculty detail</li>
+                            <li><code>GET/POST /api/v1/faculty/api/subjects/</code> - Faculty subjects CRUD</li>
+                            <li><code>GET/POST /api/v1/faculty/api/schedules/</code> - Faculty schedules CRUD</li>
+                            <li><code>GET/POST /api/v1/faculty/api/leaves/</code> - Faculty leaves CRUD</li>
+                            <li><code>GET/POST /api/v1/faculty/api/performance/</code> - Performance records CRUD</li>
+                            <li><code>GET/POST /api/v1/faculty/api/documents/</code> - Faculty documents CRUD</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Faculty Custom Fields APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-cogs"></i> Faculty Custom Fields APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET/POST /api/v1/faculty/api/custom-fields/</code> - Faculty custom fields CRUD</li>
+                            <li><code>GET/PUT/DELETE /api/v1/faculty/api/custom-fields/{id}/</code> - Custom field detail</li>
+                            <li><code>GET/POST /api/v1/faculty/api/custom-field-values/</code> - Custom field values CRUD</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- API Testing Dashboard APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-vial"></i> API Testing Dashboard APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET/POST /dashboard/api-testing/collections/</code> - API collections CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/environments/</code> - API environments CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/requests/</code> - API requests CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/tests/</code> - API tests CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/test-results/</code> - Test results CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/test-suites/</code> - Test suites CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/test-suite-results/</code> - Suite results CRUD</li>
+                            <li><code>GET/POST /dashboard/api-testing/automations/</code> - API automations CRUD</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Dashboard Management APIs -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-cogs"></i> Dashboard Management APIs
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET /dashboard/api-testing/collections/{id}/detail/</code> - Collection details</li>
+                            <li><code>PUT /dashboard/api-testing/collections/{id}/update/</code> - Update collection</li>
+                            <li><code>POST /dashboard/api-testing/collections/{id}/duplicate/</code> - Duplicate collection</li>
+                            <li><code>DELETE /dashboard/api-testing/collections/{id}/delete/</code> - Delete collection</li>
+                            <li><code>GET /dashboard/api-testing/environments/{id}/detail/</code> - Environment details</li>
+                            <li><code>PUT /dashboard/api-testing/environments/{id}/update/</code> - Update environment</li>
+                            <li><code>POST /dashboard/api-testing/environments/{id}/duplicate/</code> - Duplicate environment</li>
+                            <li><code>POST /dashboard/api-testing/environments/{id}/set-default/</code> - Set default environment</li>
+                            <li><code>DELETE /dashboard/api-testing/environments/{id}/delete/</code> - Delete environment</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- API Documentation Note -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>API Documentation:</strong> 
+                            For detailed API documentation, authentication methods, request/response formats, and examples, 
+                            please refer to the individual app documentation files:
+                            <ul class="mb-0 mt-2">
+                                <li><a href="#" class="text-decoration-none">Students API Documentation</a></li>
+                                <li><a href="#" class="text-decoration-none">Faculty API Documentation</a></li>
+                                <li><a href="#" class="text-decoration-none">Accounts API Documentation</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Academics Statistics Row -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Total Courses</h6>
+                        <h2 class="mb-0">{{ total_courses|default:0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-book-open fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Total Syllabi</h6>
+                        <h2 class="mb-0">{{ total_syllabi|default:0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Active Timetables</h6>
+                        <h2 class="mb-0">{{ total_timetables|default:0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Total Enrollments</h6>
+                        <h2 class="mb-0">{{ total_enrollments|default:0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-graduate fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fee Management Statistics Row -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Total Fees Due</h6>
+                        <h2 class="mb-0">₹{{ total_fees_due|default:0|floatformat:2 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-money-bill-wave fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Total Fees Paid</h6>
+                        <h2 class="mb-0">₹{{ total_fees_paid|default:0|floatformat:2 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Fee Categories</h6>
+                        <h2 class="mb-0">{{ total_fee_categories|default:0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tags fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-white-50">Overdue Fees</h6>
+                        <h2 class="mb-0">{{ overdue_fees_count|default:0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function refreshData() {
+    // Show loading state
+    const refreshBtn = document.querySelector('[onclick="refreshData()"]');
+    const originalText = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<span class="loading"></span> Refreshing...';
+    refreshBtn.disabled = true;
+    
+    // Reload page after a short delay
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+// Initialize Charts
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Activity Chart
+        const activityCtx = document.getElementById('activityChart');
+        if (activityCtx) {
+            // Destroy existing chart if it exists
+            if (window.activityChart && typeof window.activityChart.destroy === 'function') {
+                window.activityChart.destroy();
+            }
+            window.activityChart = new Chart(activityCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'User Logins',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'New Users',
+                    data: [2, 3, 20, 5, 1, 4],
+                    borderColor: '#f093fb',
+                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Distribution Chart
+    const distributionCtx = document.getElementById('distributionChart');
+    if (distributionCtx) {
+        // Destroy existing chart if it exists
+        if (window.distributionChart && typeof window.distributionChart.destroy === 'function') {
+            window.distributionChart.destroy();
+        }
+        window.distributionChart = new Chart(distributionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Students', 'Faculty', 'Admin', 'Staff'],
+                datasets: [{
+                    data: [{{ total_students }}, 15, 5, 8],
+                    backgroundColor: [
+                        '#667eea',
+                        '#f093fb',
+                        '#4facfe',
+                        '#43e97b'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+    }
+    
+    // Add smooth animations to stats cards
+    const statsCards = document.querySelectorAll('.stats-card');
+    statsCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('animate__animated', 'animate__fadeInUp');
+    });
+    
+    // Add hover effects to table rows
+    const tableRows = document.querySelectorAll('.table tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(5px)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+});
+
+// Add real-time clock
+function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    const dateString = now.toLocaleDateString();
+    
+    // Update clock if element exists
+    const clockElement = document.getElementById('live-clock');
+    if (clockElement) {
+        clockElement.innerHTML = `${timeString} - ${dateString}`;
+    }
+}
+
+// Update clock every second
+setInterval(updateClock, 1000);
+updateClock(); // Initial call
+</script>
+{% endblock %}
+{% endblock %}

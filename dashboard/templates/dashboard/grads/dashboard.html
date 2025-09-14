@@ -1,0 +1,60 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h2 class="mb-0">Grads & Marks</h2>
+  <div>
+    <a class="btn btn-primary btn-sm" href="{% url 'dashboard:grads_grade_scales' %}"><i class="fas fa-sliders-h"></i> Grade Scales</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'dashboard:grads_terms' %}"><i class="fas fa-calendar"></i> Terms</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'dashboard:grads_results' %}"><i class="fas fa-list"></i> Results</a>
+  </div>
+ </div>
+
+<div class="row g-3">
+  <div class="col-6 col-md-3">
+    <div class="card stats-card p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-bold">Grade Scales</div>
+          <div class="fs-4">{{ grade_scales_count }}</div>
+        </div>
+        <i class="fas fa-sliders-h fa-2x"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stats-card p-3" style="background: linear-gradient(135deg,#36d1dc,#5b86e5);">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-bold">Terms</div>
+          <div class="fs-4">{{ terms_count }}</div>
+        </div>
+        <i class="fas fa-calendar fa-2x"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stats-card p-3" style="background: linear-gradient(135deg,#11998e,#38ef7d);">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-bold">Results</div>
+          <div class="fs-4">{{ results_count }}</div>
+        </div>
+        <i class="fas fa-poll fa-2x"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stats-card p-3" style="background: linear-gradient(135deg,#ee0979,#ff6a00);">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-bold">Graduate Records</div>
+          <div class="fs-4">{{ students_with_records }}</div>
+        </div>
+        <i class="fas fa-certificate fa-2x"></i>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

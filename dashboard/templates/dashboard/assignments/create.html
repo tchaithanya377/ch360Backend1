@@ -1,0 +1,473 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Create Assignment - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Create Assignment</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-plus text-primary me-2"></i>
+                        Create New Assignment
+                    </h1>
+                    <p class="text-muted mb-0">Create a new assignment for your students</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'dashboard:assignments_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-edit me-2"></i>Assignment Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">Assignment Title <span class="text-danger">*</span></label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                    <div class="text-danger small">{{ form.category.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description <span class="text-danger">*</span></label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.instructions.id_for_label }}" class="form-label">Instructions</label>
+                            {{ form.instructions }}
+                            {% if form.instructions.errors %}
+                                <div class="text-danger small">{{ form.instructions.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Assignment Settings -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.max_marks.id_for_label }}" class="form-label">Maximum Marks <span class="text-danger">*</span></label>
+                                {{ form.max_marks }}
+                                {% if form.max_marks.errors %}
+                                    <div class="text-danger small">{{ form.max_marks.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.due_date.id_for_label }}" class="form-label">Due Date <span class="text-danger">*</span></label>
+                                {{ form.due_date }}
+                                {% if form.due_date.errors %}
+                                    <div class="text-danger small">{{ form.due_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.max_group_size.id_for_label }}" class="form-label">Max Group Size</label>
+                                {{ form.max_group_size }}
+                                {% if form.max_group_size.errors %}
+                                    <div class="text-danger small">{{ form.max_group_size.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Assignment Type -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.is_group_assignment }}
+                                    <label class="form-check-label" for="{{ form.is_group_assignment.id_for_label }}">
+                                        Group Assignment
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.late_submission_allowed }}
+                                    <label class="form-check-label" for="{{ form.late_submission_allowed.id_for_label }}">
+                                        Allow Late Submissions
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Academic Year and Semester -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.academic_year.id_for_label }}" class="form-label">Academic Year</label>
+                                {{ form.academic_year }}
+                                {% if form.academic_year.errors %}
+                                    <div class="text-danger small">{{ form.academic_year.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select academic year from the database</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.semester.id_for_label }}" class="form-label">Semester</label>
+                                {{ form.semester }}
+                                {% if form.semester.errors %}
+                                    <div class="text-danger small">{{ form.semester.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select semester from the database</div>
+                            </div>
+                        </div>
+
+                        <!-- Target Audience -->
+                        <div class="mb-3">
+                            <label class="form-label">Assign To</label>
+                            
+                            <!-- Departments -->
+                            <div class="mb-3">
+                                <label class="form-label">Departments</label>
+                                <div class="row">
+                                    {% for choice in form.assigned_to_departments %}
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.assigned_to_departments.errors %}
+                                    <div class="text-danger small">{{ form.assigned_to_departments.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Academic Programs -->
+                            <div class="mb-3">
+                                <label class="form-label">Academic Programs</label>
+                                <div class="row">
+                                    {% for choice in form.assigned_to_programs %}
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.assigned_to_programs.errors %}
+                                    <div class="text-danger small">{{ form.assigned_to_programs.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Courses -->
+                            <div class="mb-3">
+                                <label class="form-label">Courses</label>
+                                <div class="row">
+                                    {% for choice in form.assigned_to_courses %}
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.assigned_to_courses.errors %}
+                                    <div class="text-danger small">{{ form.assigned_to_courses.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Course Sections -->
+                            <div class="mb-3">
+                                <label class="form-label">Course Sections</label>
+                                <div class="row">
+                                    {% for choice in form.assigned_to_course_sections %}
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.assigned_to_course_sections.errors %}
+                                    <div class="text-danger small">{{ form.assigned_to_course_sections.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Specific Students -->
+                            <div class="mb-3">
+                                <label class="form-label">Specific Students (Optional)</label>
+                                <div class="row" id="student-list">
+                                    {% for choice in form.assigned_to_students %}
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.assigned_to_students.errors %}
+                                    <div class="text-danger small">{{ form.assigned_to_students.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Select departments or course sections above to filter students dynamically.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard:assignments_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Create Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Help Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-question-circle me-2"></i>Help & Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary">Assignment Title</h6>
+                        <p class="small text-muted mb-0">Choose a clear, descriptive title that students will easily understand.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Description</h6>
+                        <p class="small text-muted mb-0">Provide a detailed description of what students need to accomplish.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Instructions</h6>
+                        <p class="small text-muted mb-0">Include specific steps, format requirements, and submission guidelines.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Due Date</h6>
+                        <p class="small text-muted mb-0">Set a realistic deadline that gives students enough time to complete the work.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Group Assignments</h6>
+                        <p class="small text-muted mb-0">Enable group work for collaborative projects. Set appropriate group sizes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tags me-2"></i>Available Categories
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if categories %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for category in categories %}
+                                <span class="badge" style="background-color: {{ category.color_code }};">
+                                    {{ category.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No categories available</p>
+                        {% if user.is_staff %}
+                            <a href="{% url 'dashboard:assignment_categories' %}" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="fas fa-plus me-1"></i>Create Category
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set default due date to tomorrow
+    document.addEventListener('DOMContentLoaded', function() {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dueDateInput = document.getElementById('{{ form.due_date.id_for_label }}');
+        if (dueDateInput && !dueDateInput.value) {
+            dueDateInput.value = tomorrow.toISOString().slice(0, 16);
+        }
+    });
+
+    // Handle group assignment checkbox
+    document.addEventListener('DOMContentLoaded', function() {
+        const groupAssignmentCheckbox = document.getElementById('{{ form.is_group_assignment.id_for_label }}');
+        const maxGroupSizeInput = document.getElementById('{{ form.max_group_size.id_for_label }}');
+        
+        if (groupAssignmentCheckbox && maxGroupSizeInput) {
+            groupAssignmentCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    maxGroupSizeInput.value = 2;
+                    maxGroupSizeInput.min = 2;
+                } else {
+                    maxGroupSizeInput.value = 1;
+                    maxGroupSizeInput.min = 1;
+                }
+            });
+        }
+    });
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const title = document.getElementById('{{ form.title.id_for_label }}').value.trim();
+        const description = document.getElementById('{{ form.description.id_for_label }}').value.trim();
+        const maxMarks = document.getElementById('{{ form.max_marks.id_for_label }}').value;
+        const dueDate = document.getElementById('{{ form.due_date.id_for_label }}').value;
+        
+        if (!title || !description || !maxMarks || !dueDate) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return;
+        }
+        
+        // Check if at least one target is selected
+        const assignedPrograms = document.querySelectorAll('input[name="assigned_to_programs"]:checked');
+        const assignedDepartments = document.querySelectorAll('input[name="assigned_to_departments"]:checked');
+        const assignedCourses = document.querySelectorAll('input[name="assigned_to_courses"]:checked');
+        const assignedCourseSections = document.querySelectorAll('input[name="assigned_to_course_sections"]:checked');
+        const assignedStudents = document.querySelectorAll('input[name="assigned_to_students"]:checked');
+        
+        if (assignedPrograms.length === 0 && assignedDepartments.length === 0 && 
+            assignedCourses.length === 0 && assignedCourseSections.length === 0 && assignedStudents.length === 0) {
+            e.preventDefault();
+            alert('Please assign the assignment to at least one department, program, course, course section, or student.');
+            return;
+        }
+    });
+
+    // Dynamic student filtering based on department and course section selection
+    function filterStudents() {
+        const departmentIds = Array.from(document.querySelectorAll('.department-filter:checked'))
+            .map(cb => cb.dataset.departmentId);
+        const courseSectionIds = Array.from(document.querySelectorAll('.course-section-filter:checked'))
+            .map(cb => cb.dataset.sectionId);
+        const academicYear = document.getElementById('academic_year').value;
+        
+        if (departmentIds.length === 0 && courseSectionIds.length === 0 && !academicYear) {
+            return;
+        }
+        
+        const params = new URLSearchParams();
+        if (departmentIds.length > 0) {
+            params.append('department_id', departmentIds[0]); // Take first selected department
+        }
+        if (courseSectionIds.length > 0) {
+            params.append('course_section_id', courseSectionIds[0]); // Take first selected section
+        }
+        if (academicYear) {
+            params.append('academic_year', academicYear);
+        }
+        
+        fetch(`{% url 'dashboard:filter_students_ajax' %}?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStudentList(data.students);
+                }
+            })
+            .catch(error => {
+                console.error('Error filtering students:', error);
+            });
+    }
+    
+    function updateStudentList(students) {
+        const studentContainer = document.getElementById('student-list');
+        if (!studentContainer) return;
+        
+        studentContainer.innerHTML = '';
+        
+        students.forEach(student => {
+            const div = document.createElement('div');
+            div.className = 'col-md-6';
+            div.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" 
+                           id="student_${student.id}" name="assigned_students" value="${student.id}">
+                    <label class="form-check-label" for="student_${student.id}">
+                        ${student.name} (${student.roll_number})
+                        ${student.academic_year ? ` - ${student.academic_year}` : ''}
+                        ${student.section ? ` - Section ${student.section}` : ''}
+                    </label>
+                </div>
+            `;
+            studentContainer.appendChild(div);
+        });
+    }
+    
+    // Add event listeners for filtering
+    document.querySelectorAll('.department-filter, .course-section-filter').forEach(checkbox => {
+        checkbox.addEventListener('change', filterStudents);
+    });
+    
+    document.getElementById('academic_year').addEventListener('input', 
+        debounce(filterStudents, 500));
+    
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+</script>
+{% endblock %}

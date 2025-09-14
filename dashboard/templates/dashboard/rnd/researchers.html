@@ -1,0 +1,34 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Researchers{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Researchers</h3>
+    <form class="d-flex" method="get">
+      <input class="form-control me-2" type="search" placeholder="Search" name="search" value="{{ search }}">
+      <input class="form-control me-2" type="text" placeholder="Department" name="department" value="{{ department }}">
+      <button class="btn btn-primary" type="submit">Filter</button>
+    </form>
+  </div>
+  <div class="card p-3">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover mb-0">
+        <thead><tr><th>Name</th><th>Title</th><th>Department</th><th>ORCID</th></tr></thead>
+        <tbody>
+          {% for r in researchers %}
+          <tr>
+            <td><a href="{% url 'dashboard:rnd_researcher_detail' r.id %}">{{ r.user.get_full_name|default:r.user.username }}</a></td>
+            <td>{{ r.title|default:'-' }}</td>
+            <td>{{ r.department|default:'-' }}</td>
+            <td>{{ r.orcid|default:'-' }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted">No researchers found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

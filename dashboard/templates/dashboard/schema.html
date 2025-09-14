@@ -1,0 +1,260 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Database Schema - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-database text-primary"></i>
+        Database Schema
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a class="btn btn-success" href="{% url 'dashboard:home' %}">
+            <i class="fas fa-file-excel"></i> Download Schema (Excel)
+        </a>
+        <a class="btn btn-outline-success ms-2" href="{% url 'dashboard:home' %}">
+            <i class="fas fa-file-excel"></i> Download Single Sheet
+        </a>
+        <a class="btn btn-outline-secondary ms-2" href="{% url 'dashboard:home' %}">
+            <i class="fas fa-file-csv"></i> Download CSV
+        </a>
+        <button class="btn btn-primary ms-2" onclick="exportSchema()">
+            <i class="fas fa-download"></i> Export Schema
+        </button>
+        <button class="btn btn-secondary ms-2" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Schema Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table text-primary"></i>
+                    Tables Overview ({{ schema_info|length }} tables)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for table in schema_info %}
+                    <div class="col-md-4 col-lg-3 mb-3">
+                        <div class="card border-primary h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-table"></i>
+                                    {{ table.table }}
+                                </h6>
+                                <p class="card-text text-muted">
+                                    {{ table.columns|length }} columns
+                                </p>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewTable('{{ table.table }}')">
+                                    View Details
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="viewData('{{ table.table }}')">
+                                    View Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Schema -->
+{% for table in schema_info %}
+<div class="card mb-4" id="table-{{ table.table }}">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-table text-primary"></i>
+            {{ table.table }}
+            <span class="badge bg-secondary ms-2">{{ table.columns|length }} columns</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Column</th>
+                        <th>Type</th>
+                        <th>Null</th>
+                        <th>Default</th>
+                        <th>Primary Key</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for column in table.columns %}
+                    <tr>
+                        <td>
+                            <strong>{{ column.1 }}</strong>
+                            {% if column.5 %}
+                                <i class="fas fa-key text-warning ms-1" title="Primary Key"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code>{{ column.2 }}</code>
+                        </td>
+                        <td>
+                            {% if column.3 %}
+                                <span class="badge bg-danger">NOT NULL</span>
+                            {% else %}
+                                <span class="badge bg-success">NULL</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if column.4 %}
+                                <code>{{ column.4 }}</code>
+                            {% else %}
+                                <span class="text-muted">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if column.5 %}
+                                <i class="fas fa-check text-success"></i>
+                            {% else %}
+                                <i class="fas fa-times text-muted"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Table Data Modal -->
+<div class="modal fade" id="tableDataModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Table Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="tableDataContent">
+                <!-- Table data will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewTable(tableName) {
+    document.getElementById('table-' + tableName).scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+}
+
+function viewData(tableName) {
+    fetch(`/dashboard/api/table/${tableName}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('tableDataContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error: ${data.error}
+                    </div>
+                `;
+            } else {
+                const safeTable = data.table || 'unknown';
+                const safeCount = (typeof data.count === 'number') ? data.count : (data.data ? data.data.length : 0);
+                let tableHtml = `
+                    <h6>Table: ${safeTable} (${safeCount} rows)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                `;
+                
+                if (data.columns && Array.isArray(data.columns)) {
+                    data.columns.forEach(column => {
+                        tableHtml += `<th>${column}</th>`;
+                    });
+                }
+                
+                tableHtml += `
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                if (data.data && Array.isArray(data.data)) {
+                    data.data.slice(0, 50).forEach(row => {
+                        tableHtml += '<tr>';
+                        if (data.columns && Array.isArray(data.columns)) {
+                            data.columns.forEach(column => {
+                                let value = row[column];
+                                if (value === null || value === undefined) {
+                                    value = '<span class="text-muted">NULL</span>';
+                                } else if (typeof value === 'string' && value.length > 50) {
+                                    value = value.substring(0, 50) + '...';
+                                }
+                                tableHtml += `<td>${value}</td>`;
+                            });
+                        }
+                        tableHtml += '</tr>';
+                    });
+                }
+                
+                if (data.data && Array.isArray(data.data) && data.data.length > 50) {
+                    tableHtml += `
+                        <tr>
+                            <td colspan="${(data.columns && Array.isArray(data.columns)) ? data.columns.length : 1}" class="text-center text-muted">
+                                ... and ${data.data.length - 50} more rows
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('tableDataContent').innerHTML = tableHtml;
+            }
+            
+            new bootstrap.Modal(document.getElementById('tableDataModal')).show();
+        })
+        .catch(error => {
+            console.error('Error fetching table data:', error);
+            document.getElementById('tableDataContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error loading table data: ${error.message}
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('tableDataModal')).show();
+        });
+}
+
+function exportSchema() {
+    fetch('/dashboard/api/schema/')
+        .then(response => response.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'database_schema.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('Error exporting schema:', error);
+            alert('Error exporting schema');
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,316 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Assignment Categories - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Categories</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-tags text-primary me-2"></i>
+                        Assignment Categories
+                    </h1>
+                    <p class="text-muted mb-0">Manage assignment categories for better organization</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                        <i class="fas fa-plus me-1"></i>Create Category
+                    </button>
+                    <a href="{% url 'dashboard:assignments_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list me-2"></i>Categories List
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if categories %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Color</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in categories %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge me-2" style="background-color: {{ category.color_code }};">
+                                                    {{ category.name }}
+                                                </span>
+                                                <strong>{{ category.name }}</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if category.description %}
+                                                {{ category.description|truncatechars:50 }}
+                                            {% else %}
+                                                <span class="text-muted">No description</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="color-preview me-2" 
+                                                     style="width: 20px; height: 20px; background-color: {{ category.color_code }}; border-radius: 3px;"></div>
+                                                <code>{{ category.color_code }}</code>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if category.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {% if category.is_active %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>{{ category.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="editCategory('{{ category.id }}', '{{ category.name }}', '{{ category.description }}', '{{ category.color_code }}', {{ category.is_active|yesno:"true,false" }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deleteCategory('{{ category.id }}', '{{ category.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No categories found</h5>
+                            <p class="text-muted">Create your first category to organize assignments better.</p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                                <i class="fas fa-plus me-1"></i>Create Category
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Category Modal -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createCategoryModalLabel">
+                        <i class="fas fa-plus me-2"></i>Create New Category
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="create_name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="create_name" name="name" required
+                               placeholder="Enter category name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="create_description" name="description" rows="3"
+                                  placeholder="Enter category description (optional)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_color" class="form-label">Color</label>
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color" id="create_color" 
+                                   name="color_code" value="#007bff" title="Choose color">
+                            <input type="text" class="form-control" id="create_color_text" 
+                                   name="color_code_text" value="#007bff" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Create Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="category_id" id="edit_category_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editCategoryModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit Category
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_color" class="form-label">Color</label>
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color" id="edit_color" 
+                                   name="color_code" title="Choose color">
+                            <input type="text" class="form-control" id="edit_color_text" 
+                                   name="color_code_text" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                            <label class="form-check-label" for="edit_is_active">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Update Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Category Modal -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="category_id" id="delete_category_id">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteCategoryModalLabel">
+                        <i class="fas fa-trash me-2"></i>Delete Category
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    <p>Are you sure you want to delete the category <strong id="delete_category_name"></strong>?</p>
+                    <p class="text-muted">This will not delete assignments using this category, but they will no longer be categorized.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Color picker synchronization
+    function syncColorPickers(colorInput, textInput) {
+        colorInput.addEventListener('input', function() {
+            textInput.value = this.value;
+        });
+        
+        textInput.addEventListener('input', function() {
+            if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                colorInput.value = this.value;
+            }
+        });
+    }
+    
+    // Initialize color pickers
+    syncColorPickers(document.getElementById('create_color'), document.getElementById('create_color_text'));
+    syncColorPickers(document.getElementById('edit_color'), document.getElementById('edit_color_text'));
+    
+    // Edit category function
+    function editCategory(id, name, description, color, isActive) {
+        document.getElementById('edit_category_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_description').value = description || '';
+        document.getElementById('edit_color').value = color;
+        document.getElementById('edit_color_text').value = color;
+        document.getElementById('edit_is_active').checked = isActive;
+        
+        new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+    }
+    
+    // Delete category function
+    function deleteCategory(id, name) {
+        document.getElementById('delete_category_id').value = id;
+        document.getElementById('delete_category_name').textContent = name;
+        
+        new bootstrap.Modal(document.getElementById('deleteCategoryModal')).show();
+    }
+    
+    // Form validation
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const nameInput = this.querySelector('input[name="name"]');
+            if (nameInput && !nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Category name is required.');
+                nameInput.focus();
+                return;
+            }
+        });
+    });
+    
+    // Auto-focus on name input when modal opens
+    document.getElementById('createCategoryModal').addEventListener('shown.bs.modal', function() {
+        document.getElementById('create_name').focus();
+    });
+    
+    document.getElementById('editCategoryModal').addEventListener('shown.bs.modal', function() {
+        document.getElementById('edit_name').focus();
+    });
+</script>
+{% endblock %}

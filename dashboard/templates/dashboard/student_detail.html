@@ -1,0 +1,452 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ student.full_name }} - Student Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-graduate"></i> {{ student.full_name }}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'dashboard:students' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Students
+            </a>
+            <a href="/admin/students/student/{{ student.id }}/change/" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit"></i> Edit Student
+            </a>
+            {% if student.user %}
+            <a href="{% url 'dashboard:student_sessions' %}?user={{ student.user.id }}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-clock"></i> View Sessions
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Student Information -->
+<div class="row">
+    <!-- Basic Information -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Basic Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-4"><strong>Roll Number:</strong></div>
+                    <div class="col-sm-8">{{ student.roll_number }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Full Name:</strong></div>
+                    <div class="col-sm-8">{{ student.full_name }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Date of Birth:</strong></div>
+                    <div class="col-sm-8">{{ student.date_of_birth }} (Age: {{ student.age }})</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Gender:</strong></div>
+                    <div class="col-sm-8">{{ student.get_gender_display }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Email:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.email %}
+                            <a href="mailto:{{ student.email }}">{{ student.email }}</a>
+                        {% else %}
+                            <span class="text-muted">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Phone:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.student_mobile %}
+                            <a href="tel:{{ student.student_mobile }}">{{ student.student_mobile }}</a>
+                        {% else %}
+                            <span class="text-muted">Not provided</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-graduation-cap"></i> Academic Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-4"><strong>Grade Level:</strong></div>
+                    <div class="col-sm-8">
+                        <span class="badge bg-info">{{ student.get_grade_level_display }}</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Section:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.section %}
+                            <span class="badge bg-secondary">{{ student.section }}</span>
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Academic Year:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.academic_year %}
+                            {{ student.academic_year }}
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Quota:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.quota %}
+                            <span class="badge bg-warning">{{ student.get_quota_display }}</span>
+                        {% else %}
+                            <span class="text-muted">Not specified</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Rank:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.rank %}
+                            {{ student.rank }}
+                        {% else %}
+                            <span class="text-muted">Not ranked</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4"><strong>Status:</strong></div>
+                    <div class="col-sm-8">
+                        {% if student.status == 'ACTIVE' %}
+                            <span class="badge bg-success">{{ student.status }}</span>
+                        {% elif student.status == 'INACTIVE' %}
+                            <span class="badge bg-warning">{{ student.status }}</span>
+                        {% elif student.status == 'GRADUATED' %}
+                            <span class="badge bg-primary">{{ student.status }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ student.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Address and Contact Information -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map-marker-alt"></i> Address Information
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if student.full_address %}
+                    <p><strong>Full Address:</strong></p>
+                    <p>{{ student.full_address }}</p>
+                {% else %}
+                    <p class="text-muted">No address information provided</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users"></i> Parent Information
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if student.father_name or student.mother_name %}
+                    {% if student.father_name %}
+                        <p><strong>Father:</strong> {{ student.father_name }}</p>
+                        {% if student.father_mobile %}
+                            <p><strong>Father's Phone:</strong> <a href="tel:{{ student.father_mobile }}">{{ student.father_mobile }}</a></p>
+                        {% endif %}
+                    {% endif %}
+                    {% if student.mother_name %}
+                        <p><strong>Mother:</strong> {{ student.mother_name }}</p>
+                        {% if student.mother_mobile %}
+                            <p><strong>Mother's Phone:</strong> <a href="tel:{{ student.mother_mobile }}">{{ student.mother_mobile }}</a></p>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">No parent information provided</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Information -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-key"></i> Login Information
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if student.user %}
+                    <div class="row">
+                        <div class="col-sm-3"><strong>Login Status:</strong></div>
+                        <div class="col-sm-9">
+                            <span class="badge bg-success">
+                                <i class="fas fa-check"></i> Active Login Account
+                            </span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3"><strong>Username:</strong></div>
+                        <div class="col-sm-9">{{ student.user.username }}</div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3"><strong>Email:</strong></div>
+                        <div class="col-sm-9">{{ student.user.email }}</div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3"><strong>Account Created:</strong></div>
+                        <div class="col-sm-9">{{ student.user.date_joined|date:"F j, Y" }}</div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3"><strong>Last Login:</strong></div>
+                        <div class="col-sm-9">
+                            {% if student.user.last_login %}
+                                {{ student.user.last_login|date:"F j, Y g:i A" }}
+                            {% else %}
+                                <span class="text-muted">Never logged in</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3"><strong>Default Password:</strong></div>
+                        <div class="col-sm-9">
+                            <code>Campus@360</code>
+                            <small class="text-muted d-block">Students should change this on first login</small>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>No Login Account:</strong> This student doesn't have a login account yet. 
+                        One will be created automatically when the student is saved.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Fields -->
+{% if custom_fields %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs"></i> Custom Fields
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for custom_value in custom_fields %}
+                    <div class="col-md-6 mb-3">
+                        <div class="row">
+                            <div class="col-sm-4"><strong>{{ custom_value.custom_field.label }}:</strong></div>
+                            <div class="col-sm-8">
+                                {% if custom_value.custom_field.field_type == 'file' and custom_value.file_value %}
+                                    <a href="{{ custom_value.file_value.url }}" target="_blank">
+                                        <i class="fas fa-file"></i> View File
+                                    </a>
+                                {% else %}
+                                    {{ custom_value.value|default:"Not provided" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Enrollment History -->
+{% if enrollment_history %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> Enrollment History
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Academic Year</th>
+                                <th>Grade Level</th>
+                                <th>Enrollment Date</th>
+                                <th>Completion Date</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for enrollment in enrollment_history %}
+                            <tr>
+                                <td>{{ enrollment.academic_year }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ enrollment.get_grade_level_display }}</span>
+                                </td>
+                                <td>{{ enrollment.enrollment_date|date:"M j, Y" }}</td>
+                                <td>
+                                    {% if enrollment.completion_date %}
+                                        {{ enrollment.completion_date|date:"M j, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if enrollment.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">{{ enrollment.status }}</span>
+                                    {% elif enrollment.status == 'INACTIVE' %}
+                                        <span class="badge bg-warning">{{ enrollment.status }}</span>
+                                    {% elif enrollment.status == 'GRADUATED' %}
+                                        <span class="badge bg-primary">{{ enrollment.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ enrollment.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ enrollment.notes|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Documents -->
+{% if documents %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-alt"></i> Documents
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for document in documents %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ document.title }}</h6>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <strong>Type:</strong> {{ document.get_document_type_display }}<br>
+                                        <strong>Uploaded:</strong> {{ document.created_at|date:"M j, Y" }}<br>
+                                        {% if document.uploaded_by %}
+                                            <strong>By:</strong> {{ document.uploaded_by.email }}
+                                        {% endif %}
+                                    </small>
+                                </p>
+                                {% if document.description %}
+                                    <p class="card-text">{{ document.description }}</p>
+                                {% endif %}
+                                <a href="{{ document.document_file.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- System Information -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-3"><strong>Created:</strong></div>
+                    <div class="col-sm-9">{{ student.created_at|date:"F j, Y g:i A" }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3"><strong>Last Updated:</strong></div>
+                    <div class="col-sm-9">{{ student.updated_at|date:"F j, Y g:i A" }}</div>
+                </div>
+                {% if student.created_by %}
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3"><strong>Created By:</strong></div>
+                    <div class="col-sm-9">{{ student.created_by.email }}</div>
+                </div>
+                {% endif %}
+                {% if student.updated_by %}
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3"><strong>Last Updated By:</strong></div>
+                    <div class="col-sm-9">{{ student.updated_by.email }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

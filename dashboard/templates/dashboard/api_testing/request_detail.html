@@ -1,0 +1,63 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ api_request.name }} - Request Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>{{ api_request.name }}</h1>
+            <p class="text-muted">{{ api_request.description|default:"No description" }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Request Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Method:</strong> <span class="badge badge-{{ api_request.method|lower }}">{{ api_request.method }}</span></p>
+                    <p><strong>URL:</strong> <code>{{ api_request.url }}</code></p>
+                    <p><strong>Collection:</strong> {{ api_request.collection.name }}</p>
+                    <p><strong>Body Type:</strong> {{ api_request.body_type }}</p>
+                    <p><strong>Timeout:</strong> {{ api_request.timeout }} seconds</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-success btn-block mb-2" onclick="executeRequest('{{ api_request.id }}')">
+                        <i class="fas fa-play"></i> Execute Request
+                    </button>
+                    <a href="{% url 'dashboard:api_testing_workspace' %}" class="btn btn-primary btn-block">
+                        <i class="fas fa-edit"></i> Open in Workspace
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function executeRequest(requestId) {
+    $.post(`/dashboard/api-testing/requests/${requestId}/execute/`)
+        .done(function(response) {
+            alert('Request executed successfully!');
+        })
+        .fail(function(xhr) {
+            alert('Failed to execute request: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        });
+}
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,479 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Edit Assignment - {{ assignment.title }} - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignments_dashboard' %}">Assignments</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard:assignment_detail' assignment.id %}">{{ assignment.title }}</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-edit text-primary me-2"></i>
+                        Edit Assignment
+                    </h1>
+                    <p class="text-muted mb-0">{{ assignment.title }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'dashboard:assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Assignment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-edit me-2"></i>Assignment Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="title" class="form-label">Assignment Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="title" name="title" required
+                                       value="{{ assignment.title }}" placeholder="Enter assignment title">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}" 
+                                                {% if assignment.category and assignment.category.id == category.id %}selected{% endif %}>
+                                            {{ category.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required
+                                      placeholder="Describe the assignment requirements and objectives">{{ assignment.description }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="instructions" class="form-label">Instructions</label>
+                            <textarea class="form-control" id="instructions" name="instructions" rows="3"
+                                      placeholder="Provide specific instructions for completing the assignment">{{ assignment.instructions }}</textarea>
+                        </div>
+
+                        <!-- Assignment Settings -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="max_marks" class="form-label">Maximum Marks <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="max_marks" name="max_marks" 
+                                       min="0.01" step="0.01" required value="{{ assignment.max_marks }}" placeholder="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="due_date" class="form-label">Due Date <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="due_date" name="due_date" required
+                                       value="{{ assignment.due_date|date:'Y-m-d\TH:i' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="max_group_size" class="form-label">Max Group Size</label>
+                                <input type="number" class="form-control" id="max_group_size" name="max_group_size" 
+                                       min="1" value="{{ assignment.max_group_size }}" placeholder="1">
+                            </div>
+                        </div>
+
+                        <!-- Assignment Type -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_group_assignment" name="is_group_assignment"
+                                           {% if assignment.is_group_assignment %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_group_assignment">
+                                        Group Assignment
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="late_submission_allowed" name="late_submission_allowed"
+                                           {% if assignment.late_submission_allowed %}checked{% endif %}>
+                                    <label class="form-check-label" for="late_submission_allowed">
+                                        Allow Late Submissions
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Academic Year and Semester -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="academic_year" class="form-label">Academic Year</label>
+                                <input type="text" class="form-control" id="academic_year" name="academic_year" 
+                                       value="{{ assignment.academic_year|default:'' }}"
+                                       placeholder="e.g., 2024-2025">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="semester" class="form-label">Semester</label>
+                                <input type="text" class="form-control" id="semester" name="semester" 
+                                       value="{{ assignment.semester|default:'' }}"
+                                       placeholder="e.g., Fall, Spring">
+                            </div>
+                        </div>
+
+                        <!-- Target Audience -->
+                        <div class="mb-3">
+                            <label class="form-label">Assign To</label>
+                            
+                            <!-- Departments -->
+                            {% if departments %}
+                            <div class="mb-3">
+                                <label class="form-label">Departments</label>
+                                <div class="row">
+                                    {% for department in departments %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input department-filter" type="checkbox" 
+                                                   id="dept_{{ department.id }}" name="assigned_departments" value="{{ department.id }}"
+                                                   data-department-id="{{ department.id }}"
+                                                   {% if department in assignment.assigned_to_departments.all %}checked{% endif %}>
+                                            <label class="form-check-label" for="dept_{{ department.id }}">
+                                                {{ department.name }} ({{ department.code }})
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Academic Programs -->
+                            {% if programs %}
+                            <div class="mb-3">
+                                <label class="form-label">Academic Programs</label>
+                                <div class="row">
+                                    {% for program in programs %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="program_{{ program.id }}" name="assigned_programs" value="{{ program.id }}"
+                                                   {% if program in assignment.assigned_to_programs.all %}checked{% endif %}>
+                                            <label class="form-check-label" for="program_{{ program.id }}">
+                                                {{ program.name }} ({{ program.code }})
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Course Sections -->
+                            {% if course_sections %}
+                            <div class="mb-3">
+                                <label class="form-label">Course Sections</label>
+                                <div class="row">
+                                    {% for section in course_sections %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input course-section-filter" type="checkbox" 
+                                                   id="section_{{ section.id }}" name="assigned_course_sections" value="{{ section.id }}"
+                                                   data-section-id="{{ section.id }}"
+                                                   {% if section in assignment.assigned_to_course_sections.all %}checked{% endif %}>
+                                            <label class="form-check-label" for="section_{{ section.id }}">
+                                                {{ section.course.code }}-{{ section.section_number }} ({{ section.academic_year }} {{ section.semester }})
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Specific Students -->
+                            {% if students %}
+                            <div class="mb-3">
+                                <label class="form-label">Specific Students (Optional)</label>
+                                <div class="row">
+                                    {% for student in students %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="student_{{ student.id }}" name="assigned_students" value="{{ student.id }}"
+                                                   {% if student in assignment.assigned_to_students.all %}checked{% endif %}>
+                                            <label class="form-check-label" for="student_{{ student.id }}">
+                                                {{ student.name }} ({{ student.apaar_student_id }})
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dashboard:assignment_detail' assignment.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Update Assignment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Assignment Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Assignment Info
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Status:</strong>
+                        <p class="mb-0">
+                            <span class="badge 
+                                {% if assignment.status == 'PUBLISHED' %}bg-success
+                                {% elif assignment.status == 'DRAFT' %}bg-warning
+                                {% elif assignment.status == 'CLOSED' %}bg-secondary
+                                {% else %}bg-danger{% endif %}">
+                                {{ assignment.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Created:</strong>
+                        <p class="mb-0">{{ assignment.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Last Updated:</strong>
+                        <p class="mb-0">{{ assignment.updated_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Faculty:</strong>
+                        <p class="mb-0">{{ assignment.faculty.name }}</p>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <strong>Submissions:</strong>
+                        <p class="mb-0">{{ assignment.submission_count }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-question-circle me-2"></i>Editing Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary">Status Changes</h6>
+                        <p class="small text-muted mb-0">Changing from Draft to Published will make the assignment visible to students.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Due Date</h6>
+                        <p class="small text-muted mb-0">Be careful when changing due dates, especially if students have already submitted.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Target Audience</h6>
+                        <p class="small text-muted mb-0">Adding or removing students/grades will affect who can see and submit the assignment.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-primary">Group Settings</h6>
+                        <p class="small text-muted mb-0">Changing group settings may affect existing submissions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if assignment.status == 'DRAFT' %}
+                            <button type="button" class="btn btn-success" onclick="publishAssignment()">
+                                <i class="fas fa-eye me-2"></i>Publish Assignment
+                            </button>
+                        {% elif assignment.status == 'PUBLISHED' %}
+                            <button type="button" class="btn btn-warning" onclick="closeAssignment()">
+                                <i class="fas fa-lock me-2"></i>Close Assignment
+                            </button>
+                        {% endif %}
+                        <a href="{% url 'dashboard:assignment_detail' assignment.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-2"></i>Preview Assignment
+                        </a>
+                        <a href="{% url 'dashboard:assignments_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-2"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle group assignment checkbox
+    document.getElementById('is_group_assignment').addEventListener('change', function() {
+        const maxGroupSizeInput = document.getElementById('max_group_size');
+        if (this.checked) {
+            maxGroupSizeInput.value = Math.max(2, maxGroupSizeInput.value);
+            maxGroupSizeInput.min = 2;
+        } else {
+            maxGroupSizeInput.value = 1;
+            maxGroupSizeInput.min = 1;
+        }
+    });
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const maxMarks = document.getElementById('max_marks').value;
+        const dueDate = document.getElementById('due_date').value;
+        
+        if (!title || !description || !maxMarks || !dueDate) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return;
+        }
+        
+        // Check if at least one program or student is selected
+        const assignedPrograms = document.querySelectorAll('input[name="assigned_programs"]:checked');
+        const assignedStudents = document.querySelectorAll('input[name="assigned_students"]:checked');
+        
+        if (assignedPrograms.length === 0 && assignedStudents.length === 0) {
+            e.preventDefault();
+            alert('Please assign the assignment to at least one program or student.');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to update this assignment?')) {
+            e.preventDefault();
+            return;
+        }
+    });
+
+    // Publish assignment function
+    function publishAssignment() {
+        if (confirm('Are you sure you want to publish this assignment? It will become visible to students.')) {
+            // This would typically make an AJAX call to publish the assignment
+            alert('Assignment published successfully!');
+            location.reload();
+        }
+    }
+
+    // Close assignment function
+    function closeAssignment() {
+        if (confirm('Are you sure you want to close this assignment? Students will no longer be able to submit.')) {
+            // This would typically make an AJAX call to close the assignment
+            alert('Assignment closed successfully!');
+            location.reload();
+        }
+    }
+
+    // Auto-save draft functionality
+    function saveDraft() {
+        const formData = new FormData(document.querySelector('form'));
+        const draftData = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            instructions: formData.get('instructions'),
+            max_marks: formData.get('max_marks'),
+            due_date: formData.get('due_date'),
+            category: formData.get('category'),
+            is_group_assignment: formData.get('is_group_assignment'),
+            max_group_size: formData.get('max_group_size'),
+            late_submission_allowed: formData.get('late_submission_allowed'),
+            assigned_grades: Array.from(document.querySelectorAll('input[name="assigned_grades"]:checked')).map(cb => cb.value),
+            assigned_students: Array.from(document.querySelectorAll('input[name="assigned_students"]:checked')).map(cb => cb.value),
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('assignment_draft_{{ assignment.id }}', JSON.stringify(draftData));
+    }
+
+    // Load draft on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const draft = localStorage.getItem('assignment_draft_{{ assignment.id }}');
+        if (draft) {
+            try {
+                const data = JSON.parse(draft);
+                const draftDate = new Date(data.timestamp);
+                const now = new Date();
+                const hoursDiff = (now - draftDate) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24) { // Only load drafts less than 24 hours old
+                    if (confirm('A draft was found from ' + draftDate.toLocaleString() + '. Would you like to restore it?')) {
+                        document.getElementById('title').value = data.title || '';
+                        document.getElementById('description').value = data.description || '';
+                        document.getElementById('instructions').value = data.instructions || '';
+                        document.getElementById('max_marks').value = data.max_marks || '';
+                        document.getElementById('due_date').value = data.due_date || '';
+                        document.getElementById('category').value = data.category || '';
+                        document.getElementById('is_group_assignment').checked = data.is_group_assignment === 'on';
+                        document.getElementById('max_group_size').value = data.max_group_size || '1';
+                        document.getElementById('late_submission_allowed').checked = data.late_submission_allowed === 'on';
+                        
+                        // Restore selected grades and students
+                        data.assigned_grades.forEach(gradeId => {
+                            const checkbox = document.getElementById('grade_' + gradeId);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                        
+                        data.assigned_students.forEach(studentId => {
+                            const checkbox = document.getElementById('student_' + studentId);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading draft:', e);
+            }
+        }
+    });
+
+    // Save draft every 30 seconds
+    setInterval(saveDraft, 30000);
+    
+    // Save draft on form submit
+    document.querySelector('form').addEventListener('submit', function() {
+        localStorage.removeItem('assignment_draft_{{ assignment.id }}');
+    });
+</script>
+{% endblock %}

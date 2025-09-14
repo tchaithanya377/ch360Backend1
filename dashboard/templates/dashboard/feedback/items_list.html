@@ -1,0 +1,79 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Feedback Items{% endblock %}
+{% block content %}
+<div class="container-fluid">
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<h2 class="mb-0">All Feedback</h2>
+		<a href="{% url 'dashboard:feedback_item_create' %}" class="btn btn-primary"><i class="fa fa-plus"></i> New</a>
+	</div>
+	<form method="get" class="row g-2 mb-3">
+		<div class="col-md-3"><input class="form-control" name="q" placeholder="Search title/description" value="{{ current.q|default:'' }}"></div>
+		<div class="col-md-2">
+			<select class="form-select" name="status">
+				<option value="">Status</option>
+				{% for value,label in status_choices %}
+				<option value="{{ value }}" {% if current.status == value %}selected{% endif %}>{{ label }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		<div class="col-md-2">
+			<select class="form-select" name="category">
+				<option value="">Category</option>
+				{% for c in categories %}
+				<option value="{{ c.id }}" {% if current.category == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		<div class="col-md-2">
+			<select class="form-select" name="department">
+				<option value="">Department</option>
+				{% for d in departments %}
+				<option value="{{ d.id }}" {% if current.department == d.id|stringformat:'s' %}selected{% endif %}>{{ d.name }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		<div class="col-md-2">
+			<select class="form-select" name="course">
+				<option value="">Course</option>
+				{% for c in courses %}
+				<option value="{{ c.id }}" {% if current.course == c.id|stringformat:'s' %}selected{% endif %}>{{ c.code }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		<div class="col-md-1">
+			<button class="btn btn-outline-secondary w-100">Filter</button>
+		</div>
+	</form>
+	<div class="card">
+		<div class="table-responsive">
+			<table class="table table-hover mb-0">
+				<thead>
+					<tr>
+						<th>Title</th>
+						<th>Category</th>
+						<th>Status</th>
+						<th>Priority</th>
+						<th>Department/Course/Faculty</th>
+						<th>Created</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for f in items %}
+					<tr>
+						<td><a href="{% url 'dashboard:feedback_item_detail' f.id %}">{{ f.title }}</a></td>
+						<td>{{ f.category }}</td>
+						<td>{{ f.get_status_display }}</td>
+						<td>{{ f.get_priority_display }}</td>
+						<td>{% if f.department %}{{ f.department.name }}{% endif %}{% if f.course %} / {{ f.course.code }}{% endif %}{% if f.faculty %} / {{ f.faculty.name }}{% endif %}</td>
+						<td>{{ f.created_at|date:'Y-m-d H:i' }}</td>
+					</tr>
+					{% empty %}
+					<tr><td colspan="6" class="text-center text-muted">No results</td></tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+{% endblock %}
+

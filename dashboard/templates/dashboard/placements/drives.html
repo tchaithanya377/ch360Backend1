@@ -1,0 +1,46 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="container">
+  <h2>Placement Drives</h2>
+  <form method="post" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-md-3"><input class="form-control" name="title" placeholder="Drive title" required></div>
+      <div class="col-md-3"><input class="form-control" name="company" placeholder="Company name (existing)" list="companiesList"></div>
+      <datalist id="companiesList">
+        {% for c in companies %}<option value="{{ c.name }}">{% endfor %}
+      </datalist>
+      <div class="col-md-2">
+        <select class="form-select" name="drive_type">
+          <option value="CAMPUS">On Campus</option>
+          <option value="POOL">Pool Campus</option>
+          <option value="VIRTUAL">Virtual</option>
+        </select>
+      </div>
+      <div class="col-md-2"><input type="date" class="form-control" name="start_date" required></div>
+      <div class="col-md-2"><input type="date" class="form-control" name="end_date"></div>
+      <div class="col-12"><textarea class="form-control" name="description" placeholder="Description"></textarea></div>
+      <div class="col-12"><button class="btn btn-primary mt-2" type="submit">Create Drive</button></div>
+    </div>
+  </form>
+
+  <table class="table table-striped">
+    <thead><tr><th>Title</th><th>Company</th><th>Type</th><th>Dates</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for d in drives %}
+      <tr>
+        <td>{{ d.title }}</td>
+        <td>{{ d.company.name }}</td>
+        <td>{{ d.get_drive_type_display }}</td>
+        <td>{{ d.start_date }}{% if d.end_date %} - {{ d.end_date }}{% endif %}</td>
+        <td>{% if d.is_active %}Active{% else %}Inactive{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center">No drives yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+

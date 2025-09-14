@@ -1,0 +1,231 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}API Reference - CampusHub 360 Documentation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'docs:home' %}">Home</a></li>
+            <li class="breadcrumb-item active">API Reference</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-code me-2"></i>API Reference</h1>
+            <p class="lead">Comprehensive documentation for all CampusHub 360 API endpoints. Learn how to integrate with our platform and build powerful applications.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="sidebar">
+                <h5><i class="fas fa-filter me-2"></i>Filters</h5>
+                
+                <!-- Search -->
+                <div class="mb-3">
+                    <form method="get" action="{% url 'docs:apis' %}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="search" placeholder="Search APIs..." value="{{ request.GET.search }}">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="mb-3">
+                    <h6>Category</h6>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'docs:apis' %}" class="list-group-item list-group-item-action {% if not request.GET.category %}active{% endif %}">
+                            All Categories
+                        </a>
+                        {% for category in categories %}
+                        <a href="?category={{ category.slug }}{% if request.GET.method %}&method={{ request.GET.method }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.category == category.slug %}active{% endif %}">
+                            <i class="{{ category.icon|default:'fas fa-folder' }} me-2"></i>{{ category.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Method Filter -->
+                <div class="mb-3">
+                    <h6>HTTP Method</h6>
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'docs:apis' %}{% if request.GET.category %}?category={{ request.GET.category }}{% endif %}{% if request.GET.search %}{% if request.GET.category %}&{% else %}?{% endif %}search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if not request.GET.method %}active{% endif %}">
+                            All Methods
+                        </a>
+                        {% for value, label in method_choices %}
+                        <a href="?method={{ value }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           class="list-group-item list-group-item-action {% if request.GET.method == value %}active{% endif %}">
+                            <span class="badge method-{{ value }} method-badge me-2">{{ value }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="mt-4">
+                    <h6>Quick Stats</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-primary">{{ apis|length }}</div>
+                                <small class="text-muted">Endpoints</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-success">{{ categories|length }}</div>
+                                <small class="text-muted">Categories</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fw-bold text-warning">5</div>
+                                <small class="text-muted">Methods</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Active Filters -->
+            {% if request.GET.category or request.GET.method or request.GET.search %}
+            <div class="mb-3">
+                <h6>Active Filters:</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if request.GET.category %}
+                    <span class="badge bg-primary">
+                        Category: {{ request.GET.category }}
+                        <a href="?{% if request.GET.method %}method={{ request.GET.method }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}{% endif %}" class="text-white ms-1">×</a>
+                    </span>
+                    {% endif %}
+                    {% if request.GET.method %}
+                    <span class="badge bg-secondary">
+                        Method: {{ request.GET.method }}
+                        <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}{% endif %}" class="text-white ms-1">×</a>
+                    </span>
+                    {% endif %}
+                    {% if request.GET.search %}
+                    <span class="badge bg-info">
+                        Search: "{{ request.GET.search }}"
+                        <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.method %}method={{ request.GET.method }}{% endif %}" class="text-white ms-1">×</a>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- API Endpoints -->
+            {% if apis %}
+            <div class="row">
+                {% for api in apis %}
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge method-{{ api.method }} method-badge me-3">{{ api.method }}</span>
+                                    <h5 class="card-title mb-0">
+                                        <a href="{% url 'docs:api_detail' api.id %}" class="text-decoration-none">
+                                            {{ api.title }}
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div class="text-end">
+                                    {% if api.authentication_required %}
+                                    <span class="badge bg-warning text-dark me-2">Auth Required</span>
+                                    {% endif %}
+                                    <small class="text-muted">{{ api.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <code class="text-primary fs-6">{{ api.endpoint }}</code>
+                            </div>
+                            
+                            <p class="card-text text-muted mb-3">{{ api.description|truncatewords:30 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tag text-muted me-2"></i>
+                                    <span class="badge bg-light text-dark me-2">{{ api.category.name }}</span>
+                                    {% for tag in api.get_tags_list %}
+                                    <span class="badge bg-secondary me-1">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                                <a href="{% url 'docs:api_detail' api.id %}" class="btn btn-primary btn-sm">
+                                    View Details <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="APIs pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- No Results -->
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No API endpoints found</h4>
+                <p class="text-muted">
+                    {% if request.GET.search %}
+                    No API endpoints match your search criteria. Try adjusting your filters or search terms.
+                    {% else %}
+                    No API endpoints are available yet. Check back soon for new content!
+                    {% endif %}
+                </p>
+                {% if request.GET.category or request.GET.method or request.GET.search %}
+                <a href="{% url 'docs:apis' %}" class="btn btn-primary">
+                    <i class="fas fa-refresh me-2"></i>Clear Filters
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

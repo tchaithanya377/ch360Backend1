@@ -1,0 +1,77 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ automation.name }} - Automation Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>{{ automation.name }}</h1>
+            <p class="text-muted">{{ automation.description|default:"No description" }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Automation Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Test Suite:</strong> {{ automation.test_suite.name }}</p>
+                    <p><strong>Schedule:</strong> {{ automation.schedule|default:"Not scheduled" }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge badge-{{ automation.is_active|yesno:'success,secondary' }}">
+                            {{ automation.is_active|yesno:'Active,Inactive' }}
+                        </span>
+                    </p>
+                    <p><strong>Last Run:</strong> {{ automation.last_run|timesince|default:"Never" }} ago</p>
+                    <p><strong>Next Run:</strong> {{ automation.next_run|timesince|default:"Not scheduled" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-success btn-block mb-2" onclick="runAutomation('{{ automation.id }}')">
+                        <i class="fas fa-play"></i> Run Now
+                    </button>
+                    <button class="btn btn-warning btn-block mb-2" onclick="toggleAutomation('{{ automation.id }}')">
+                        <i class="fas fa-toggle-on"></i> Toggle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function runAutomation(automationId) {
+    $.post(`/dashboard/api-testing/automations/${automationId}/run_now/`)
+        .done(function(response) {
+            alert('Automation executed successfully!');
+        })
+        .fail(function(xhr) {
+            alert('Failed to run automation: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        });
+}
+
+function toggleAutomation(automationId) {
+    $.post(`/dashboard/api-testing/automations/${automationId}/toggle/`)
+        .done(function(response) {
+            location.reload();
+        })
+        .fail(function(xhr) {
+            alert('Failed to toggle automation: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        });
+}
+</script>
+{% endblock %}
+
+

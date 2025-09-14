@@ -1,0 +1,194 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Academics API Endpoints - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-code text-primary"></i>
+            Academics API Endpoints
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <a href="{% url 'dashboard:academics_api_test' %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-vial"></i> Test APIs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle text-info"></i>
+                        API Overview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Base URL</h6>
+                            <code class="bg-light p-2 rounded">{{ api_base_url }}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Authentication</h6>
+                            <p class="mb-1"><strong>Type:</strong> {{ authentication.type }}</p>
+                            <p class="mb-1"><strong>Header:</strong> <code>{{ authentication.header }}</code></p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <h6>Token Endpoint</h6>
+                            <code class="bg-light p-2 rounded">{{ authentication.token_endpoint }}</code>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Refresh Endpoint</h6>
+                            <code class="bg-light p-2 rounded">{{ authentication.refresh_endpoint }}</code>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Default Page Size</h6>
+                            <code class="bg-light p-2 rounded">{{ pagination.default_page_size }}</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Endpoints -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list text-primary"></i>
+                        Available Endpoints
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for endpoint in endpoints %}
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ endpoint.name }}</h6>
+                            <div>
+                                {% for method in endpoint.methods %}
+                                    <span class="badge bg-{% if method == 'GET' %}success{% elif method == 'POST' %}primary{% elif method == 'PUT' %}warning{% elif method == 'PATCH' %}info{% else %}danger{% endif %} me-1">
+                                        {{ method }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <p class="text-muted mb-2">{{ endpoint.description }}</p>
+                        <p class="mb-2"><strong>URL:</strong> <code>{{ endpoint.url }}</code></p>
+                        
+                        {% if endpoint.example_request %}
+                        <div class="mt-3">
+                            <h6>Example Request:</h6>
+                            <div class="bg-light p-3 rounded">
+                                <p><strong>Method:</strong> {{ endpoint.example_request.method }}</p>
+                                <p><strong>URL:</strong> <code>{{ endpoint.example_request.url }}</code></p>
+                                <p><strong>Data:</strong></p>
+                                <pre class="bg-white p-2 rounded border"><code>{{ endpoint.example_request.data|pprint }}</code></pre>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Features -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-search text-success"></i>
+                        Filtering & Search
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Search</h6>
+                    <code class="bg-light p-2 rounded d-block mb-2">{{ filtering.search }}</code>
+                    
+                    <h6>Ordering</h6>
+                    <code class="bg-light p-2 rounded d-block mb-2">{{ filtering.ordering }}</code>
+                    
+                    <h6>Filtering</h6>
+                    <code class="bg-light p-2 rounded d-block">{{ filtering.filtering }}</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-pagelines text-warning"></i>
+                        Pagination
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Default Page Size:</strong> {{ pagination.default_page_size }}</p>
+                    <p><strong>Maximum Page Size:</strong> {{ pagination.max_page_size }}</p>
+                    <p><strong>Example:</strong></p>
+                    <code class="bg-light p-2 rounded">{{ pagination.example }}</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Examples -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning"></i>
+                        Usage Examples
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Get All Courses</h6>
+                            <pre class="bg-light p-3 rounded"><code>curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "{{ api_base_url }}courses/"</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Create a New Course</h6>
+                            <pre class="bg-light p-3 rounded"><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"CS101","title":"Intro to CS","credits":3}' \
+  "{{ api_base_url }}courses/"</code></pre>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6>Get Courses with Filtering</h6>
+                            <pre class="bg-light p-3 rounded"><code>curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "{{ api_base_url }}courses/?status=ACTIVE&level=UNDERGRADUATE"</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Search Courses</h6>
+                            <pre class="bg-light p-3 rounded"><code>curl -H "Authorization: Bearer YOUR_TOKEN" \
+  "{{ api_base_url }}courses/?search=computer"</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

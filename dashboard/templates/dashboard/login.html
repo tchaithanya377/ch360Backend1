@@ -1,0 +1,195 @@
+{% extends 'dashboard/base_simple.html' %}
+
+{% block title %}Login - CampsHub360{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-sign-in-alt text-primary me-2"></i>
+    Sign In
+{% endblock %}
+
+{% block page_subtitle %}
+    Access your CampsHub360 management dashboard
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5 col-xl-4">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-graduation-cap text-white fs-4"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">Welcome Back</h3>
+                    <p class="text-muted">Sign in to your account</p>
+                </div>
+
+                {% if form.errors %}
+                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <strong>Login Failed!</strong><br>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    {{ error }}<br>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="id_username" class="form-label fw-semibold">
+                            <i class="fas fa-envelope me-1 text-primary"></i>
+                            Email Address
+                        </label>
+                        <input type="email" 
+                               name="username" 
+                               id="id_username"
+                               class="form-control form-control-lg" 
+                               placeholder="Enter your email"
+                               value="{% if form.username.value %}{{ form.username.value }}{% endif %}"
+                               required
+                               autocomplete="email">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="id_password" class="form-label fw-semibold">
+                            <i class="fas fa-lock me-1 text-primary"></i>
+                            Password
+                        </label>
+                        <div class="input-group">
+                            <input type="password" 
+                                   name="password" 
+                                   id="id_password"
+                                   class="form-control form-control-lg" 
+                                   placeholder="Enter your password"
+                                   required
+                                   autocomplete="current-password">
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mb-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Sign In
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Secure login with industry-standard encryption
+                        </small>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Additional Info Card -->
+        <div class="card mt-4 border-0 bg-light">
+            <div class="card-body text-center py-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Need help? Contact your system administrator
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 20px !important;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .input-group .btn {
+        border-radius: 0 12px 12px 0;
+    }
+    
+    .form-control-lg {
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .alert {
+        border-radius: 12px;
+        border: none;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password toggle functionality
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('id_password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        if (type === 'text') {
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const email = document.getElementById('id_username').value;
+        const password = document.getElementById('id_password').value;
+        
+        if (!email || !password) {
+            e.preventDefault();
+            alert('Please fill in all fields');
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+        submitBtn.disabled = true;
+        
+        // Re-enable after 5 seconds (in case of network issues)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 5000);
+    });
+    
+    // Auto-focus on email field
+    document.getElementById('id_username').focus();
+});
+</script>
+{% endblock %}
+
+

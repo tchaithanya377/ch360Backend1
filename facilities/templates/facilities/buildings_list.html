@@ -1,0 +1,135 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Buildings - Facilities Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h1 class="display-4 text-white fw-bold mb-3">
+                        <i class="fas fa-building me-3"></i>Buildings Management
+                    </h1>
+                    <p class="lead text-white-50 mb-0">View and manage all university buildings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buildings List -->
+    {% if buildings %}
+        <div class="row">
+            {% for building in buildings %}
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-building me-2"></i>{{ building.name }}
+                        </h6>
+                        <span class="badge bg-primary">{{ building.code }}</span>
+                    </div>
+                    
+                    <div class="card-body">
+                        {% if building.description %}
+                        <div class="mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Description</small>
+                            <div class="text-muted">{{ building.description|truncatechars:100 }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted text-uppercase fw-semibold">Address</small>
+                                <div class="fw-semibold">{{ building.address|default:"N/A" }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted text-uppercase fw-semibold">Floors</small>
+                                <div class="fw-semibold">{{ building.floors|default:"N/A" }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted text-uppercase fw-semibold">Year Built</small>
+                                <div class="fw-semibold">{{ building.year_built|default:"N/A" }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted text-uppercase fw-semibold">Status</small>
+                                <div class="fw-semibold">
+                                    {% if building.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if building.rooms.exists %}
+                        <div class="mb-3">
+                            <small class="text-muted text-uppercase fw-semibold">Rooms</small>
+                            <div class="fw-semibold">{{ building.rooms.count }} rooms</div>
+                            <small class="text-muted">
+                                {% for room in building.rooms.all|slice:":3" %}
+                                    {{ room.code }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                                {% if building.rooms.count > 3 %}...{% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer bg-transparent">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'facilities:building_detail' building.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-2"></i>View Details
+                            </a>
+                            <a href="{% url 'facilities:rooms_list' %}?building={{ building.id }}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-list me-2"></i>View Rooms
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-building fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">No buildings found</h4>
+                        <p class="text-muted mb-4">No buildings have been added to the system yet.</p>
+                        <a href="{% url 'facilities:dashboard' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to building cards
+        const buildingCards = document.querySelectorAll('.card');
+        buildingCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}

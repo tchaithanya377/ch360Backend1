@@ -1,0 +1,54 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ event.title }} - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-calendar-day text-warning"></i>
+            {{ event.title }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_calendar' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Calendar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Title:</strong> {{ event.title }}</p>
+                    <p><strong>Type:</strong> {{ event.get_event_type_display }}</p>
+                    <p><strong>Start Date:</strong> {{ event.start_date }}</p>
+                    <p><strong>End Date:</strong> {{ event.end_date }}</p>
+                    <p><strong>Duration:</strong> {{ duration_days }} day(s)</p>
+                    <p><strong>Academic Day:</strong> {% if event.is_academic_day %}Yes{% else %}No{% endif %}</p>
+                    <p><strong>Description:</strong> {{ event.description|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Event Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Academic Year:</strong> {{ event.academic_year }}</p>
+                    <p><strong>Semester:</strong> {{ event.semester|default:"N/A" }}</p>
+                    <p><strong>Created:</strong> {{ event.created_at|date:"M d, Y" }}</p>
+                    <p><strong>Updated:</strong> {{ event.updated_at|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

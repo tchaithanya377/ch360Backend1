@@ -1,0 +1,874 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}API Environments{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #667eea;
+        --secondary-color: #764ba2;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --info-color: #17a2b8;
+        --light-bg: #f8f9fa;
+        --dark-bg: #343a40;
+        --border-color: #dee2e6;
+    }
+
+    .environments-page {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+
+    .page-header {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .page-title {
+        color: var(--dark-bg);
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    .environments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .environment-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .environment-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    }
+
+    .environment-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--info-color), var(--primary-color));
+    }
+
+    .environment-card.default::before {
+        background: linear-gradient(90deg, var(--success-color), var(--warning-color));
+    }
+
+    .environment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .environment-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--dark-bg);
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .default-badge {
+        background: var(--success-color);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .environment-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin-bottom: 20px;
+    }
+
+    .variables-section {
+        margin-bottom: 20px;
+    }
+
+    .variables-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .variables-title {
+        font-weight: 600;
+        color: var(--dark-bg);
+        margin: 0;
+    }
+
+    .variables-count {
+        background: var(--light-bg);
+        color: var(--primary-color);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .variables-list {
+        background: var(--light-bg);
+        border-radius: 10px;
+        padding: 15px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .variable-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .variable-item:last-child {
+        border-bottom: none;
+    }
+
+    .variable-name {
+        font-weight: 500;
+        color: var(--dark-bg);
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9rem;
+    }
+
+    .variable-value {
+        color: var(--primary-color);
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.85rem;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .environment-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .action-btn.primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .action-btn.secondary {
+        background: var(--light-bg);
+        color: var(--dark-bg);
+        border: 1px solid var(--border-color);
+    }
+
+    .action-btn.secondary:hover {
+        background: #e9ecef;
+        color: var(--dark-bg);
+        text-decoration: none;
+    }
+
+    .action-btn.danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .action-btn.danger:hover {
+        background: #c82333;
+        color: white;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        margin-bottom: 20px;
+        opacity: 0.3;
+        color: var(--info-color);
+    }
+
+    .empty-state h3 {
+        color: var(--dark-bg);
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .empty-state p {
+        color: #6c757d;
+        margin-bottom: 30px;
+        font-size: 1.1rem;
+    }
+
+    .create-environment-btn {
+        padding: 15px 30px;
+        background: linear-gradient(135deg, var(--info-color), var(--primary-color));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .create-environment-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--info-color), var(--primary-color));
+        color: white;
+        border-radius: 15px 15px 0 0;
+        border: none;
+        padding: 20px 25px;
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--dark-bg);
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .variables-container {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px;
+        background: var(--light-bg);
+    }
+
+    .variable-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: center;
+    }
+
+    .variable-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .variable-row input {
+        flex: 1;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--info-color), var(--primary-color));
+        border: none;
+        border-radius: 8px;
+        padding: 12px 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--light-bg);
+        border: 1px solid var(--border-color);
+        color: var(--dark-bg);
+        border-radius: 8px;
+        padding: 12px 25px;
+        font-weight: 500;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        color: var(--dark-bg);
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    @media (max-width: 768px) {
+        .environments-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .environment-actions {
+            flex-direction: column;
+        }
+        
+        .action-btn {
+            justify-content: center;
+        }
+        
+        .variable-row {
+            flex-direction: column;
+            gap: 5px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="environments-page">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">API Environments</h1>
+                    <p class="page-subtitle">Manage different environments for your API testing</p>
+                </div>
+                <button class="create-environment-btn" data-bs-toggle="modal" data-bs-target="#createEnvironmentModal">
+                    <i class="fas fa-plus"></i>
+                    New Environment
+                </button>
+            </div>
+        </div>
+
+        <!-- Environments Grid -->
+        {% if environments %}
+        <div class="environments-grid">
+            {% for environment in environments %}
+            <div class="environment-card {% if environment.is_default %}default{% endif %}">
+                <div class="environment-header">
+                    <div>
+                        <h3 class="environment-title">
+                            {{ environment.name }}
+                            {% if environment.is_default %}
+                            <span class="default-badge">Default</span>
+                            {% endif %}
+                        </h3>
+                        <p class="environment-description">
+                            {% if environment.description %}
+                                {{ environment.description }}
+                            {% else %}
+                                No description provided
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-link text-muted" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="editEnvironment('{{ environment.id }}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="duplicateEnvironment('{{ environment.id }}')">
+                                <i class="fas fa-copy"></i> Duplicate
+                            </a></li>
+                            {% if not environment.is_default %}
+                            <li><a class="dropdown-item" href="#" onclick="setDefaultEnvironment('{{ environment.id }}')">
+                                <i class="fas fa-star"></i> Set as Default
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteEnvironment('{{ environment.id }}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="variables-section">
+                    <div class="variables-header">
+                        <h5 class="variables-title">Environment Variables</h5>
+                        <span class="variables-count">{{ environment.variables|length }} variables</span>
+                    </div>
+                    
+                    {% if environment.variables %}
+                    <div class="variables-list">
+                        {% for key, value in environment.variables.items %}
+                        <div class="variable-item">
+                            <span class="variable-name">{{ key }}</span>
+                            <span class="variable-value" title="{{ value }}">{{ value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-info-circle"></i>
+                        <p class="mb-0">No variables defined</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="environment-actions">
+                    <button class="action-btn secondary" onclick="editEnvironment('{{ environment.id }}')">
+                        <i class="fas fa-edit"></i>
+                        Edit Environment
+                    </button>
+                    <button class="action-btn secondary" onclick="duplicateEnvironment('{{ environment.id }}')">
+                        <i class="fas fa-copy"></i>
+                        Duplicate
+                    </button>
+                    {% if not environment.is_default %}
+                    <button class="action-btn primary" onclick="setDefaultEnvironment('{{ environment.id }}')">
+                        <i class="fas fa-star"></i>
+                        Set as Default
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-server"></i>
+            <h3>No Environments Yet</h3>
+            <p>Create your first environment to manage variables for different stages</p>
+            <button class="create-environment-btn" data-bs-toggle="modal" data-bs-target="#createEnvironmentModal">
+                <i class="fas fa-plus"></i>
+                Create Your First Environment
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Environment Modal -->
+<div class="modal fade" id="createEnvironmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-server"></i>
+                    Create New Environment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createEnvironmentForm" method="post" action="{% url 'dashboard:api_environments_list' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="environmentName" class="form-label">Environment Name *</label>
+                        <input type="text" class="form-control" id="environmentName" name="name" required 
+                               placeholder="e.g., Development, Staging, Production">
+                    </div>
+                    <div class="mb-3">
+                        <label for="environmentDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="environmentDescription" name="description" rows="3"
+                                  placeholder="Describe this environment"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Environment Variables</label>
+                        <div class="variables-container" id="variablesContainer">
+                            <div class="variable-row">
+                                <input type="text" class="form-control" name="var_names[]" placeholder="Variable name (e.g., base_url)">
+                                <input type="text" class="form-control" name="var_values[]" placeholder="Variable value (e.g., https://api.dev.com)">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-variable" style="display: none;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addVariable">
+                            <i class="fas fa-plus"></i> Add Variable
+                        </button>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="isDefault" name="is_default">
+                        <label class="form-check-label" for="isDefault">
+                            Set as default environment
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Create Environment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Environment Modal -->
+<div class="modal fade" id="editEnvironmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    Edit Environment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editEnvironmentForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editEnvironmentName" class="form-label">Environment Name *</label>
+                        <input type="text" class="form-control" id="editEnvironmentName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEnvironmentDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editEnvironmentDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Environment Variables</label>
+                        <div class="variables-container" id="editVariablesContainer">
+                            <!-- Variables will be populated dynamically -->
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addEditVariable">
+                            <i class="fas fa-plus"></i> Add Variable
+                        </button>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="editIsDefault" name="is_default">
+                        <label class="form-check-label" for="editIsDefault">
+                            Set as default environment
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add variable functionality
+    document.getElementById('addVariable').addEventListener('click', function() {
+        addVariableRow('variablesContainer', 'var_names[]', 'var_values[]');
+    });
+
+    document.getElementById('addEditVariable').addEventListener('click', function() {
+        addVariableRow('editVariablesContainer', 'edit_var_names[]', 'edit_var_values[]');
+    });
+
+    // Remove variable functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-variable')) {
+            const row = e.target.closest('.variable-row');
+            row.remove();
+            updateRemoveButtons();
+        }
+    });
+
+    // Create environment form submission
+    document.getElementById('createEnvironmentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Creating...';
+        
+        try {
+            // Process variables
+            const varNames = formData.getAll('var_names[]');
+            const varValues = formData.getAll('var_values[]');
+            const variables = {};
+            
+            for (let i = 0; i < varNames.length; i++) {
+                if (varNames[i] && varValues[i]) {
+                    variables[varNames[i]] = varValues[i];
+                }
+            }
+            
+            // Create new form data
+            const newFormData = new FormData();
+            newFormData.append('name', formData.get('name'));
+            newFormData.append('description', formData.get('description'));
+            newFormData.append('variables', JSON.stringify(variables));
+            newFormData.append('is_default', formData.get('is_default') === 'on');
+            newFormData.append('csrfmiddlewaretoken', formData.get('csrfmiddlewaretoken'));
+            
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: newFormData
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert('Error creating environment: ' + (error.message || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Error creating environment: ' + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+});
+
+function addVariableRow(containerId, nameField, valueField) {
+    const container = document.getElementById(containerId);
+    const newRow = document.createElement('div');
+    newRow.className = 'variable-row';
+    newRow.innerHTML = `
+        <input type="text" class="form-control" name="${nameField}" placeholder="Variable name">
+        <input type="text" class="form-control" name="${valueField}" placeholder="Variable value">
+        <button type="button" class="btn btn-outline-danger btn-sm remove-variable">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newRow);
+    updateRemoveButtons();
+}
+
+function updateRemoveButtons() {
+    const containers = ['variablesContainer', 'editVariablesContainer'];
+    containers.forEach(containerId => {
+        const container = document.getElementById(containerId);
+        const removeBtns = container.querySelectorAll('.remove-variable');
+        removeBtns.forEach(btn => {
+            btn.style.display = removeBtns.length > 1 ? 'block' : 'none';
+        });
+    });
+}
+
+function editEnvironment(environmentId) {
+    // Fetch environment data and populate edit modal
+    fetch(`/dashboard/api-testing/environments/${environmentId}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editEnvironmentName').value = data.name;
+            document.getElementById('editEnvironmentDescription').value = data.description || '';
+            document.getElementById('editIsDefault').checked = data.is_default;
+            
+            // Populate variables
+            const container = document.getElementById('editVariablesContainer');
+            container.innerHTML = '';
+            
+            if (data.variables && Object.keys(data.variables).length > 0) {
+                Object.entries(data.variables).forEach(([key, value]) => {
+                    addVariableRow('editVariablesContainer', 'edit_var_names[]', 'edit_var_values[]');
+                    const rows = container.querySelectorAll('.variable-row');
+                    const lastRow = rows[rows.length - 1];
+                    lastRow.querySelector('input[name="edit_var_names[]"]').value = key;
+                    lastRow.querySelector('input[name="edit_var_values[]"]').value = value;
+                });
+            } else {
+                addVariableRow('editVariablesContainer', 'edit_var_names[]', 'edit_var_values[]');
+            }
+            
+            // Update form action
+            document.getElementById('editEnvironmentForm').action = `/dashboard/api-testing/environments/${environmentId}/update/`;
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('editEnvironmentModal')).show();
+        })
+        .catch(error => {
+            alert('Error loading environment: ' + error.message);
+        });
+}
+
+function duplicateEnvironment(environmentId) {
+    if (confirm('Are you sure you want to duplicate this environment?')) {
+        fetch(`/dashboard/api-testing/environments/${environmentId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.new_environment_id) {
+                location.reload();
+            } else {
+                alert('Error duplicating environment');
+            }
+        })
+        .catch(error => {
+            alert('Error duplicating environment: ' + error.message);
+        });
+    }
+}
+
+function setDefaultEnvironment(environmentId) {
+    if (confirm('Are you sure you want to set this as the default environment?')) {
+        fetch(`/dashboard/api-testing/environments/${environmentId}/set-default/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error setting default environment: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error setting default environment: ' + error.message);
+        });
+    }
+}
+
+function deleteEnvironment(environmentId) {
+    if (confirm('Are you sure you want to delete this environment? This action cannot be undone.')) {
+        fetch(`/dashboard/api-testing/environments/${environmentId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting environment: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error deleting environment: ' + error.message);
+        });
+    }
+}
+
+// Edit environment form submission
+document.getElementById('editEnvironmentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Saving...';
+    
+    try {
+        // Process variables
+        const varNames = formData.getAll('edit_var_names[]');
+        const varValues = formData.getAll('edit_var_values[]');
+        const variables = {};
+        
+        for (let i = 0; i < varNames.length; i++) {
+            if (varNames[i] && varValues[i]) {
+                variables[varNames[i]] = varValues[i];
+            }
+        }
+        
+        // Convert to JSON for PUT request
+        const data = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            variables: variables,
+            is_default: formData.get('is_default') === 'on'
+        };
+        
+        const response = await fetch(this.action, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error updating environment: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error updating environment: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+</script>
+{% endblock %}

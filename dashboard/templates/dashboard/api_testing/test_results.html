@@ -1,0 +1,475 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}API Test Results{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #667eea;
+        --secondary-color: #764ba2;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --info-color: #17a2b8;
+        --light-bg: #f8f9fa;
+        --dark-bg: #343a40;
+        --border-color: #dee2e6;
+    }
+
+    .test-results-page {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+
+    .page-header {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .page-title {
+        color: var(--dark-bg);
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    .results-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .result-item {
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .result-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .result-item.passed {
+        border-left: 4px solid var(--success-color);
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    }
+
+    .result-item.failed {
+        border-left: 4px solid var(--danger-color);
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    }
+
+    .result-item.error {
+        border-left: 4px solid var(--warning-color);
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    }
+
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .result-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--dark-bg);
+        margin-bottom: 5px;
+    }
+
+    .result-subtitle {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .result-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-passed {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .status-failed {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .status-error {
+        background: var(--warning-color);
+        color: black;
+    }
+
+    .result-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .metric-item {
+        text-align: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+    }
+
+    .metric-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: block;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .result-details {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        font-weight: 500;
+        color: var(--dark-bg);
+    }
+
+    .detail-value {
+        color: var(--primary-color);
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        margin-bottom: 20px;
+        opacity: 0.3;
+        color: var(--primary-color);
+    }
+
+    .empty-state h3 {
+        color: var(--dark-bg);
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .empty-state p {
+        margin-bottom: 30px;
+        font-size: 1.1rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border: none;
+        border-radius: 8px;
+        padding: 12px 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .filters {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .form-control {
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 12px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    @media (max-width: 768px) {
+        .result-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .result-metrics {
+            grid-template-columns: 1fr;
+        }
+        
+        .filter-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-results-page">
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">API Test Results</h1>
+                    <p class="page-subtitle">View and analyze your API test execution results</p>
+                </div>
+                <a href="{% url 'dashboard:api_testing_workspace' %}" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Run New Tests
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filter-row">
+                <div>
+                    <label class="form-label">Status</label>
+                    <select class="form-control" id="statusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="passed">Passed</option>
+                        <option value="failed">Failed</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Collection</label>
+                    <select class="form-control" id="collectionFilter">
+                        <option value="">All Collections</option>
+                        <!-- Will be populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Date Range</label>
+                    <select class="form-control" id="dateFilter">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-end">
+                    <button class="btn btn-outline-primary" onclick="applyFilters()">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div class="results-container">
+            {% if results %}
+                {% for result in results %}
+                <div class="result-item {{ result.status }}">
+                    <div class="result-header">
+                        <div>
+                            <h4 class="result-title">{{ result.test.name }}</h4>
+                            <p class="result-subtitle">
+                                {{ result.request.name }} • {{ result.executed_at|timesince }} ago
+                            </p>
+                        </div>
+                        <div class="result-status">
+                            <span class="status-badge status-{{ result.status }}">
+                                {{ result.status|title }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="result-metrics">
+                        <div class="metric-item">
+                            <span class="metric-value">{{ result.response_status|default:"N/A" }}</span>
+                            <span class="metric-label">Status Code</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value">{{ result.response_time|floatformat:0|default:"N/A" }}ms</span>
+                            <span class="metric-label">Response Time</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value">{{ result.response_body|length|default:"0" }}</span>
+                            <span class="metric-label">Response Size</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value">{{ result.test_results|length|default:"0" }}</span>
+                            <span class="metric-label">Assertions</span>
+                        </div>
+                    </div>
+
+                    <div class="result-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Request Method:</span>
+                            <span class="detail-value">{{ result.request.method }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Request URL:</span>
+                            <span class="detail-value">{{ result.request.url }}</span>
+                        </div>
+                        {% if result.error_message %}
+                        <div class="detail-row">
+                            <span class="detail-label">Error Message:</span>
+                            <span class="detail-value text-danger">{{ result.error_message }}</span>
+                        </div>
+                        {% endif %}
+                        {% if result.test_results %}
+                        <div class="detail-row">
+                            <span class="detail-label">Test Results:</span>
+                            <span class="detail-value">
+                                {% for test_result in result.test_results %}
+                                    <div class="mb-1">
+                                        <strong>{{ test_result.name }}:</strong> 
+                                        <span class="text-{{ test_result.passed|yesno:'success,danger' }}">
+                                            {{ test_result.passed|yesno:'PASSED,FAILED' }}
+                                        </span>
+                                        {% if test_result.message %}
+                                            <br><small>{{ test_result.message }}</small>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>No Test Results Yet</h3>
+                    <p>Run some API tests to see results here</p>
+                    <a href="{% url 'dashboard:api_testing_workspace' %}" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Start Testing
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Populate collection filter
+    populateCollectionFilter();
+    
+    // Apply filters on page load
+    applyFilters();
+});
+
+function populateCollectionFilter() {
+    // This would typically fetch collections from the server
+    // For now, we'll use a placeholder
+    const collectionFilter = document.getElementById('collectionFilter');
+    const collections = [
+        { id: '1', name: 'User Management API' },
+        { id: '2', name: 'Product API' },
+        { id: '3', name: 'Authentication API' }
+    ];
+    
+    collections.forEach(collection => {
+        const option = document.createElement('option');
+        option.value = collection.id;
+        option.textContent = collection.name;
+        collectionFilter.appendChild(option);
+    });
+}
+
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const collectionFilter = document.getElementById('collectionFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    
+    const resultItems = document.querySelectorAll('.result-item');
+    
+    resultItems.forEach(item => {
+        let show = true;
+        
+        // Status filter
+        if (statusFilter && !item.classList.contains(statusFilter)) {
+            show = false;
+        }
+        
+        // Collection filter (would need data attributes on items)
+        if (collectionFilter) {
+            // This would check against collection data
+            // For now, we'll show all items
+        }
+        
+        // Date filter (would need to check execution date)
+        if (dateFilter) {
+            // This would filter by date range
+            // For now, we'll show all items
+        }
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+}
+
+// Auto-refresh results every 30 seconds
+setInterval(function() {
+    if (document.visibilityState === 'visible') {
+        location.reload();
+    }
+}, 30000);
+</script>
+{% endblock %}

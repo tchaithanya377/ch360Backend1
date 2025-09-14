@@ -1,0 +1,115 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Vehicles</div>
+            <div class="h3 mb-0">{{ vehicles_count }}</div>
+          </div>
+          <i class="fas fa-bus fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_vehicles' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_vehicle_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Drivers</div>
+            <div class="h3 mb-0">{{ drivers_count }}</div>
+          </div>
+          <i class="fas fa-id-badge fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_drivers' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_driver_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Routes</div>
+            <div class="h3 mb-0">{{ routes_count }}</div>
+          </div>
+          <i class="fas fa-route fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_routes' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_route_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Stops</div>
+            <div class="h3 mb-0">{{ stops_count }}</div>
+          </div>
+          <i class="fas fa-map-marker-alt fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_stops' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_stop_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-sm-6 col-lg-4">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Assignments</div>
+            <div class="h3 mb-0">{{ assignments_count }}</div>
+          </div>
+          <i class="fas fa-tasks fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_assignments' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_assignment_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Schedules</div>
+            <div class="h3 mb-0">{{ schedules_count }}</div>
+          </div>
+          <i class="fas fa-clock fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_schedules' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_schedule_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card stats-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="h6">Passes</div>
+            <div class="h3 mb-0">{{ passes_count }}</div>
+          </div>
+          <i class="fas fa-ticket-alt fa-2x"></i>
+        </div>
+        <a class="btn btn-light btn-sm mt-3" href="{% url 'dashboard:transport_passes' %}">Manage</a>
+        <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'dashboard:transport_pass_create' %}">Add</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

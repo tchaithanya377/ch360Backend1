@@ -1,0 +1,291 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Exam Registration Detail - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-user-check text-primary"></i>
+            Exam Registration: {{ exam_registration.student.roll_number }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'dashboard:exams_registrations' %}'">
+                    <i class="fas fa-arrow-left"></i> Back to Registrations
+                </button>
+                <button type="button" class="btn btn-sm btn-success" onclick="editRegistration()">
+                    <i class="fas fa-edit"></i> Edit Registration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Registration Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Student:</label>
+                            <p>
+                                <strong>{{ exam_registration.student.roll_number }}</strong><br>
+                                <small class="text-muted">{{ exam_registration.student.first_name }} {{ exam_registration.student.last_name }}</small>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Exam Schedule:</label>
+                            <p>
+                                <strong>{{ exam_registration.exam_schedule.course.code }}</strong><br>
+                                <small class="text-muted">{{ exam_registration.exam_schedule.title }}</small>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Registration Date:</label>
+                            <p>{{ exam_registration.registration_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p>
+                                {% if exam_registration.status == 'PENDING' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif exam_registration.status == 'APPROVED' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif exam_registration.status == 'REJECTED' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% elif exam_registration.status == 'CANCELLED' %}
+                                    <span class="badge bg-secondary">Cancelled</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Exam Date:</label>
+                            <p>{{ exam_registration.exam_schedule.exam_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Exam Time:</label>
+                            <p>{{ exam_registration.exam_schedule.start_time|time:"H:i" }} - {{ exam_registration.exam_schedule.end_time|time:"H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Course:</label>
+                            <p>{{ exam_registration.exam_schedule.course.title }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Exam Type:</label>
+                            <p><span class="badge bg-info">{{ exam_registration.exam_schedule.get_exam_type_display }}</span></p>
+                        </div>
+                    </div>
+                    {% if exam_registration.special_requirements %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Special Requirements:</label>
+                        <p>{{ exam_registration.special_requirements }}</p>
+                    </div>
+                    {% endif %}
+                    {% if exam_registration.notes %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes:</label>
+                        <p>{{ exam_registration.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="text-primary">{{ exam_registration.student.exam_registrations.count }}</h3>
+                        <p class="text-muted">Total Registrations</p>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-success">{{ exam_registration.student.exam_registrations.filter.status='APPROVED'|length }}</h3>
+                        <p class="text-muted">Approved</p>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-warning">{{ exam_registration.student.exam_registrations.filter.status='PENDING'|length }}</h3>
+                        <p class="text-muted">Pending</p>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-info">{{ exam_registration.student.hall_tickets.count }}</h3>
+                        <p class="text-muted">Hall Tickets</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Hall Ticket -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-ticket-alt"></i> Hall Ticket</h5>
+        </div>
+        <div class="card-body">
+            {% if exam_registration.hall_ticket %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ticket Number:</label>
+                        <p><span class="badge bg-primary">{{ exam_registration.hall_ticket.ticket_number }}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Status:</label>
+                        <p>
+                            {% if exam_registration.hall_ticket.status == 'DRAFT' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif exam_registration.hall_ticket.status == 'GENERATED' %}
+                                <span class="badge bg-primary">Generated</span>
+                            {% elif exam_registration.hall_ticket.status == 'PRINTED' %}
+                                <span class="badge bg-info">Printed</span>
+                            {% elif exam_registration.hall_ticket.status == 'ISSUED' %}
+                                <span class="badge bg-success">Issued</span>
+                            {% elif exam_registration.hall_ticket.status == 'USED' %}
+                                <span class="badge bg-warning">Used</span>
+                            {% elif exam_registration.hall_ticket.status == 'EXPIRED' %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Generated Date:</label>
+                        <p>{{ exam_registration.hall_ticket.generated_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Room Assignment:</label>
+                        <p>
+                            {% if exam_registration.hall_ticket.exam_room %}
+                                {{ exam_registration.hall_ticket.exam_room.name }} ({{ exam_registration.hall_ticket.exam_room.building }})
+                                {% if exam_registration.hall_ticket.seat_number %}
+                                    - Seat {{ exam_registration.hall_ticket.seat_number }}
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'dashboard:exams_hall_ticket_detail' exam_registration.hall_ticket.id %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-eye"></i> View Ticket
+                    </a>
+                    <button type="button" class="btn btn-outline-success me-2" onclick="downloadTicket()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="printTicket()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hall ticket generated</h5>
+                    <p class="text-muted">Hall ticket will be generated automatically when registration is approved.</p>
+                    {% if exam_registration.status == 'APPROVED' %}
+                        <button type="button" class="btn btn-primary" onclick="generateTicket()">
+                            <i class="fas fa-plus"></i> Generate Ticket
+                        </button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Registration Actions -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-cogs"></i> Registration Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% if exam_registration.status == 'PENDING' %}
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-success w-100" onclick="approveRegistration()">
+                        <i class="fas fa-check fa-2x mb-2"></i><br>
+                        Approve
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="rejectRegistration()">
+                        <i class="fas fa-times fa-2x mb-2"></i><br>
+                        Reject
+                    </button>
+                </div>
+                {% endif %}
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="editRegistration()">
+                        <i class="fas fa-edit fa-2x mb-2"></i><br>
+                        Edit
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-warning w-100" onclick="cancelRegistration()">
+                        <i class="fas fa-ban fa-2x mb-2"></i><br>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editRegistration() {
+    // Implement edit functionality
+    console.log('Edit registration:', '{{ exam_registration.id }}');
+}
+
+function approveRegistration() {
+    if (confirm('Are you sure you want to approve this registration?')) {
+        // Implement approve functionality
+        console.log('Approve registration:', '{{ exam_registration.id }}');
+    }
+}
+
+function rejectRegistration() {
+    if (confirm('Are you sure you want to reject this registration?')) {
+        // Implement reject functionality
+        console.log('Reject registration:', '{{ exam_registration.id }}');
+    }
+}
+
+function cancelRegistration() {
+    if (confirm('Are you sure you want to cancel this registration?')) {
+        // Implement cancel functionality
+        console.log('Cancel registration:', '{{ exam_registration.id }}');
+    }
+}
+
+function generateTicket() {
+    if (confirm('Generate hall ticket for this registration?')) {
+        // Implement generate ticket functionality
+        console.log('Generate ticket for registration:', '{{ exam_registration.id }}');
+    }
+}
+
+function downloadTicket() {
+    // Implement download functionality
+    console.log('Download ticket:', '{{ exam_registration.hall_ticket.id }}');
+}
+
+function printTicket() {
+    // Implement print functionality
+    console.log('Print ticket:', '{{ exam_registration.hall_ticket.id }}');
+}
+</script>
+{% endblock %}

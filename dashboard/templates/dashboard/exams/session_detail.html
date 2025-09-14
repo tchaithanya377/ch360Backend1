@@ -1,0 +1,239 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Exam Session Detail - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-calendar-alt text-primary"></i>
+            Exam Session: {{ exam_session.name }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'dashboard:exams_sessions' %}'">
+                    <i class="fas fa-arrow-left"></i> Back to Sessions
+                </button>
+                <button type="button" class="btn btn-sm btn-success" onclick="editSession()">
+                    <i class="fas fa-edit"></i> Edit Session
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Session Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Session Name:</label>
+                            <p>{{ exam_session.name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Session Type:</label>
+                            <p><span class="badge bg-info">{{ exam_session.get_session_type_display }}</span></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Academic Year:</label>
+                            <p>{{ exam_session.academic_year }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Semester:</label>
+                            <p>{{ exam_session.semester }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Start Date:</label>
+                            <p>{{ exam_session.start_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">End Date:</label>
+                            <p>{{ exam_session.end_date|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Registration Start:</label>
+                            <p>{{ exam_session.registration_start|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Registration End:</label>
+                            <p>{{ exam_session.registration_end|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% if exam_session.description %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description:</label>
+                        <p>{{ exam_session.description }}</p>
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Status:</label>
+                        <p>
+                            {% if exam_session.status == 'DRAFT' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif exam_session.status == 'PUBLISHED' %}
+                                <span class="badge bg-primary">Published</span>
+                            {% elif exam_session.status == 'ONGOING' %}
+                                <span class="badge bg-success">Ongoing</span>
+                            {% elif exam_session.status == 'COMPLETED' %}
+                                <span class="badge bg-info">Completed</span>
+                            {% elif exam_session.status == 'CANCELLED' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="text-primary">{{ exam_session.exam_schedules.count }}</h3>
+                        <p class="text-muted">Total Exams</p>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-success">{{ exam_session.exam_schedules.filter.status='SCHEDULED'|length }}</h3>
+                        <p class="text-muted">Scheduled</p>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-warning">{{ exam_session.exam_schedules.filter.status='ONGOING'|length }}</h3>
+                        <p class="text-muted">Ongoing</p>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-info">{{ exam_session.exam_schedules.filter.status='COMPLETED'|length }}</h3>
+                        <p class="text-muted">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Schedules -->
+    <div class="card shadow mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-clock"></i> Exam Schedules</h5>
+            <button type="button" class="btn btn-sm btn-primary" onclick="location.href='{% url 'dashboard:exams_schedules' %}'">
+                <i class="fas fa-plus"></i> Add Schedule
+            </button>
+        </div>
+        <div class="card-body">
+            {% if exam_session.exam_schedules.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Course</th>
+                                <th>Title</th>
+                                <th>Date & Time</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for schedule in exam_session.exam_schedules.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ schedule.course.code }}</strong><br>
+                                    <small class="text-muted">{{ schedule.course.title|truncatechars:40 }}</small>
+                                </td>
+                                <td>{{ schedule.title }}</td>
+                                <td>
+                                    <strong>{{ schedule.exam_date|date:"M d, Y" }}</strong><br>
+                                    <small class="text-muted">{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}</small>
+                                </td>
+                                <td>{{ schedule.duration_minutes }} min</td>
+                                <td>
+                                    {% if schedule.status == 'SCHEDULED' %}
+                                        <span class="badge bg-primary">Scheduled</span>
+                                    {% elif schedule.status == 'ONGOING' %}
+                                        <span class="badge bg-success">Ongoing</span>
+                                    {% elif schedule.status == 'COMPLETED' %}
+                                        <span class="badge bg-info">Completed</span>
+                                    {% elif schedule.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'dashboard:exams_schedule_detail' schedule.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No exam schedules found</h5>
+                    <p class="text-muted">Create exam schedules for this session to get started.</p>
+                    <button type="button" class="btn btn-primary" onclick="location.href='{% url 'dashboard:exams_schedules' %}'">
+                        <i class="fas fa-plus"></i> Create Schedule
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Session Actions -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-cogs"></i> Session Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="location.href='{% url 'dashboard:exams_schedules' %}'">
+                        <i class="fas fa-clock fa-2x mb-2"></i><br>
+                        Manage Schedules
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-success w-100" onclick="location.href='{% url 'dashboard:exams_registrations' %}'">
+                        <i class="fas fa-user-check fa-2x mb-2"></i><br>
+                        View Registrations
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-info w-100" onclick="location.href='{% url 'dashboard:exams_hall_tickets' %}'">
+                        <i class="fas fa-ticket-alt fa-2x mb-2"></i><br>
+                        Generate Tickets
+                    </button>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button type="button" class="btn btn-outline-warning w-100" onclick="location.href='{% url 'dashboard:exams_attendance' %}'">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i><br>
+                        Track Attendance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editSession() {
+    // Implement edit functionality
+    console.log('Edit session:', '{{ exam_session.id }}');
+    // You can redirect to edit page or show edit modal
+}
+</script>
+{% endblock %}

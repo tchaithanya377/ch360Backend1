@@ -1,0 +1,137 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mentoring Projects - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h3"><i class="fas fa-project-diagram text-primary"></i> Projects</h1>
+    <div>
+        <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#createProjectModal"><i class="fas fa-plus"></i> New Project</button>
+        <a href="{% url 'dashboard:mentoring_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+    
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Mentor</th>
+                        <th>Student</th>
+                        <th>Status</th>
+                        <th>Start</th>
+                        <th>Due</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in projects %}
+                    <tr>
+                        <td>{{ p.title }}</td>
+                        <td>{{ p.mentorship.mentor.name }}</td>
+                        <td>{{ p.mentorship.student.full_name }}</td>
+                        <td><span class="badge bg-info">{{ p.status }}</span></td>
+                        <td>{{ p.start_date|date:"M d, Y"|default:"-" }}</td>
+                        <td>{{ p.due_date|date:"M d, Y"|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">No projects found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+<!-- Create Project Modal -->
+<div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createProjectModalLabel">Create Project</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createProjectForm">
+          <div class="mb-2">
+            <label class="form-label">Mentorship ID</label>
+            <input type="text" class="form-control" name="mentorship" placeholder="UUID of mentorship" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-control" name="title" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3"></textarea>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="form-label">Status</label>
+              <input type="text" class="form-control" name="status" placeholder="PLANNED">
+            </div>
+            <div class="col">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" name="start_date">
+            </div>
+            <div class="col">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-control" name="due_date">
+            </div>
+          </div>
+        </form>
+        <div id="createProjectResult" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="submitCreateProject()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+async function submitCreateProject() {
+  const form = document.getElementById('createProjectForm');
+  const payload = Object.fromEntries(new FormData(form).entries());
+  const resEl = document.getElementById('createProjectResult');
+  resEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/v1/mentoring/projects/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      resEl.innerHTML = '<div class="alert alert-success">Project created.</div>';
+      setTimeout(() => location.reload(), 800);
+    } else {
+      resEl.innerHTML = `<div class="alert alert-danger">${JSON.stringify(data)}</div>`;
+    }
+  } catch (e) {
+    resEl.innerHTML = `<div class="alert alert-danger">${e}</div>`;
+  }
+}
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+          }
+      }
+  }
+  return cookieValue;
+}
+</script>
+{% endblock %}
+{% endblock %}
+
+

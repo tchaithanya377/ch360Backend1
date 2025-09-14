@@ -1,0 +1,219 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Mentoring Dashboard - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-user-friends text-primary"></i> Mentoring</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button class="btn btn-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#autoAssignModal">
+            <i class="fas fa-magic"></i> Auto-Assign Mentors
+        </button>
+        <a href="{% url 'dashboard:mentoring_mentorships' %}" class="btn btn-primary btn-sm me-2"><i class="fas fa-link"></i> Mentorships</a>
+        <a href="{% url 'dashboard:mentoring_projects' %}" class="btn btn-primary btn-sm me-2"><i class="fas fa-project-diagram"></i> Projects</a>
+        <a href="{% url 'dashboard:mentoring_meetings' %}" class="btn btn-primary btn-sm me-2"><i class="fas fa-calendar"></i> Meetings</a>
+        <a href="{% url 'dashboard:mentoring_feedback' %}" class="btn btn-primary btn-sm"><i class="fas fa-comment-dots"></i> Feedback</a>
+    </div>
+    
+    
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="card-title text-white-50">Total Mentorships</h6>
+                    <h2 class="mb-0">{{ total_mentorships }}</h2>
+                </div>
+                <i class="fas fa-link fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="card-title text-white-50">Active Mentorships</h6>
+                    <h2 class="mb-0">{{ active_mentorships }}</h2>
+                </div>
+                <i class="fas fa-bolt fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="card-title text-white-50">Total Projects</h6>
+                    <h2 class="mb-0">{{ total_projects }}</h2>
+                </div>
+                <i class="fas fa-project-diagram fa-2x opacity-75"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-Assign Modal -->
+<div class="modal fade" id="autoAssignModal" tabindex="-1" aria-labelledby="autoAssignModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="autoAssignModalLabel">Auto-Assign Mentors</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="autoAssignForm">
+          <div class="mb-3">
+            <label class="form-label">Department ID (optional)</label>
+            <input type="text" class="form-control" name="department_id" placeholder="UUID of Department">
+          </div>
+          <div class="row">
+            <div class="col">
+              <label class="form-label">Academic Year</label>
+              <input type="text" class="form-control" name="academic_year" placeholder="2024-2025">
+            </div>
+            <div class="col">
+              <label class="form-label">Grade</label>
+              <input type="text" class="form-control" name="grade_level" placeholder="10">
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col">
+              <label class="form-label">Section</label>
+              <input type="text" class="form-control" name="section" placeholder="A">
+            </div>
+            <div class="col">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" name="start_date">
+            </div>
+          </div>
+        </form>
+        <div class="alert alert-info mt-2">Round-robin assignment among active faculty (optionally filtered by department).</div>
+        <div id="autoAssignResult" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="submitAutoAssign()">Run</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-calendar text-primary"></i> Upcoming Meetings</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Mentor</th>
+                                <th>Student</th>
+                                <th>When</th>
+                                <th>Agenda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in upcoming_meetings %}
+                            <tr>
+                                <td>{{ m.mentorship.mentor.name }}</td>
+                                <td>{{ m.mentorship.student.full_name }}</td>
+                                <td>{{ m.scheduled_at|date:"M d, H:i" }}</td>
+                                <td>{{ m.agenda|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted">No upcoming meetings</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-comment-dots text-primary"></i> Recent Feedback</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Mentor</th>
+                                <th>Student</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in recent_feedback %}
+                            <tr>
+                                <td>{{ f.mentorship.mentor.name }}</td>
+                                <td>{{ f.mentorship.student.full_name }}</td>
+                                <td><span class="badge bg-info">{{ f.rating }}</span></td>
+                                <td>{{ f.comments|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted">No feedback yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function submitAutoAssign() {
+  const form = document.getElementById('autoAssignForm');
+  const payload = Object.fromEntries(new FormData(form).entries());
+  const resEl = document.getElementById('autoAssignResult');
+  resEl.innerHTML = '';
+  try {
+    const resp = await fetch('/api/v1/mentoring/mentorships/auto-assign/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      resEl.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> Assigned ${data.assigned} mentorship(s).</div>`;
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      resEl.innerHTML = `<div class="alert alert-danger">${data.detail || 'Error'}</div>`;
+    }
+  } catch (e) {
+    resEl.innerHTML = `<div class="alert alert-danger">${e}</div>`;
+  }
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+          }
+      }
+  }
+  return cookieValue;
+}
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,245 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Assignments List - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-dark">
+                        <i class="fas fa-list text-primary me-2"></i>
+                        Assignments
+                    </h1>
+                    <p class="text-muted mb-0">View and manage all assignments</p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if user.faculty_profile %}
+                        <a href="{% url 'dashboard:assignment_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Create Assignment
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'dashboard:assignments_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ filters.search }}" placeholder="Search assignments...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Status</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if filters.category == category.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="overdue" class="form-label">Overdue</label>
+                            <select class="form-select" id="overdue" name="overdue">
+                                <option value="">All</option>
+                                <option value="true" {% if filters.overdue == 'true' %}selected{% endif %}>Overdue Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search me-1"></i>Filter
+                            </button>
+                            <a href="{% url 'dashboard:assignments_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tasks me-2"></i>Assignments List
+                    </h6>
+                    <span class="badge bg-primary">{{ assignments.count }} assignments</span>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Faculty</th>
+                                        <th>Category</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Max Marks</th>
+                                        <th>Submissions</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in assignments %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-2">
+                                                    {% if assignment.is_group_assignment %}
+                                                        <i class="fas fa-users text-info" title="Group Assignment"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-user text-primary" title="Individual Assignment"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ assignment.title }}</strong>
+                                                    {% if assignment.is_overdue %}
+                                                        <i class="fas fa-exclamation-triangle text-danger ms-1" title="Overdue"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                                     style="width: 30px; height: 30px; font-size: 12px;">
+                                                    {{ assignment.faculty.name|first|upper }}
+                                                </div>
+                                                <span>{{ assignment.faculty.name }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if assignment.category %}
+                                                <span class="badge" style="background-color: {{ assignment.category.color_code }};">
+                                                    {{ assignment.category.name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">No category</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="{% if assignment.is_overdue %}text-danger{% endif %}">
+                                                {{ assignment.due_date|date:"M d, Y H:i" }}
+                                            </span>
+                                            {% if assignment.is_overdue %}
+                                                <br><small class="text-danger">Overdue</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if assignment.status == 'PUBLISHED' %}bg-success
+                                                {% elif assignment.status == 'DRAFT' %}bg-warning
+                                                {% elif assignment.status == 'CLOSED' %}bg-secondary
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ assignment.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ assignment.max_marks }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {{ assignment.submission_count }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'dashboard:assignment_detail' assignment.id %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if user.faculty_profile and assignment.faculty == user.faculty_profile %}
+                                                    <a href="{% url 'dashboard:assignment_edit' assignment.id %}" 
+                                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                {% endif %}
+                                                {% if user.student_profile and not assignment.submissions.filter.student == user.student_profile %}
+                                                    <a href="{% url 'dashboard:assignment_submit' assignment.id %}" 
+                                                       class="btn btn-sm btn-outline-success" title="Submit">
+                                                        <i class="fas fa-upload"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No assignments found</h5>
+                            <p class="text-muted">
+                                {% if filters.search or filters.status or filters.category or filters.overdue %}
+                                    Try adjusting your filters to see more results.
+                                {% else %}
+                                    {% if user.faculty_profile %}
+                                        Create your first assignment to get started.
+                                    {% else %}
+                                        No assignments have been assigned to you yet.
+                                    {% endif %}
+                                {% endif %}
+                            </p>
+                            {% if user.faculty_profile %}
+                                <a href="{% url 'dashboard:assignment_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>Create Assignment
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit form on filter change
+    document.getElementById('status').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('category').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('overdue').addEventListener('change', function() {
+        this.form.submit();
+    });
+</script>
+{% endblock %}

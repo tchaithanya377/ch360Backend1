@@ -1,0 +1,76 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Timetable Details - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-calendar-alt text-info"></i>
+            Timetable Details
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_timetables' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Timetables
+                </a>
+                <a href="/admin/academics/timetable/{{ timetable.id }}/change/" class="btn btn-sm btn-warning">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Timetable Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Course:</strong> {{ timetable.course.code }} - {{ timetable.course.title }}</p>
+                    <p><strong>Day:</strong> {{ timetable.get_day_of_week_display }}</p>
+                    <p><strong>Time:</strong> {{ timetable.start_time|time:"H:i" }} - {{ timetable.end_time|time:"H:i" }}</p>
+                    <p><strong>Duration:</strong> {{ duration_minutes }} minutes</p>
+                    <p><strong>Room:</strong> {{ timetable.room }}</p>
+                    <p><strong>Faculty:</strong> {{ timetable.faculty.first_name }} {{ timetable.faculty.last_name }}</p>
+                    <p><strong>Type:</strong> {{ timetable.get_timetable_type_display }}</p>
+                    <p><strong>Status:</strong> {% if timetable.is_active %}Active{% else %}Inactive{% endif %}</p>
+                    <p><strong>Academic Year:</strong> {{ timetable.academic_year }}</p>
+                    <p><strong>Semester:</strong> {{ timetable.semester }}</p>
+                    {% if timetable.notes %}
+                        <p><strong>Notes:</strong> {{ timetable.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Conflicts</h5>
+                </div>
+                <div class="card-body">
+                    {% if has_conflicts %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Potential conflicts detected!
+                        </div>
+                        {% for conflict in conflicts %}
+                            <div class="border-bottom pb-2 mb-2">
+                                <small class="text-muted">{{ conflict.course.code }} - {{ conflict.course.title }}</small><br>
+                                <small>{{ conflict.start_time|time:"H:i" }} - {{ conflict.end_time|time:"H:i" }}</small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            No conflicts detected
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Request #{{ item.id }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">Request #{{ item.id }}</h2>
+    <div class="text-muted">Created {{ item.created_at|date:'Y-m-d H:i' }} by {{ item.created_by }}</div>
+  </div>
+  <a href="{% url 'dashboard:home' %}" class="btn btn-outline-secondary">Back</a>
+ </div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update">
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" value="{{ item.title }}" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="6">{{ item.description }}</textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Target</label>
+            <select name="target" class="form-select" required>
+              {% for val,label in targets %}
+                <option value="{{ val }}" {% if item.target == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select">
+                <option value="open" {% if item.status == 'open' %}selected{% endif %}>Open</option>
+                <option value="in_progress" {% if item.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="resolved" {% if item.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                <option value="closed" {% if item.status == 'closed' %}selected{% endif %}>Closed</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Priority</label>
+              <select name="priority" class="form-select">
+                <option value="low" {% if item.priority == 'low' %}selected{% endif %}>Low</option>
+                <option value="medium" {% if item.priority == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="high" {% if item.priority == 'high' %}selected{% endif %}>High</option>
+                <option value="urgent" {% if item.priority == 'urgent' %}selected{% endif %}>Urgent</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Due Date</label>
+              <input type="date" name="due_date" value="{{ item.due_date|date:'Y-m-d' }}" class="form-control">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Assignee (email or username)</label>
+            <input type="text" name="assignee" value="{{ item.assignee }}" class="form-control" placeholder="Optional">
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="fa fa-save"></i> Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-bold">Quick Status</div>
+            <span class="badge text-bg-secondary mb-2">{{ item.get_status_display }}</span>
+            <div>Priority: <span class="badge text-bg-light text-uppercase">{{ item.priority }}</span></div>
+            <div>Due: {{ item.due_date|default:'—' }}</div>
+            <div>Assignee: {{ item.assignee|default:'—' }}</div>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_resolved">
+            {% if item.is_resolved %}
+              <button class="btn btn-outline-warning" type="submit"><i class="fa fa-undo"></i> Reopen</button>
+            {% else %}
+              <button class="btn btn-outline-success" type="submit"><i class="fa fa-check"></i> Mark Resolved</button>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Comments</h5>
+        <div class="mb-3" style="max-height: 280px; overflow-y:auto;">
+          {% for c in item.comments.all %}
+            <div class="border-bottom pb-2 mb-2">
+              <div class="small text-muted">{{ c.created_at|date:'Y-m-d H:i' }} by {{ c.author }}</div>
+              <div>{{ c.content|linebreaksbr }}</div>
+            </div>
+          {% empty %}
+            <div class="text-muted">No comments yet.</div>
+          {% endfor %}
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_comment">
+          <textarea name="comment" class="form-control mb-2" rows="3" placeholder="Write a comment..."></textarea>
+          <button class="btn btn-outline-primary" type="submit"><i class="fa fa-paper-plane"></i> Add Comment</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

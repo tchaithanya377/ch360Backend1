@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CampsHub360 Dashboard{% endblock %}</title>
+    
+    <!-- Bootstrap 5.3.2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome 6.5.0 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    {% load static %}
+    <!-- Custom CSS will be loaded after Bootstrap to override if needed -->
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --info-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Enhanced Sidebar */
+        .sidebar {
+            min-height: 100vh;
+            max-height: 100vh;
+            background: var(--primary-gradient);
+            overflow-y: auto;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 280px;
+            z-index: 1000;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.3) transparent;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255,255,255,0.5);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .sidebar-header h4 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .sidebar-header .subtitle {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            border-radius: 12px;
+            margin: 3px 8px;
+            padding: 12px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .sidebar .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .sidebar .badge {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+        }
+
+        .sidebar .exam-management-nav {
+            background-color: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-weight: 600;
+            margin: 8px;
+        }
+
+        .sidebar .exam-management-nav:hover {
+            background-color: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            margin-left: 280px;
+            transition: all 0.3s ease;
+        }
+
+        .content-header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .content-body {
+            padding: 2rem;
+        }
+
+        /* Enhanced Cards */
+        .card {
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .stats-card {
+            background: var(--primary-gradient);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .stats-card .card-body {
+            position: relative;
+            z-index: 2;
+        }
+
+        .stats-card h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stats-card h6 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-card i {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        /* Enhanced Buttons */
+        .btn {
+            border-radius: 10px;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-outline-light {
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+        }
+
+        .btn-outline-light:hover {
+            background-color: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+        }
+
+        /* Enhanced Tables */
+        .table-responsive {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background-color: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            font-weight: 600;
+            color: #475569;
+            padding: 1rem;
+        }
+
+        .table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Enhanced Badges */
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .content-header {
+                padding: 1rem;
+            }
+            
+            .content-body {
+                padding: 1rem;
+            }
+            
+            .stats-card h2 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar for main content */
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .main-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .main-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Avatar styling */
+        .avatar-sm {
+            width: 40px;
+            height: 40px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Stats icon styling */
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* Enhanced card hover effects */
+        .card:hover .stats-icon {
+            transform: scale(1.1);
+            transition: transform 0.3s ease;
+        }
+
+        /* Progress bars */
+        .progress {
+            height: 8px;
+            border-radius: 10px;
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+                <div class="sidebar-header">
+                    <h4>
+                        <i class="fas fa-tachometer-alt"></i>
+                        CampsHub360
+                    </h4>
+                    <div class="subtitle">Management Dashboard</div>
+                </div>
+                
+                <div class="px-3 py-2">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" 
+                               href="{% url 'dashboard:home' %}">
+                                <i class="fas fa-home"></i> Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'users' %}active{% endif %}" 
+                               href="{% url 'dashboard:users' %}">
+                                <i class="fas fa-users"></i> Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'students' %}active{% endif %}" 
+                               href="{% url 'dashboard:students' %}">
+                                <i class="fas fa-graduation-cap"></i> Students
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'faculty_list' %}active{% endif %}"
+                               href="{% url 'dashboard:faculty_list' %}">
+                                <i class="fas fa-chalkboard-teacher"></i> Faculty
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'mentoring' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'dashboard:mentoring_dashboard' %}">
+                                <i class="fas fa-user-friends"></i> Mentoring
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'academics' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'dashboard:academics_dashboard' %}">
+                                <i class="fas fa-book-open"></i> Academics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'assignments' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'dashboard:assignments_dashboard' %}">
+                                <i class="fas fa-tasks"></i> Assignments
+                                <span class="badge bg-success ms-2" style="font-size: 0.6rem;">NEW</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'enrollment' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'dashboard:enrollment_dashboard' %}">
+                                <i class="fas fa-user-graduate"></i> Enrollment
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'placements' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'dashboard:placements_dashboard' %}">
+                                <i class="fas fa-briefcase"></i> Placements
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'rnd' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'dashboard:rnd_dashboard' %}">
+                                <i class="fas fa-flask"></i> R&D
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'facilities' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'dashboard:facilities_dashboard' %}">
+                                <i class="fas fa-building"></i> Facilities
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'transport' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'dashboard:transport_dashboard' %}">
+                                <i class="fas fa-bus"></i> Transportation
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'grads' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'dashboard:grads_dashboard' %}">
+                                <i class="fas fa-certificate"></i> Grads & Marks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'exams' in request.resolver_match.url_name %}active{% endif %} exam-management-nav" 
+                               href="{% url 'dashboard:exams_dashboard' %}">
+                                <i class="fas fa-file-alt"></i> Exam Management
+                                <span class="badge bg-success ms-2" style="font-size: 0.6rem;">NEW</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'fees' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'dashboard:fees_dashboard' %}">
+                                <i class="fas fa-money-bill-wave"></i> Fee Management
+                                <span class="badge bg-primary ms-2" style="font-size: 0.6rem;">NEW</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'feedback' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'dashboard:feedback_dashboard' %}">
+                                <i class="fas fa-comments"></i> Feedback
+                                <span class="badge bg-primary ms-2" style="font-size: 0.6rem;">NEW</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'open_requests' in request.resolver_match.url_name %}active{% endif %}"
+                               href="#" class="disabled" onclick="return false;">
+                                <i class="fas fa-inbox"></i> Open Requests
+                                <span class="badge bg-info ms-2" style="font-size: 0.6rem;">NEW</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'attendance' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'dashboard:attendance_sessions' %}">
+                                <i class="fas fa-check-circle"></i> Attendance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'custom_fields' %}active{% endif %}" 
+                               href="{% url 'dashboard:custom_fields' %}">
+                                <i class="fas fa-cogs"></i> Custom Fields
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'student_sessions' %}active{% endif %}" 
+                               href="{% url 'dashboard:student_sessions' %}">
+                                <i class="fas fa-clock"></i> Student Sessions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'roles' %}active{% endif %}" 
+                               href="{% url 'dashboard:roles' %}">
+                                <i class="fas fa-user-shield"></i> Roles
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'sessions' %}active{% endif %}" 
+                               href="{% url 'dashboard:sessions' %}">
+                                <i class="fas fa-clock"></i> Sessions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'audit' %}active{% endif %}" 
+                               href="{% url 'dashboard:audit' %}">
+                                <i class="fas fa-clipboard-list"></i> Audit Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'schema' %}active{% endif %}" 
+                               href="#" class="disabled" onclick="return false;">
+                                <i class="fas fa-database"></i> Database Schema
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" class="disabled" onclick="return false;">
+                                <i class="fas fa-code"></i> API Testing
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" class="disabled" onclick="return false;">
+                                <i class="fas fa-rocket"></i> Quick API Test
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" target="_blank">
+                                <i class="fas fa-book-open"></i> Documentation
+                                <span class="badge bg-success ms-2">NEW</span>
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="/admin/">
+                                <i class="fas fa-cog"></i> Django Admin
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            {% if request.user.is_authenticated %}
+                                <a class="nav-link" href="{% url 'dashboard:logout' %}" 
+                                   onclick="return confirm('Are you sure you want to logout?')"
+                                   title="Logout from your account">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </a>
+                            {% else %}
+                                <a class="nav-link" href="{% url 'dashboard:login' %}">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </a>
+                            {% endif %}
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" class="disabled" onclick="return false;">
+                                <i class="fas fa-project-diagram"></i> ER Diagram
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="text-muted mb-0">{% block page_subtitle %}Welcome to your management dashboard{% endblock %}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% block header_actions %}{% endblock %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-body">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Bootstrap 5.3.2 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Mermaid for diagrams -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        window.mermaid = mermaid;
+    </script>
+    
+    <script>
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('show');
+        }
+        
+        // Add mobile menu button for small screens
+        if (window.innerWidth <= 768) {
+            const header = document.querySelector('.content-header .d-flex');
+            const mobileMenuBtn = document.createElement('button');
+            mobileMenuBtn.className = 'btn btn-outline-primary d-md-none';
+            mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            mobileMenuBtn.onclick = toggleSidebar;
+            header.insertBefore(mobileMenuBtn, header.firstChild);
+        }
+        
+        // Auto-refresh data every 30 seconds (optional)
+        // setInterval(function() {
+        //     location.reload();
+        // }, 30000);
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add loading states to buttons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.type === 'submit' || this.classList.contains('btn-primary')) {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="loading"></span> Loading...';
+                    this.disabled = true;
+                    
+                    // Re-enable after 3 seconds (adjust as needed)
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 3000);
+                }
+            });
+        });
+        
+        // Add tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Add animations on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all cards for animation
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

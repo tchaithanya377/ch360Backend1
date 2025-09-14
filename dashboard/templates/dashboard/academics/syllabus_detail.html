@@ -1,0 +1,205 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ syllabus.course.code }} Syllabus - CampsHub360{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-file-alt text-success"></i>
+            {{ syllabus.course.code }} Syllabus
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'dashboard:academics_syllabi' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Syllabi
+                </a>
+                <a href="/admin/academics/syllabus/{{ syllabus.id }}/change/" class="btn btn-sm btn-warning">
+                    <i class="fas fa-edit"></i> Edit Syllabus
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Syllabus Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-info"></i>
+                        Syllabus Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Course:</strong> 
+                                <a href="{% url 'dashboard:academics_course_detail' syllabus.course.id %}">
+                                    {{ syllabus.course.code }} - {{ syllabus.course.title }}
+                                </a>
+                            </p>
+                            <p><strong>Version:</strong> {{ syllabus.version }}</p>
+                            <p><strong>Academic Year:</strong> {{ syllabus.academic_year }}</p>
+                            <p><strong>Semester:</strong> {{ syllabus.semester }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                {% if syllabus.status == 'APPROVED' %}
+                                    <span class="badge bg-success">{{ syllabus.get_status_display }}</span>
+                                {% elif syllabus.status == 'DRAFT' %}
+                                    <span class="badge bg-warning">{{ syllabus.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ syllabus.get_status_display }}</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Created:</strong> {{ syllabus.created_at|date:"M d, Y" }}</p>
+                            <p><strong>Updated:</strong> {{ syllabus.updated_at|date:"M d, Y" }}</p>
+                            {% if syllabus.approved_by %}
+                                <p><strong>Approved By:</strong> {{ syllabus.approved_by }}</p>
+                                <p><strong>Approved At:</strong> {{ syllabus.approved_at|date:"M d, Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Learning Objectives:</h6>
+                            <p class="text-muted">{{ syllabus.learning_objectives|linebreaks }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Course Outline:</h6>
+                            <p class="text-muted">{{ syllabus.course_outline|linebreaks }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Assessment Methods:</h6>
+                            <p class="text-muted">{{ syllabus.assessment_methods|linebreaks }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Grading Policy:</h6>
+                            <p class="text-muted">{{ syllabus.grading_policy|linebreaks }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Textbooks:</h6>
+                            <p class="text-muted">{{ syllabus.textbooks|linebreaks }}</p>
+                        </div>
+                    </div>
+                    {% if syllabus.additional_resources %}
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Additional Resources:</h6>
+                                <p class="text-muted">{{ syllabus.additional_resources|linebreaks }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar text-success"></i>
+                        Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="text-primary">{{ topics_count }}</h3>
+                        <small class="text-muted">Total Topics</small>
+                    </div>
+                    <div class="text-center mb-3">
+                        <h3 class="text-success">{{ total_hours }}</h3>
+                        <small class="text-muted">Total Hours</small>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-info">{{ syllabus.course.credits }}</h3>
+                        <small class="text-muted">Course Credits</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topics Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list text-primary"></i>
+                        Course Topics
+                    </h5>
+                    <a href="/admin/academics/syllabustopic/add/" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus"></i> Add Topic
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if topics %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Week</th>
+                                        <th>Title</th>
+                                        <th>Description</th>
+                                        <th>Duration</th>
+                                        <th>Order</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for topic in topics %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">Week {{ topic.week_number }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ topic.title }}</strong>
+                                            </td>
+                                            <td>{{ topic.description|truncatewords:20 }}</td>
+                                            <td>{{ topic.duration_hours }} hours</td>
+                                            <td>{{ topic.order }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="/admin/academics/syllabustopic/{{ topic.id }}/change/" 
+                                                       class="btn btn-sm btn-outline-warning">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="/admin/academics/syllabustopic/{{ topic.id }}/delete/" 
+                                                       class="btn btn-sm btn-outline-danger"
+                                                       onclick="return confirm('Are you sure you want to delete this topic?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-list fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No topics created yet</h6>
+                            <p class="text-muted">Add topics to organize course content by weeks.</p>
+                            <a href="/admin/academics/syllabustopic/add/" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add First Topic
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

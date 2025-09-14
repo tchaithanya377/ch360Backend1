@@ -1,0 +1,603 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{{ faculty.name }} - Faculty Details - CampsHub360{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    .info-card {
+        border-left: 4px solid #4e73df;
+        background: white;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 0.35rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+    .info-card h5 {
+        color: #4e73df;
+        margin-bottom: 1rem;
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f8f9fc;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #5a5c69;
+    }
+    .info-value {
+        color: #858796;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .nav-tabs .nav-link {
+        color: #5a5c69;
+    }
+    .nav-tabs .nav-link.active {
+        color: #4e73df;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">{{ faculty.name }}</h1>
+                <p class="mb-1">
+                    <strong>APAAR ID:</strong> {{ faculty.apaar_faculty_id }} | 
+                    <strong>Employee ID:</strong> {{ faculty.employee_id }}
+                </p>
+                <p class="mb-0">
+                    <strong>Department:</strong> {{ faculty.get_department_display }} | 
+                    <strong>Designation:</strong> {{ faculty.present_designation }}
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <span class="badge status-badge 
+                    {% if faculty.status == 'ACTIVE' %}badge-success
+                    {% elif faculty.status == 'INACTIVE' %}badge-secondary
+                    {% elif faculty.status == 'ON_LEAVE' %}badge-warning
+                    {% else %}badge-danger{% endif %}">
+                    {{ faculty.get_status_display }}
+                </span>
+                {% if faculty.is_head_of_department %}
+                <span class="badge badge-info ml-2">Head of Department</span>
+                {% endif %}
+                {% if faculty.is_mentor %}
+                <span class="badge badge-success ml-2">Mentor</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="facultyTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="overview-tab" data-toggle="tab" href="#overview" role="tab">
+                <i class="fas fa-user mr-1"></i> Overview
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="academic-tab" data-toggle="tab" href="#academic" role="tab">
+                <i class="fas fa-graduation-cap mr-1"></i> Academic
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="employment-tab" data-toggle="tab" href="#employment" role="tab">
+                <i class="fas fa-briefcase mr-1"></i> Employment
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab">
+                <i class="fas fa-address-book mr-1"></i> Contact
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="performance-tab" data-toggle="tab" href="#performance" role="tab">
+                <i class="fas fa-chart-line mr-1"></i> Performance
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="leaves-tab" data-toggle="tab" href="#leaves" role="tab">
+                <i class="fas fa-calendar-alt mr-1"></i> Leaves
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="documents-tab" data-toggle="tab" href="#documents" role="tab">
+                <i class="fas fa-file-alt mr-1"></i> Documents
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="custom-fields-tab" data-toggle="tab" href="#custom-fields" role="tab">
+                <i class="fas fa-cogs mr-1"></i> Custom Fields
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="facultyTabContent">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-user mr-2"></i>Personal Information</h5>
+                        <div class="info-row">
+                            <span class="info-label">Full Name:</span>
+                            <span class="info-value">{{ faculty.name }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Date of Birth:</span>
+                            <span class="info-value">{{ faculty.date_of_birth|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Gender:</span>
+                            <span class="info-value">{{ faculty.get_gender_display }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">PAN Number:</span>
+                            <span class="info-value">{{ faculty.pan_no|default:"Not provided" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value">
+                                <span class="badge 
+                                    {% if faculty.status == 'ACTIVE' %}badge-success
+                                    {% elif faculty.status == 'INACTIVE' %}badge-secondary
+                                    {% elif faculty.status == 'ON_LEAVE' %}badge-warning
+                                    {% else %}badge-danger{% endif %}">
+                                    {{ faculty.get_status_display }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-briefcase mr-2"></i>Professional Information</h5>
+                        <div class="info-row">
+                            <span class="info-label">Employee ID:</span>
+                            <span class="info-value">{{ faculty.employee_id }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">APAAR Faculty ID:</span>
+                            <span class="info-value">{{ faculty.apaar_faculty_id }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Department:</span>
+                            <span class="info-value">{{ faculty.get_department_display }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Present Designation:</span>
+                            <span class="info-value">{{ faculty.present_designation }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Employment Type:</span>
+                            <span class="info-value">{{ faculty.get_employment_type_display }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Currently Associated:</span>
+                            <span class="info-value">
+                                <span class="badge {% if faculty.currently_associated %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ faculty.currently_associated|yesno:"Yes,No" }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Tab -->
+        <div class="tab-pane fade" id="academic" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-graduation-cap mr-2"></i>Educational Background</h5>
+                        <div class="info-row">
+                            <span class="info-label">Highest Degree:</span>
+                            <span class="info-value">{{ faculty.highest_degree }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">University:</span>
+                            <span class="info-value">{{ faculty.university|default:"Not specified" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Area of Specialization:</span>
+                            <span class="info-value">{{ faculty.area_of_specialization|default:"Not specified" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Highest Qualification:</span>
+                            <span class="info-value">{{ faculty.highest_qualification }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Specialization:</span>
+                            <span class="info-value">{{ faculty.specialization|default:"Not specified" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Year of Completion:</span>
+                            <span class="info-value">{{ faculty.year_of_completion|default:"Not specified" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-chalkboard-teacher mr-2"></i>Teaching Information</h5>
+                        <div class="info-row">
+                            <span class="info-label">Total Experience:</span>
+                            <span class="info-value">{{ faculty.experience_years }} years</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Current Institute Experience:</span>
+                            <span class="info-value">{{ faculty.experience_in_current_institute }} years</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Previous Institution:</span>
+                            <span class="info-value">{{ faculty.previous_institution|default:"Not specified" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Research Interests:</span>
+                            <span class="info-value">{{ faculty.research_interests|default:"Not specified" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Achievements:</span>
+                            <span class="info-value">{{ faculty.achievements|default:"Not specified" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employment Tab -->
+        <div class="tab-pane fade" id="employment" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-calendar-check mr-2"></i>Employment History</h5>
+                        <div class="info-row">
+                            <span class="info-label">Date of Joining Institution:</span>
+                            <span class="info-value">{{ faculty.date_of_joining_institution|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Designation at Joining:</span>
+                            <span class="info-value">{{ faculty.designation_at_joining }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Date Designated as Professor:</span>
+                            <span class="info-value">{{ faculty.date_designated_as_professor|date:"M d, Y"|default:"Not applicable" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Nature of Association:</span>
+                            <span class="info-value">{{ faculty.get_nature_of_association_display }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Contractual Type:</span>
+                            <span class="info-value">{{ faculty.get_contractual_full_time_part_time_display|default:"Not applicable" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Date of Leaving:</span>
+                            <span class="info-value">{{ faculty.date_of_leaving|date:"M d, Y"|default:"Currently employed" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-user-tie mr-2"></i>Roles & Responsibilities</h5>
+                        <div class="info-row">
+                            <span class="info-label">Head of Department:</span>
+                            <span class="info-value">
+                                <span class="badge {% if faculty.is_head_of_department %}badge-success{% else %}badge-secondary{% endif %}">
+                                    {{ faculty.is_head_of_department|yesno:"Yes,No" }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Mentor:</span>
+                            <span class="info-value">
+                                <span class="badge {% if faculty.is_mentor %}badge-success{% else %}badge-secondary{% endif %}">
+                                    {{ faculty.is_mentor|yesno:"Yes,No" }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Mentor for Grades:</span>
+                            <span class="info-value">{{ faculty.mentor_for_grades|default:"Not specified" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Bio:</span>
+                            <span class="info-value">{{ faculty.bio|default:"Not provided" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Notes:</span>
+                            <span class="info-value">{{ faculty.notes|default:"No notes" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Tab -->
+        <div class="tab-pane fade" id="contact" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-envelope mr-2"></i>Contact Information</h5>
+                        <div class="info-row">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value">
+                                <a href="mailto:{{ faculty.email }}">{{ faculty.email }}</a>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Phone Number:</span>
+                            <span class="info-value">
+                                <a href="tel:{{ faculty.phone_number }}">{{ faculty.phone_number }}</a>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Alternate Phone:</span>
+                            <span class="info-value">
+                                {% if faculty.alternate_phone %}
+                                <a href="tel:{{ faculty.alternate_phone }}">{{ faculty.alternate_phone }}</a>
+                                {% else %}
+                                Not provided
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <h5><i class="fas fa-map-marker-alt mr-2"></i>Address</h5>
+                        <div class="info-row">
+                            <span class="info-label">Address Line 1:</span>
+                            <span class="info-value">{{ faculty.address_line_1 }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Address Line 2:</span>
+                            <span class="info-value">{{ faculty.address_line_2|default:"Not provided" }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">City:</span>
+                            <span class="info-value">{{ faculty.city }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">State:</span>
+                            <span class="info-value">{{ faculty.state }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Postal Code:</span>
+                            <span class="info-value">{{ faculty.postal_code }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Country:</span>
+                            <span class="info-value">{{ faculty.country }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="info-card">
+                        <h5><i class="fas fa-exclamation-triangle mr-2"></i>Emergency Contact</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="info-row">
+                                    <span class="info-label">Name:</span>
+                                    <span class="info-value">{{ faculty.emergency_contact_name }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-row">
+                                    <span class="info-label">Phone:</span>
+                                    <span class="info-value">
+                                        <a href="tel:{{ faculty.emergency_contact_phone }}">{{ faculty.emergency_contact_phone }}</a>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-row">
+                                    <span class="info-label">Relationship:</span>
+                                    <span class="info-value">{{ faculty.emergency_contact_relationship }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Tab -->
+        <div class="tab-pane fade" id="performance" role="tabpanel">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="info-card">
+                        <h5><i class="fas fa-chart-line mr-2"></i>Performance Records</h5>
+                        {% if performance_records %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Rating</th>
+                                        <th>Comments</th>
+                                        <th>Evaluated By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in performance_records %}
+                                    <tr>
+                                        <td>{{ record.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if record.rating >= 4 %}badge-success
+                                                {% elif record.rating >= 3 %}badge-warning
+                                                {% else %}badge-danger{% endif %}">
+                                                {{ record.rating }}/5
+                                            </span>
+                                        </td>
+                                        <td>{{ record.comments|default:"No comments" }}</td>
+                                        <td>{{ record.evaluated_by.get_full_name|default:"System" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No performance records found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaves Tab -->
+        <div class="tab-pane fade" id="leaves" role="tabpanel">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="info-card">
+                        <h5><i class="fas fa-calendar-alt mr-2"></i>Leave Records</h5>
+                        {% if leaves %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Leave Type</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for leave in leaves %}
+                                    <tr>
+                                        <td>{{ leave.get_leave_type_display }}</td>
+                                        <td>{{ leave.start_date|date:"M d, Y" }}</td>
+                                        <td>{{ leave.end_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if leave.status == 'APPROVED' %}badge-success
+                                                {% elif leave.status == 'PENDING' %}badge-warning
+                                                {% else %}badge-danger{% endif %}">
+                                                {{ leave.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ leave.reason|default:"No reason provided" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No leave records found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Tab -->
+        <div class="tab-pane fade" id="documents" role="tabpanel">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="info-card">
+                        <h5><i class="fas fa-file-alt mr-2"></i>Documents</h5>
+                        {% if documents %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Document Type</th>
+                                        <th>File Name</th>
+                                        <th>Uploaded Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in documents %}
+                                    <tr>
+                                        <td>{{ document.get_document_type_display }}</td>
+                                        <td>{{ document.file.name|slice:"13:" }}</td>
+                                        <td>{{ document.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <a href="{{ document.file.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                                <i class="fas fa-download mr-1"></i> Download
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No documents uploaded.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Fields Tab -->
+        <div class="tab-pane fade" id="custom-fields" role="tabpanel">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="info-card">
+                        <h5><i class="fas fa-cogs mr-2"></i>Custom Fields</h5>
+                        {% if custom_fields %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Field Name</th>
+                                        <th>Field Type</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field_value in custom_fields %}
+                                    <tr>
+                                        <td>{{ field_value.custom_field.label }}</td>
+                                        <td>{{ field_value.custom_field.get_field_type_display }}</td>
+                                        <td>{{ field_value.value|default:"Not set" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No custom fields defined for this faculty member.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

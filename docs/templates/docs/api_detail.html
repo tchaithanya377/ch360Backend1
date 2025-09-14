@@ -1,0 +1,395 @@
+{% extends 'docs/base.html' %}
+
+{% block title %}{{ api.title }} - CampusHub 360 API Documentation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'docs:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'docs:apis' %}">API Reference</a></li>
+            <li class="breadcrumb-item active">{{ api.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- API Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <span class="badge method-{{ api.method }} method-badge me-3">{{ api.method }}</span>
+                            <h1 class="card-title mb-0">{{ api.title }}</h1>
+                        </div>
+                        <div class="text-end">
+                            {% if api.authentication_required %}
+                            <span class="badge bg-warning text-dark me-2">Authentication Required</span>
+                            {% endif %}
+                            <small class="text-muted">{{ api.created_at|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <code class="text-primary fs-5">{{ api.endpoint }}</code>
+                    </div>
+                    
+                    <p class="lead">{{ api.description }}</p>
+                    
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-light text-dark">{{ api.category.name }}</span>
+                        {% for tag in api.get_tags_list %}
+                        <span class="badge bg-secondary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="shareAPI()">
+                                <i class="fas fa-share me-1"></i>Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Request Details</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Headers -->
+                    {% if api.request_headers %}
+                    <div class="mb-4">
+                        <h5>Headers</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Header</th>
+                                        <th>Value</th>
+                                        <th>Required</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for header, details in api.request_headers.items %}
+                                    <tr>
+                                        <td><code>{{ header }}</code></td>
+                                        <td>{{ details.value|default:"-" }}</td>
+                                        <td>
+                                            {% if details.required %}
+                                            <span class="badge bg-danger">Required</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Optional</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Path Parameters -->
+                    {% if api.path_parameters %}
+                    <div class="mb-4">
+                        <h5>Path Parameters</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Required</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for param, details in api.path_parameters.items %}
+                                    <tr>
+                                        <td><code>{{ param }}</code></td>
+                                        <td><span class="badge bg-info">{{ details.type|default:"string" }}</span></td>
+                                        <td>{{ details.description|default:"-" }}</td>
+                                        <td>
+                                            {% if details.required %}
+                                            <span class="badge bg-danger">Required</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Optional</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Query Parameters -->
+                    {% if api.query_parameters %}
+                    <div class="mb-4">
+                        <h5>Query Parameters</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Required</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for param, details in api.query_parameters.items %}
+                                    <tr>
+                                        <td><code>{{ param }}</code></td>
+                                        <td><span class="badge bg-info">{{ details.type|default:"string" }}</span></td>
+                                        <td>{{ details.description|default:"-" }}</td>
+                                        <td>
+                                            {% if details.required %}
+                                            <span class="badge bg-danger">Required</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Optional</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Request Body -->
+                    {% if api.request_body %}
+                    <div class="mb-4">
+                        <h5>Request Body</h5>
+                        <div class="code-block">
+                            <pre><code class="language-json">{{ api.request_body|safe }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Response Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-reply me-2"></i>Response Details</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Status Codes -->
+                    {% if api.status_codes %}
+                    <div class="mb-4">
+                        <h5>Status Codes</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for code, description in api.status_codes.items %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge {% if code|add:0 >= 200 and code|add:0 < 300 %}bg-success{% elif code|add:0 >= 400 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                                {{ code }}
+                                            </span>
+                                        </td>
+                                        <td>{{ description }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Response Schema -->
+                    {% if api.response_schema %}
+                    <div class="mb-4">
+                        <h5>Response Schema</h5>
+                        <div class="code-block">
+                            <pre><code class="language-json">{{ api.response_schema|safe }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Example Response -->
+                    {% if api.example_response %}
+                    <div class="mb-4">
+                        <h5>Example Response</h5>
+                        <div class="code-block">
+                            <pre><code class="language-json">{{ api.example_response|safe }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Code Examples -->
+            {% if code_examples %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-code me-2"></i>Code Examples</h3>
+                </div>
+                <div class="card-body">
+                    {% for example in code_examples %}
+                    <div class="mb-4">
+                        <h5>{{ example.title }}</h5>
+                        {% if example.description %}
+                        <p class="text-muted">{{ example.description }}</p>
+                        {% endif %}
+                        <div class="code-block">
+                            <pre><code class="language-{{ example.language }}">{{ example.code }}</code></pre>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Rate Limiting -->
+            {% if api.rate_limit %}
+            <div class="alert alert-warning mb-4">
+                <h5><i class="fas fa-tachometer-alt me-2"></i>Rate Limiting</h5>
+                <p class="mb-0">{{ api.rate_limit }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Navigation -->
+            <div class="d-flex justify-content-between mb-4">
+                <a href="{% url 'docs:apis' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to APIs
+                </a>
+                <button class="btn btn-primary" onclick="scrollToTop()">
+                    <i class="fas fa-arrow-up me-2"></i>Back to Top
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- API Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>API Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Method:</span>
+                        <span class="badge method-{{ api.method }} method-badge">{{ api.method }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Category:</span>
+                        <span class="badge bg-light text-dark">{{ api.category.name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Auth Required:</span>
+                        {% if api.authentication_required %}
+                        <span class="badge bg-warning text-dark">Yes</span>
+                        {% else %}
+                        <span class="badge bg-success">No</span>
+                        {% endif %}
+                    </div>
+                    {% if api.rate_limit %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Rate Limit:</span>
+                        <small class="text-muted">{{ api.rate_limit }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related APIs -->
+            {% if related_apis %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-code me-2"></i>Related APIs</h5>
+                </div>
+                <div class="card-body">
+                    {% for related in related_apis %}
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge method-{{ related.method }} method-badge">
+                                {{ related.method }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-2">
+                            <h6 class="mb-1">
+                                <a href="{% url 'docs:api_detail' related.id %}" class="text-decoration-none">
+                                    {{ related.title }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                <code class="text-primary">{{ related.endpoint }}</code>
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="shareAPI()">
+                            <i class="fas fa-share me-2"></i>Share API
+                        </button>
+                        <button class="btn btn-outline-success" onclick="copyEndpoint()">
+                            <i class="fas fa-copy me-2"></i>Copy Endpoint
+                        </button>
+                        <a href="{% url 'docs:tutorials' %}" class="btn btn-outline-info">
+                            <i class="fas fa-book me-2"></i>View Tutorials
+                        </a>
+                        <a href="{% url 'docs:faq' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-question-circle me-2"></i>FAQ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function shareAPI() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ api.title }}',
+            text: '{{ api.description }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            alert('Link copied to clipboard!');
+        });
+    }
+}
+
+function copyEndpoint() {
+    navigator.clipboard.writeText('{{ api.endpoint }}').then(function() {
+        alert('Endpoint copied to clipboard!');
+    });
+}
+
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+</script>
+{% endblock %}
