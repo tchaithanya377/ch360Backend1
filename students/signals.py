@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.db import connection, DatabaseError
 import uuid as _uuid
 
-from .models import Student
+from .models import Student, StudentEnrollmentHistory
 from accounts.models import AuthIdentifier, IdentifierType, UserSession
 
 
@@ -118,4 +118,73 @@ def record_session(user: User, request):
             # Last resort: do not block login
             return None
 
+
+
+@receiver(post_save, sender=Student)
+def ensure_enrollment_history_on_batch_assignment(sender, instance: Student, created: bool, **kwargs):
+    """Create or update StudentEnrollmentHistory when a student's batch is set.
+
+    Rules:
+    - When a student has a `student_batch`, ensure there is an Active history row
+      for the batch's academic context (year_of_study, semester, academic_year).
+    - If an Active row exists for the same combination, do nothing.
+    - If there is a different Active row, mark it completed with completion_date=timezone.now().date().
+    - Only runs when student has a batch assigned.
+    """
+    batch = instance.student_batch
+    if not batch:
+        return
+
+    academic_year = batch.academic_year.year if getattr(batch, 'academic_year', None) else None
+    if not academic_year:
+        return
+
+    today = timezone.now().date()
+    target = {
+        'year_of_study': batch.year_of_study,
+        'semester': batch.semester,
+        'academic_year': academic_year,
+    }
+
+    # Close any other active histories not matching current batch context
+    active_histories = StudentEnrollmentHistory.objects.filter(
+        student=instance,
+        status='ACTIVE',
+    )
+
+    # If an exact active exists, keep it
+    exact = active_histories.filter(**target).first()
+    if exact:
+        # Ensure enrollment date is set (for newly created student that got batch later)
+        updates = []
+        if not exact.enrollment_date:
+            exact.enrollment_date = instance.enrollment_date or today
+            updates.append('enrollment_date')
+        # Ensure status and completion are consistent for current active
+        if exact.status != 'ACTIVE':
+            exact.status = 'ACTIVE'
+            updates.append('status')
+        if exact.completion_date:
+            exact.completion_date = None
+            updates.append('completion_date')
+        if updates:
+            exact.save(update_fields=updates)
+        return
+
+    # Close other actives
+    for row in active_histories.exclude(**target):
+        row.status = 'INACTIVE'
+        if not row.completion_date:
+            row.completion_date = today
+        row.save(update_fields=['status', 'completion_date'])
+
+    # Create the current active history
+    StudentEnrollmentHistory.objects.create(
+        student=instance,
+        year_of_study=target['year_of_study'],
+        semester=target['semester'],
+        academic_year=target['academic_year'],
+        enrollment_date=instance.enrollment_date or today,
+        status='ACTIVE',
+    )
 

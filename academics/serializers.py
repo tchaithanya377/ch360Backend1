@@ -5,6 +5,7 @@ from .models import (
 )
 from faculty.serializers import FacultySerializer
 from students.serializers import StudentSerializer, StudentBatchSerializer
+from students.models import AcademicYear as StudentAcademicYear, Semester as StudentSemester
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -331,12 +332,18 @@ class BatchCourseEnrollmentSerializer(serializers.ModelSerializer):
 
 
 class BatchCourseEnrollmentCreateSerializer(serializers.ModelSerializer):
+    academic_year = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    semester = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     class Meta:
         model = BatchCourseEnrollment
         fields = [
             'student_batch', 'course', 'course_section', 'academic_year', 'semester',
             'status', 'auto_enroll_new_students', 'notes'
         ]
+        extra_kwargs = {
+            'academic_year': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'semester': {'required': False, 'allow_null': True, 'allow_blank': True},
+        }
     
     def validate(self, data):
         # Validate that the course is appropriate for the student batch
@@ -356,6 +363,30 @@ class BatchCourseEnrollmentCreateSerializer(serializers.ModelSerializer):
                     f"Undergraduate course {course.code} is not suitable for year {student_batch.year_of_study}"
                 )
         
+        # Default academic_year and semester from current records if not provided
+        if not data.get('academic_year'):
+            current_year = StudentAcademicYear.objects.filter(is_active=True).order_by('-is_current', '-year').first()
+            if current_year:
+                data['academic_year'] = current_year.year
+        if not data.get('semester') and data.get('academic_year'):
+            sem = StudentSemester.objects.filter(
+                academic_year__year=data['academic_year'],
+                is_active=True
+            ).order_by('-is_current', 'semester_type').first()
+            if sem:
+                data['semester'] = sem.name
+
+        # Validate that semester belongs to the given academic_year
+        if data.get('academic_year') and data.get('semester'):
+            if not StudentSemester.objects.filter(
+                academic_year__year=data['academic_year'],
+                name=data['semester'],
+                is_active=True,
+            ).exists():
+                raise serializers.ValidationError(
+                    'Semester does not belong to the selected academic year.'
+                )
+
         return data
 
 

@@ -320,7 +320,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_MINUTES', '30'))),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_MINUTES', '1440'))),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_DAYS', '7'))),
     'ROTATE_REFRESH_TOKENS': os.getenv('JWT_ROTATE_REFRESH', 'False').lower() == 'true',
     'BLACKLIST_AFTER_ROTATION': True,
@@ -433,7 +433,7 @@ SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == '
 SESSION_COOKIE_HTTPONLY = True
 # For cross-site cookies when frontend runs on a different origin
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
-SESSION_COOKIE_AGE = 3600  # 1 hour
+SESSION_COOKIE_AGE = 86400  # 1 day
 
 # Performance Settings
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
@@ -461,7 +461,7 @@ CORS_ALLOWED_ORIGINS = os.getenv(
     'http://localhost:5173,http://127.0.0.1:5173,http://0.0.0.0:5173,https://localhost:5173,https://127.0.0.1:5173,'
     'https://campushub360.xyz,https://www.campushub360.xyz,https://api.campushub360.xyz,'
     'http://13.232.220.214,https://13.232.220.214,http://13.232.220.214:8000,https://13.232.220.214:8000,'
-    'http://ec2-13.232.220.214.ap-south-1.compute.amazonaws.com,https://ec2-13.232.220.214.ap-south-1.compute.amazonaws.com,'
+    'http://ec2-13.232.220.214.ap-south-1.compute.amazonaws.com,https://ec2-13.232-220-214.ap-south-1.compute.amazonaws.com,'
     'http://ec2-13.232.220.214.ap-south-1.compute.amazonaws.com:8000,https://ec2-13.232.220.214.ap-south-1.compute.amazonaws.com:8000,'
     'http://13.201.129.254,https://13.201.129.254,http://ec2-13-201-129-254.ap-south-1.compute.amazonaws.com,https://ec2-13-201-129-254.ap-south-1.compute.amazonaws.com'
 ).split(',')
@@ -528,8 +528,8 @@ CORS_ALLOW_METHODS = list(default_methods) + [
 CORS_ALLOWED_ORIGIN_REGEXES = list(set((globals().get('CORS_ALLOWED_ORIGIN_REGEXES') or []) + [
     r'^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\\d+)?$',
     r'^https?://(\\d{1,3}\.){3}\\d{1,3}(:\\d+)?$',
-    r'^https?://([a-zA-Z0-9-]+\\.)*campushub360\\.xyz(:\\d+)?$',
-    r'^https?://([a-zA-Z0-9-]+\\.)*compute\\.amazonaws\\.com(:\\d+)?$',
+    r'^https?://([a-zA-Z0-9-]+\.)*campushub360\\.xyz(:\\d+)?$',
+    r'^https?://([a-zA-Z0-9-]+\.)*compute\\.amazonaws\\.com(:\\d+)?$',
 ]))
 
 # Custom CSRF failure handler to avoid generic 500s and add logging

@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .api_views import (
     StudentViewSet, StudentEnrollmentHistoryViewSet, StudentDocumentViewSet,
-    CustomFieldViewSet, StudentCustomFieldValueViewSet, StudentImportViewSet
+    CustomFieldViewSet, StudentCustomFieldValueViewSet, StudentImportViewSet,
+    StudentBatchViewSet,
 )
 
 # Create router and register viewsets
@@ -13,6 +14,7 @@ router.register(r'documents', StudentDocumentViewSet, basename='document')
 router.register(r'custom-fields', CustomFieldViewSet, basename='custom-field')
 router.register(r'custom-field-values', StudentCustomFieldValueViewSet, basename='custom-field-value')
 router.register(r'imports', StudentImportViewSet, basename='import')
+router.register(r'student-batches', StudentBatchViewSet, basename='student-batch')
 
 app_name = 'students_api'
 
@@ -54,6 +56,10 @@ urlpatterns = [
     path('students/stats/', 
          StudentViewSet.as_view({'get': 'stats'}), 
          name='student-stats'),
+    # Alias for convenience: /api/v1/students/stats/
+    path('stats/', 
+         StudentViewSet.as_view({'get': 'stats'}), 
+         name='stats'),
     
     path('custom-fields/stats/', 
          CustomFieldViewSet.as_view({'get': 'stats'}), 

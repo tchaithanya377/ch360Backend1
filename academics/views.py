@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import datetime, timedelta
+from copy import deepcopy
 
 from .models import (
     Course, CourseSection, Syllabus, SyllabusTopic, Timetable, 
@@ -531,7 +532,7 @@ class BatchCourseEnrollmentViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return BatchCourseEnrollmentCreateSerializer
-        elif self.action in ['retrieve', 'detail']:
+        if self.action in ['retrieve', 'detail']:
             return BatchCourseEnrollmentDetailSerializer
         return BatchCourseEnrollmentSerializer
     
@@ -541,14 +542,39 @@ class BatchCourseEnrollmentViewSet(viewsets.ModelViewSet):
             'course', 'course_section', 'created_by'
         ).prefetch_related('student_batch__students')
     
+    def create(self, request, *args, **kwargs):
+        # Make request data mutable copy to provide defaults
+        data = deepcopy(request.data)
+        if not data.get('academic_year') or not data.get('semester'):
+            from students.models import AcademicYear as StudentAcademicYear, Semester as StudentSemester
+            if not data.get('academic_year'):
+                current_year = StudentAcademicYear.objects.filter(is_active=True).order_by('-is_current', '-year').first()
+                if current_year:
+                    data['academic_year'] = current_year.year
+            if not data.get('semester') and data.get('academic_year'):
+                sem = StudentSemester.objects.filter(
+                    academic_year__year=data['academic_year'], is_active=True
+                ).order_by('-is_current', 'semester_type').first()
+                if sem:
+                    data['semester'] = sem.name
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        instance = serializer.instance
+        # Return full representation including id
+        from .serializers import BatchCourseEnrollmentSerializer as BCEReadSerializer
+        response_data = BCEReadSerializer(instance).data
+        headers = self.get_success_headers(response_data)
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
     
-    @action(detail=True, methods=['get'])
-    def detail(self, request, pk=None):
+    @action(detail=True, methods=['get'], url_path='detail')
+    def get_detail(self, request, pk=None):
         """Get detailed batch enrollment information including enrolled students"""
         batch_enrollment = self.get_object()
-        serializer = self.get_serializer(batch_enrollment)
+        serializer = BatchCourseEnrollmentDetailSerializer(batch_enrollment)
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])

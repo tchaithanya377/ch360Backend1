@@ -2,6 +2,7 @@ from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import Course, Syllabus, Timetable, CourseEnrollment, AcademicCalendar, BatchCourseEnrollment
+from students.models import StudentEnrollmentHistory
 
 
 @receiver(post_save, sender=Course)
@@ -122,6 +123,56 @@ def batch_enrollment_post_save(sender, instance, created, **kwargs):
                 print(f"Auto-enrolled {result['enrolled_count']} students from batch {instance.student_batch.batch_name}")
             else:
                 print(f"Auto-enrollment failed: {result['message']}")
+
+        # Ensure Student Enrollment History is updated for all students in this batch
+        try:
+            batch = instance.student_batch
+            if batch and batch.is_active:
+                academic_year = instance.academic_year or (batch.academic_year.year if batch.academic_year else None)
+                if academic_year:
+                    today = timezone.now().date()
+                    for student in batch.students.all():
+                        target = {
+                            'year_of_study': batch.year_of_study,
+                            'semester': batch.semester,
+                            'academic_year': academic_year,
+                        }
+                        active_histories = StudentEnrollmentHistory.objects.filter(student=student, status='ACTIVE')
+                        exact = active_histories.filter(**target).first()
+                        if exact:
+                            updates = []
+                            if not exact.enrollment_date:
+                                exact.enrollment_date = student.enrollment_date or today
+                                updates.append('enrollment_date')
+                            if exact.completion_date:
+                                exact.completion_date = None
+                                updates.append('completion_date')
+                            if exact.status != 'ACTIVE':
+                                exact.status = 'ACTIVE'
+                                updates.append('status')
+                            if updates:
+                                exact.save(update_fields=updates)
+                            continue
+
+                        # Close other active rows
+                        for row in active_histories.exclude(**target):
+                            if row.status != 'INACTIVE' or not row.completion_date:
+                                row.status = 'INACTIVE'
+                                row.completion_date = today
+                                row.save(update_fields=['status', 'completion_date'])
+
+                        # Create fresh record
+                        StudentEnrollmentHistory.objects.create(
+                            student=student,
+                            year_of_study=target['year_of_study'],
+                            semester=target['semester'],
+                            academic_year=target['academic_year'],
+                            enrollment_date=student.enrollment_date or today,
+                            status='ACTIVE',
+                        )
+        except Exception as e:
+            # Non-fatal; do not block admin save
+            print(f"Enrollment history sync failed for batch {instance.student_batch_id}: {e}")
 
 
 @receiver(post_save, sender='students.Student')

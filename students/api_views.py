@@ -12,6 +12,9 @@ from .models import (
     Student, StudentEnrollmentHistory, StudentDocument, 
     CustomField, StudentCustomFieldValue, StudentImport
 )
+# High-RPS batch listing support
+from .models import StudentBatch
+from .serializers import StudentBatchSerializer
 from .api_serializers import (
     StudentSerializer, StudentDetailSerializer, StudentEnrollmentHistorySerializer,
     StudentDocumentSerializer, CustomFieldSerializer, StudentCustomFieldValueSerializer,
@@ -66,10 +69,10 @@ class StudentViewSet(viewsets.ModelViewSet):
         active_students = Student.objects.filter(status='ACTIVE').count()
         students_with_login = Student.objects.filter(user__isnull=False).count()
         
-        # Year of study distribution
-        grade_distribution = Student.objects.values('year_of_study').annotate(
+        # Year of study distribution (via related student_batch)
+        grade_distribution = Student.objects.values('student_batch__year_of_study').annotate(
             count=Count('id')
-        ).order_by('year_of_study')
+        ).order_by('student_batch__year_of_study')
         
         # Status distribution
         status_distribution = Student.objects.values('status').annotate(
@@ -523,3 +526,49 @@ class StudentImportViewSet(viewsets.ReadOnlyModelViewSet):
             'recent_imports': recent_imports,
             'total_students_imported': total_students_imported
         })
+
+
+@method_decorator(cache_page(60 * 2), name='list')
+class StudentBatchViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API v1 endpoint for listing student batches used by the enrollment UI.
+
+    Optimized for high read throughput:
+    - select_related for FK fields
+    - ordering and search fields indexed/cheap
+    - optional caching via cache_page
+    """
+
+    queryset = StudentBatch.objects.select_related(
+        'department', 'academic_program', 'academic_year'
+    ).only(
+        'id', 'department', 'academic_program', 'academic_year', 'semester',
+        'year_of_study', 'section', 'batch_name', 'batch_code', 'max_capacity',
+        'current_count', 'is_active', 'created_at', 'updated_at'
+    )
+    serializer_class = StudentBatchSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = [
+        'department', 'academic_program', 'academic_year', 'semester',
+        'year_of_study', 'section', 'is_active'
+    ]
+    search_fields = [
+        'batch_name', 'batch_code',
+        'department__code', 'department__name',
+        'academic_program__code', 'academic_program__name',
+        'academic_year__year'
+    ]
+    ordering_fields = [
+        'department__code', 'academic_year__year', 'year_of_study', 'semester',
+        'section', 'batch_name', 'batch_code'
+    ]
+    ordering = ['department__code', 'academic_year__year', 'year_of_study', 'section']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Normalize boolean query param for is_active
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+        return qs

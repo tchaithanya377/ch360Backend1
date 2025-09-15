@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -6,6 +7,7 @@ from .models import (
     AcademicProgram, Course, CourseSection, Syllabus, SyllabusTopic, 
     Timetable, CourseEnrollment, AcademicCalendar, BatchCourseEnrollment, CoursePrerequisite
 )
+from students.models import AcademicYear as StudentAcademicYear, Semester as StudentSemester
 
 
 @admin.register(AcademicProgram)
@@ -259,8 +261,85 @@ class AcademicCalendarAdmin(admin.ModelAdmin):
     list_editable = ['is_academic_day']
 
 
+class BatchCourseEnrollmentForm(forms.ModelForm):
+    """Admin form to source academic year and semester from students app tables."""
+
+    academic_year = forms.ChoiceField(required=True)
+    semester = forms.ChoiceField(required=True)
+
+    class Meta:
+        model = BatchCourseEnrollment
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Academic year choices from students.AcademicYear
+        year_qs = StudentAcademicYear.objects.filter(is_active=True).order_by('-is_current', '-year')
+        self.fields['academic_year'].choices = [
+            (y.year, y.year) for y in year_qs
+        ]
+
+        # Determine currently selected year (from bound data or instance)
+        selected_year = None
+        if self.is_bound:
+            selected_year = self.data.get('academic_year') or self.initial.get('academic_year')
+        else:
+            selected_year = (
+                self.initial.get('academic_year')
+                or (self.instance.academic_year if getattr(self, 'instance', None) else None)
+            )
+
+        # If nothing selected, default to current academic year
+        if not selected_year:
+            current_year_obj = year_qs.filter(is_current=True).first() or year_qs.first()
+            selected_year = current_year_obj.year if current_year_obj else None
+
+        # Semester choices filtered by selected academic year when available
+        sem_qs = StudentSemester.objects.filter(is_active=True)
+        if selected_year:
+            sem_qs = sem_qs.filter(academic_year__year=selected_year)
+
+        self.fields['semester'].choices = [
+            (s.name, s.name) for s in sem_qs.order_by('-is_current', 'semester_type')
+        ]
+
+        # Set initial defaults if creating
+        if not self.instance.pk:
+            if selected_year:
+                self.fields['academic_year'].initial = selected_year
+            current_sem = sem_qs.filter(is_current=True).first() or sem_qs.first()
+            if current_sem:
+                self.fields['semester'].initial = current_sem.name
+
+    def clean(self):
+        cleaned = super().clean()
+        year_val = cleaned.get('academic_year')
+        sem_val = cleaned.get('semester')
+        if year_val and sem_val:
+            exists = StudentSemester.objects.filter(
+                academic_year__year=year_val,
+                name=sem_val,
+                is_active=True,
+            ).exists()
+            if not exists:
+                raise forms.ValidationError("Selected semester does not belong to the selected academic year.")
+        return cleaned
+
+    def save(self, commit=True):
+        # Persist the selected strings into the char fields
+        instance = super().save(commit=False)
+        instance.academic_year = self.cleaned_data.get('academic_year')
+        instance.semester = self.cleaned_data.get('semester')
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+
 @admin.register(BatchCourseEnrollment)
 class BatchCourseEnrollmentAdmin(admin.ModelAdmin):
+    form = BatchCourseEnrollmentForm
     list_display = [
         'student_batch', 'course', 'academic_year', 'semester', 'status', 
         'enrollment_percentage_display', 'auto_enroll_new_students', 'created_by', 'enrollment_date'
