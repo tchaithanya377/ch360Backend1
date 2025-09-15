@@ -54,6 +54,7 @@ urlpatterns = [
     
     # Academics Management
     path('academics/', views.academics_dashboard, name='academics_dashboard'),
+    path('academics/api-test/', views.academics_api_test, name='academics_api_test'),
     path('academics/courses/', views.academics_courses_list, name='academics_courses'),
     path('academics/courses/<int:course_id>/', views.academics_course_detail, name='academics_course_detail'),
     path('academics/syllabi/', views.academics_syllabi_list, name='academics_syllabi'),
@@ -225,6 +226,6 @@ urlpatterns = [
     path('assignments/ajax/<uuid:assignment_id>/comment/', views.assignment_comment_ajax, name='assignment_comment_ajax'),
     path('assignments/ajax/stats/', views.assignment_stats_ajax, name='assignment_stats_ajax'),
     path('assignments/ajax/autocomplete/', views.assignment_autocomplete, name='assignment_autocomplete'),
-            path('assignments/ajax/bulk-action/', views.assignment_bulk_action, name='assignment_bulk_action'),
-            path('assignments/ajax/filter-students/', views.filter_students_ajax, name='filter_students_ajax'),
+    path('assignments/ajax/bulk-action/', views.assignment_bulk_action, name='assignment_bulk_action'),
+    path('assignments/ajax/filter-students/', views.filter_students_ajax, name='filter_students_ajax'),
 ]

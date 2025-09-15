@@ -28,7 +28,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     API endpoint for managing students
     """
     queryset = Student.objects.all().select_related('user').only(
-        'id','roll_number','first_name','last_name','middle_name','year_of_study','semester','section','status','created_at','user_id'
+        'id','roll_number','first_name','last_name','middle_name','status','created_at','user_id'
     ).order_by('-created_at')
     serializer_class = StudentSerializer
     permission_classes = [IsAuthenticated]
@@ -40,7 +40,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     ]
     ordering_fields = [
         'roll_number', 'first_name', 'last_name', 'date_of_birth', 
-        'year_of_study', 'semester', 'section', 'status', 'created_at'
+        'status', 'created_at'
     ]
     ordering = ['-created_at']
 

@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -169,7 +170,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         # Students by year of study
         year_stats = {}
         for year, _ in Student.YEAR_OF_STUDY_CHOICES:
-            count = Student.objects.filter(year_of_study=year).count()
+            count = Student.objects.filter(student_batch__year_of_study=year).count()
             if count:
                 year_stats[year] = count
         
@@ -418,11 +419,20 @@ class StudentViewSet(viewsets.ModelViewSet):
                 
                 # Update fields if provided - need to create or update StudentBatch
                 if any([department_id, academic_program_id, academic_year, year_of_study, semester, section]):
+                    # Get AcademicYear object if academic_year is provided
+                    academic_year_obj = None
+                    if academic_year:
+                        try:
+                            from .models import AcademicYear
+                            academic_year_obj = AcademicYear.objects.get(year=academic_year)
+                        except AcademicYear.DoesNotExist:
+                            continue  # Skip this student if academic year not found
+                    
                     # Get or create StudentBatch
                     batch, created = StudentBatch.objects.get_or_create(
                         department_id=department_id,
                         academic_program_id=academic_program_id,
-                        academic_year_id=academic_year,
+                        academic_year=academic_year_obj,
                         year_of_study=year_of_study,
                         semester=semester,
                         section=section,
@@ -524,25 +534,39 @@ class StudentViewSet(viewsets.ModelViewSet):
                 bulk_assignment.save()
                 return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Update students
-            update_fields = {}
-            if assignment_data.get('department_id'):
-                update_fields['department_id'] = assignment_data['department_id']
-            if assignment_data.get('academic_program_id'):
-                update_fields['academic_program_id'] = assignment_data['academic_program_id']
-            if assignment_data.get('academic_year_id'):
-                update_fields['academic_year_id'] = assignment_data['academic_year_id']
-            if assignment_data.get('semester_id'):
-                update_fields['semester_id'] = assignment_data['semester_id']
-            if assignment_data.get('year_of_study'):
-                update_fields['year_of_study'] = assignment_data['year_of_study']
-            if assignment_data.get('section'):
-                update_fields['section'] = assignment_data['section']
-            
-            update_fields['updated_by'] = request.user
-            
-            # Perform bulk update
-            updated_count = queryset.update(**update_fields)
+            # Update students by creating/updating their StudentBatch
+            updated_count = 0
+            for student in queryset:
+                try:
+                    # Get AcademicYear object if academic_year_id is provided
+                    academic_year_obj = None
+                    if assignment_data.get('academic_year_id'):
+                        try:
+                            from .models import AcademicYear
+                            academic_year_obj = AcademicYear.objects.get(id=assignment_data['academic_year_id'])
+                        except AcademicYear.DoesNotExist:
+                            continue  # Skip this student if academic year not found
+                    
+                    # Get or create StudentBatch
+                    batch, created = StudentBatch.objects.get_or_create(
+                        department_id=assignment_data.get('department_id'),
+                        academic_program_id=assignment_data.get('academic_program_id'),
+                        academic_year=academic_year_obj,
+                        year_of_study=assignment_data.get('year_of_study'),
+                        semester=assignment_data.get('semester'),
+                        section=assignment_data.get('section'),
+                        defaults={
+                            'batch_name': f"{assignment_data.get('department_id', '')}-{assignment_data.get('academic_year_id', '')}-{assignment_data.get('year_of_study', '')}-{assignment_data.get('section', '')}",
+                            'batch_code': f"{assignment_data.get('department_id', '')}-{assignment_data.get('academic_year_id', '')}-{assignment_data.get('year_of_study', '')}-{assignment_data.get('section', '')}",
+                        }
+                    )
+                    student.student_batch = batch
+                    student.updated_by = request.user
+                    student.save()
+                    updated_count += 1
+                except Exception as e:
+                    # Log error but continue with other students
+                    continue
             
             # Update bulk assignment record
             bulk_assignment.students_updated = updated_count
@@ -671,7 +695,6 @@ class StudentViewSet(viewsets.ModelViewSet):
                     # Update student
                     for field, value in assignment_fields.items():
                         setattr(student, field, value)
-                    student.section = section
                     student.updated_by = request.user
                     student.save()
                     updated_students.append(student)
@@ -699,18 +722,18 @@ class StudentViewSet(viewsets.ModelViewSet):
         existing_counts = defaultdict(int)
         if assignment_fields.get('department_id') and assignment_fields.get('academic_year_id'):
             existing_students = Student.objects.filter(
-                department_id=assignment_fields['department_id'],
-                academic_year_id=assignment_fields['academic_year_id'],
+                student_batch__department_id=assignment_fields['department_id'],
+                student_batch__academic_year_id=assignment_fields['academic_year_id'],
                 status='ACTIVE'
             )
             if assignment_fields.get('year_of_study'):
-                existing_students = existing_students.filter(year_of_study=assignment_fields['year_of_study'])
+                existing_students = existing_students.filter(student_batch__year_of_study=assignment_fields['year_of_study'])
             if assignment_fields.get('semester_id'):
-                existing_students = existing_students.filter(semester_id=assignment_fields['semester_id'])
+                existing_students = existing_students.filter(student_batch__semester_id=assignment_fields['semester_id'])
             
             for student in existing_students:
-                if student.section:
-                    existing_counts[student.section] += 1
+                if student.student_batch and student.student_batch.section:
+                    existing_counts[student.student_batch.section] += 1
         
         # Available sections (A-T)
         available_sections = [chr(i) for i in range(ord('A'), ord('T') + 1)]
@@ -897,12 +920,12 @@ class StudentBatchViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def capacity_report(self, request):
         """Get capacity report for all batches"""
-        from django.db.models import Count, Avg
+        from django.db.models import Count, Avg, F
         
         batches = self.get_queryset()
         
         total_batches = batches.count()
-        full_batches = batches.filter(current_count__gte=models.F('max_capacity')).count()
+        full_batches = batches.filter(current_count__gte=F('max_capacity')).count()
         available_capacity = sum(batch.get_available_capacity() for batch in batches)
         total_capacity = sum(batch.max_capacity for batch in batches)
         total_students = sum(batch.current_count for batch in batches)
@@ -982,17 +1005,17 @@ class BulkAssignmentViewSet(viewsets.ReadOnlyModelViewSet):
         
         # Apply same criteria as the original operation
         if criteria.get('current_department'):
-            queryset = queryset.filter(department_id=criteria['current_department'])
+            queryset = queryset.filter(student_batch__department_id=criteria['current_department'])
         if criteria.get('current_academic_program'):
-            queryset = queryset.filter(academic_program_id=criteria['current_academic_program'])
+            queryset = queryset.filter(student_batch__academic_program_id=criteria['current_academic_program'])
         if criteria.get('current_academic_year'):
-            queryset = queryset.filter(academic_year_id=criteria['current_academic_year'])
+            queryset = queryset.filter(student_batch__academic_year_id=criteria['current_academic_year'])
         if criteria.get('current_year_of_study'):
-            queryset = queryset.filter(year_of_study=criteria['current_year_of_study'])
+            queryset = queryset.filter(student_batch__year_of_study=criteria['current_year_of_study'])
         if criteria.get('current_semester'):
-            queryset = queryset.filter(semester_id=criteria['current_semester'])
+            queryset = queryset.filter(student_batch__semester=criteria['current_semester'])
         if criteria.get('current_section'):
-            queryset = queryset.filter(section=criteria['current_section'])
+            queryset = queryset.filter(student_batch__section=criteria['current_section'])
         if criteria.get('gender'):
             queryset = queryset.filter(gender=criteria['gender'])
         if criteria.get('quota'):
@@ -1040,7 +1063,7 @@ def student_list_view(request):
         students = students.filter(
             Q(first_name__icontains=search_query) |
             Q(last_name__icontains=search_query) |
-            Q(student_id__icontains=search_query) |
+            Q(roll_number__icontains=search_query) |
             Q(email__icontains=search_query)
         )
     

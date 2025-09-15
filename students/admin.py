@@ -168,30 +168,25 @@ class StudentAdmin(admin.ModelAdmin):
         ay_cache = {a.year: a for a in AcademicYear.objects.all()}
 
         with transaction.atomic():
-            for student in queryset.select_related('department'):
-                if not (student.department and student.year_of_study and student.section):
+            for student in queryset.select_related('student_batch__department', 'student_batch__academic_year'):
+                if not (student.student_batch and student.student_batch.department and student.student_batch.year_of_study and student.student_batch.section):
                     skipped += 1
                     errors.append(f"Missing grouping fields for {student.roll_number}")
                     continue
 
-                # Determine academic year object from student's string field or current_academic_year
-                ay_str = student.academic_year or (student.current_academic_year.year if student.current_academic_year else None)
-                if not ay_str:
+                # Get academic year from student batch
+                ay = student.student_batch.academic_year
+                if not ay:
                     skipped += 1
                     errors.append(f"Missing academic_year for {student.roll_number}")
                     continue
 
-                ay = ay_cache.get(ay_str)
-                if not ay:
-                    ay = AcademicYear.objects.create(year=ay_str, start_date=student.enrollment_date, end_date=student.enrollment_date)
-                    ay_cache[ay_str] = ay
-
-                batch_name = f"{student.department.short_name}-{ay.year}-{student.year_of_study}-{student.section}"
+                batch_name = f"{student.student_batch.department.short_name}-{ay.year}-{student.student_batch.year_of_study}-{student.student_batch.section}"
                 batch, created_flag = StudentBatch.objects.get_or_create(
-                    department=student.department,
+                    department=student.student_batch.department,
                     academic_year=ay,
-                    year_of_study=student.year_of_study,
-                    section=student.section,
+                    year_of_study=student.student_batch.year_of_study,
+                    section=student.student_batch.section,
                     defaults={
                         'batch_name': batch_name,
                         'max_capacity': 60,
