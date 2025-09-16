@@ -1,0 +1,597 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Successfully authenticated with test user",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:39.681061"
+  },
+  {
+    "test": "Get Assignment Categories",
+    "success": true,
+    "message": "Found 10 categories",
+    "data": [
+      {
+        "id": "7ace83e4-5a52-4e39-8e4c-758b611c6350",
+        "name": "Test Category",
+        "description": "Test category for course assignments",
+        "color_code": "#007bff",
+        "is_active": true,
+        "created_at": "2025-09-14T16:01:29.409068Z",
+        "updated_at": "2025-09-14T16:01:29.409068Z"
+      },
+      {
+        "id": "24fb9bb4-e415-4eef-bd47-427ed5271b98",
+        "name": "Enhanced Test Category",
+        "description": "Test category for enhanced form testing",
+        "color_code": "#007bff",
+        "is_active": true,
+        "created_at": "2025-09-14T16:08:33.715746Z",
+        "updated_at": "2025-09-14T16:08:33.715746Z"
+      },
+      {
+        "id": "f7df43c5-59ea-4292-8093-96c9cef1a4c9",
+        "name": "Research Project",
+        "description": "Independent research projects aligned with AP academic standards",
+        "color_code": "#2E8B57",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:26.756281Z",
+        "updated_at": "2025-09-16T00:59:26.756281Z"
+      },
+      {
+        "id": "65438137-d61e-48e4-a93f-01ee90aba5a4",
+        "name": "Laboratory Assignment",
+        "description": "Practical laboratory work and experiments",
+        "color_code": "#4169E1",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:26.958972Z",
+        "updated_at": "2025-09-16T00:59:26.958972Z"
+      },
+      {
+        "id": "852a4415-763c-42fa-83b2-c02a1c75e5e2",
+        "name": "Field Work",
+        "description": "Field studies and practical applications",
+        "color_code": "#FF6347",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.092394Z",
+        "updated_at": "2025-09-16T00:59:27.092394Z"
+      },
+      {
+        "id": "aec720fe-c895-42d8-b954-384002879803",
+        "name": "Case Study",
+        "description": "Real-world case analysis and problem solving",
+        "color_code": "#9370DB",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.224681Z",
+        "updated_at": "2025-09-16T00:59:27.224681Z"
+      },
+      {
+        "id": "6c5dc65f-57d8-4a0d-9e5d-83de8f71b6f6",
+        "name": "Portfolio",
+        "description": "Comprehensive portfolio of student work",
+        "color_code": "#FFD700",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.356436Z",
+        "updated_at": "2025-09-16T00:59:27.356436Z"
+      },
+      {
+        "id": "2059bdda-becd-4bdb-9314-2245e344602a",
+        "name": "Presentation",
+        "description": "Oral presentations and demonstrations",
+        "color_code": "#FF69B4",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.488588Z",
+        "updated_at": "2025-09-16T00:59:27.488588Z"
+      },
+      {
+        "id": "b0023e2e-0258-4714-9b8f-6abf3b5ad10e",
+        "name": "Internship Report",
+        "description": "Reports from industry internships and placements",
+        "color_code": "#20B2AA",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.620154Z",
+        "updated_at": "2025-09-16T00:59:27.620154Z"
+      },
+      {
+        "id": "535f5f25-18c2-4cc9-9188-8a216f5ca571",
+        "name": "Thesis/Dissertation",
+        "description": "Final year thesis and dissertation work",
+        "color_code": "#8B4513",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.764962Z",
+        "updated_at": "2025-09-16T00:59:27.764962Z"
+      }
+    ],
+    "timestamp": "2025-09-16T06:46:39.890853"
+  },
+  {
+    "test": "Create Assignment Category",
+    "success": true,
+    "message": "Category created successfully",
+    "data": {
+      "id": "36663a6c-d542-40aa-bc59-b3ddfc4d4bcd",
+      "name": "Final Test Category",
+      "description": "Final test category for comprehensive testing",
+      "color_code": "#FF5733",
+      "is_active": true,
+      "created_at": "2025-09-16T01:16:39.948163Z",
+      "updated_at": "2025-09-16T01:16:39.948163Z"
+    },
+    "timestamp": "2025-09-16T06:46:40.178385"
+  },
+  {
+    "test": "Get Assignment Category Detail",
+    "success": true,
+    "message": "Category detail retrieved",
+    "data": {
+      "id": "36663a6c-d542-40aa-bc59-b3ddfc4d4bcd",
+      "name": "Final Test Category",
+      "description": "Final test category for comprehensive testing",
+      "color_code": "#FF5733",
+      "is_active": true,
+      "created_at": "2025-09-16T01:16:39.948163Z",
+      "updated_at": "2025-09-16T01:16:39.948163Z"
+    },
+    "timestamp": "2025-09-16T06:46:40.364323"
+  },
+  {
+    "test": "Get Assignment Rubrics",
+    "success": true,
+    "message": "Found 2 rubrics",
+    "data": [
+      {
+        "id": "0f918343-363d-49e7-b08e-207c213b9cd1",
+        "name": "AP Research Project Rubric",
+        "description": "Comprehensive rubric for research projects in AP universities",
+        "rubric_type": "ANALYTIC",
+        "criteria": [
+          {
+            "name": "Research Quality",
+            "levels": [
+              {
+                "points": 25,
+                "description": "Excellent research with multiple sources"
+              },
+              {
+                "points": 20,
+                "description": "Good research with adequate sources"
+              },
+              {
+                "points": 15,
+                "description": "Basic research with limited sources"
+              },
+              {
+                "points": 10,
+                "description": "Poor research with minimal sources"
+              },
+              {
+                "points": 0,
+                "description": "No research conducted"
+              }
+            ],
+            "max_points": 25,
+            "description": "Depth and quality of research conducted"
+          },
+          {
+            "name": "Analysis and Critical Thinking",
+            "levels": [
+              {
+                "points": 25,
+                "description": "Excellent analysis with deep insights"
+              },
+              {
+                "points": 20,
+                "description": "Good analysis with clear insights"
+              },
+              {
+                "points": 15,
+                "description": "Basic analysis with some insights"
+              },
+              {
+                "points": 10,
+                "description": "Limited analysis with few insights"
+              },
+              {
+                "points": 0,
+                "description": "No analysis or critical thinking"
+              }
+            ],
+            "max_points": 25,
+            "description": "Quality of analysis and critical thinking demonstrated"
+          },
+          {
+            "name": "Writing and Communication",
+            "levels": [
+              {
+                "points": 20,
+                "description": "Excellent writing with clear communication"
+              },
+              {
+                "points": 16,
+                "description": "Good writing with mostly clear communication"
+              },
+              {
+                "points": 12,
+                "description": "Adequate writing with some clarity issues"
+              },
+              {
+                "points": 8,
+                "description": "Poor writing with communication problems"
+              },
+              {
+                "points": 0,
+                "description": "Unclear or incomprehensible writing"
+              }
+            ],
+            "max_points": 20,
+            "description": "Quality of writing and communication"
+          },
+          {
+            "name": "APAAR Compliance",
+            "levels": [
+              {
+                "points": 15,
+                "description": "Fully compliant with APAAR standards"
+              },
+              {
+                "points": 12,
+                "description": "Mostly compliant with minor issues"
+              },
+              {
+                "points": 9,
+                "description": "Partially compliant with some issues"
+              },
+              {
+                "points": 6,
+                "description": "Minimally compliant with major issues"
+              },
+              {
+                "points": 0,
+                "description": "Not compliant with APAAR standards"
+              }
+            ],
+            "max_points": 15,
+            "description": "Compliance with AP Academic Assessment and Accreditation Requirements"
+          },
+          {
+            "name": "Originality and Plagiarism",
+            "levels": [
+              {
+                "points": 15,
+                "description": "Completely original work"
+              },
+              {
+                "points": 12,
+                "description": "Mostly original with proper citations"
+              },
+              {
+                "points": 9,
+                "description": "Some originality with minor citation issues"
+              },
+              {
+                "points": 6,
+                "description": "Limited originality with citation problems"
+              },
+              {
+                "points": 0,
+                "description": "Plagiarized or unoriginal work"
+              }
+            ],
+            "max_points": 15,
+            "description": "Originality of work and absence of plagiarism"
+          }
+        ],
+        "total_points": "100.00",
+        "created_by": "7074b6d0-d79d-499c-b0c5-709a93419222",
+        "created_by_name": "system@apuniversity.edu",
+        "is_public": true,
+        "created_at": "2025-09-16T00:59:49.178867Z",
+        "updated_at": "2025-09-16T00:59:49.178867Z"
+      },
+      {
+        "id": "84fc0d7d-9223-4735-b6a9-e5741b6150d9",
+        "name": "AP Laboratory Assignment Rubric",
+        "description": "Rubric for laboratory assignments and practical work",
+        "rubric_type": "ANALYTIC",
+        "criteria": [
+          {
+            "name": "Experimental Design",
+            "levels": [
+              {
+                "points": 30,
+                "description": "Excellent experimental design"
+              },
+              {
+                "points": 24,
+                "description": "Good experimental design"
+              },
+              {
+                "points": 18,
+                "description": "Adequate experimental design"
+              },
+              {
+                "points": 12,
+                "description": "Poor experimental design"
+              },
+              {
+                "points": 0,
+                "description": "No experimental design"
+              }
+            ],
+            "max_points": 30,
+            "description": "Quality of experimental design and methodology"
+          },
+          {
+            "name": "Data Collection and Analysis",
+            "levels": [
+              {
+                "points": 25,
+                "description": "Excellent data collection and analysis"
+              },
+              {
+                "points": 20,
+                "description": "Good data collection and analysis"
+              },
+              {
+                "points": 15,
+                "description": "Adequate data collection and analysis"
+              },
+              {
+                "points": 10,
+                "description": "Poor data collection and analysis"
+              },
+              {
+                "points": 0,
+                "description": "No data collection or analysis"
+              }
+            ],
+            "max_points": 25,
+            "description": "Quality of data collection and analysis"
+          },
+          {
+            "name": "Safety and Procedures",
+            "levels": [
+              {
+                "points": 20,
+                "description": "Excellent safety adherence"
+              },
+              {
+                "points": 16,
+                "description": "Good safety adherence"
+              },
+              {
+                "points": 12,
+                "description": "Adequate safety adherence"
+              },
+              {
+                "points": 8,
+                "description": "Poor safety adherence"
+              },
+              {
+                "points": 0,
+                "description": "Unsafe practices"
+              }
+            ],
+            "max_points": 20,
+            "description": "Adherence to safety protocols and procedures"
+          },
+          {
+            "name": "Report Quality",
+            "levels": [
+              {
+                "points": 25,
+                "description": "Excellent report quality"
+              },
+              {
+                "points": 20,
+                "description": "Good report quality"
+              },
+              {
+                "points": 15,
+                "description": "Adequate report quality"
+              },
+              {
+                "points": 10,
+                "description": "Poor report quality"
+              },
+              {
+                "points": 0,
+                "description": "No report submitted"
+              }
+            ],
+            "max_points": 25,
+            "description": "Quality of laboratory report"
+          }
+        ],
+        "total_points": "100.00",
+        "created_by": "7074b6d0-d79d-499c-b0c5-709a93419222",
+        "created_by_name": "system@apuniversity.edu",
+        "is_public": true,
+        "created_at": "2025-09-16T00:59:49.303399Z",
+        "updated_at": "2025-09-16T00:59:49.303399Z"
+      }
+    ],
+    "timestamp": "2025-09-16T06:46:40.615964"
+  },
+  {
+    "test": "Create Assignment Rubric",
+    "success": true,
+    "message": "Rubric created successfully",
+    "data": {
+      "id": "7d958c63-3765-4344-8bec-efe1f7df2c10",
+      "name": "Final Test Rubric",
+      "description": "Comprehensive rubric for final testing",
+      "rubric_type": "ANALYTIC",
+      "criteria": [
+        {
+          "name": "Content Quality",
+          "description": "Quality and depth of content",
+          "points": 40,
+          "weight": 0.4
+        },
+        {
+          "name": "Presentation",
+          "description": "Clarity and organization",
+          "points": 30,
+          "weight": 0.3
+        },
+        {
+          "name": "Originality",
+          "description": "Originality and creativity",
+          "points": 30,
+          "weight": 0.3
+        }
+      ],
+      "total_points": "100.00",
+      "created_by": "f7f41538-ca0d-4a63-9e62-8564c2b64ae8",
+      "created_by_name": "test@example.com",
+      "is_public": true,
+      "created_at": "2025-09-16T01:16:40.648047Z",
+      "updated_at": "2025-09-16T01:16:40.648047Z"
+    },
+    "timestamp": "2025-09-16T06:46:40.875988"
+  },
+  {
+    "test": "Get Assignment Rubric Detail",
+    "success": true,
+    "message": "Rubric detail retrieved",
+    "data": {
+      "id": "7d958c63-3765-4344-8bec-efe1f7df2c10",
+      "name": "Final Test Rubric",
+      "description": "Comprehensive rubric for final testing",
+      "rubric_type": "ANALYTIC",
+      "criteria": [
+        {
+          "name": "Content Quality",
+          "points": 40,
+          "weight": 0.4,
+          "description": "Quality and depth of content"
+        },
+        {
+          "name": "Presentation",
+          "points": 30,
+          "weight": 0.3,
+          "description": "Clarity and organization"
+        },
+        {
+          "name": "Originality",
+          "points": 30,
+          "weight": 0.3,
+          "description": "Originality and creativity"
+        }
+      ],
+      "total_points": "100.00",
+      "created_by": "f7f41538-ca0d-4a63-9e62-8564c2b64ae8",
+      "created_by_name": "test@example.com",
+      "is_public": true,
+      "created_at": "2025-09-16T01:16:40.648047Z",
+      "updated_at": "2025-09-16T01:16:40.648047Z"
+    },
+    "timestamp": "2025-09-16T06:46:41.153922"
+  },
+  {
+    "test": "Get Assignments",
+    "success": true,
+    "message": "Found 0 assignments",
+    "data": [],
+    "timestamp": "2025-09-16T06:46:41.407648"
+  },
+  {
+    "test": "Get My Assignments",
+    "success": false,
+    "message": "Failed to get my assignments: {\"error\":\"User profile not found\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:41.630075"
+  },
+  {
+    "test": "Get Assignment Analytics",
+    "success": false,
+    "message": "No assignments available for analytics test",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:41.905396"
+  },
+  {
+    "test": "Get Assignment Notifications",
+    "success": true,
+    "message": "Found 0 notifications",
+    "data": [],
+    "timestamp": "2025-09-16T06:46:42.166623"
+  },
+  {
+    "test": "Create Assignment Notification",
+    "success": false,
+    "message": "Failed to create notification: {\"assignment\":[\"This field is required.\"],\"recipient\":[\"This field is required.\"]}",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:42.394987"
+  },
+  {
+    "test": "Get Assignment Schedules",
+    "success": true,
+    "message": "Found 0 schedules",
+    "data": [],
+    "timestamp": "2025-09-16T06:46:42.871257"
+  },
+  {
+    "test": "Create Assignment Schedule",
+    "success": false,
+    "message": "Failed to create schedule: {\"template\":[\"This field is required.\"],\"schedule_type\":[\"This field is required.\"]}",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:43.116334"
+  },
+  {
+    "test": "Peer Reviews Test",
+    "success": false,
+    "message": "No assignments available for peer review test",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:43.392207"
+  },
+  {
+    "test": "Plagiarism Checks Test",
+    "success": false,
+    "message": "No assignments available for plagiarism check test",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:43.639947"
+  },
+  {
+    "test": "Learning Outcomes Test",
+    "success": false,
+    "message": "No assignments available for learning outcome test",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:43.894475"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:43.911400"
+  },
+  {
+    "test": "Error Handling - Invalid Rubric ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:43.929598"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment Data",
+    "success": true,
+    "message": "Correctly returned 400 for invalid data",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:44.145231"
+  },
+  {
+    "test": "Cleanup test_rubric",
+    "success": true,
+    "message": "Successfully deleted test_rubric",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:44.563595"
+  },
+  {
+    "test": "Cleanup test_category",
+    "success": true,
+    "message": "Successfully deleted test_category",
+    "data": null,
+    "timestamp": "2025-09-16T06:46:44.966895"
+  }
+]

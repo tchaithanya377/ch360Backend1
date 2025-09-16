@@ -55,6 +55,26 @@ class Assignment(TimeStampedUUIDModel):
         ('CANCELLED', 'Cancelled'),
     ]
     
+    ASSIGNMENT_TYPES = [
+        ('HOMEWORK', 'Homework'),
+        ('PROJECT', 'Project'),
+        ('LAB_ASSIGNMENT', 'Lab Assignment'),
+        ('RESEARCH_PAPER', 'Research Paper'),
+        ('PRESENTATION', 'Presentation'),
+        ('QUIZ', 'Quiz'),
+        ('EXAM', 'Exam'),
+        ('PEER_REVIEW', 'Peer Review'),
+        ('PORTFOLIO', 'Portfolio'),
+        ('FIELD_WORK', 'Field Work'),
+    ]
+    
+    DIFFICULTY_LEVELS = [
+        ('BEGINNER', 'Beginner'),
+        ('INTERMEDIATE', 'Intermediate'),
+        ('ADVANCED', 'Advanced'),
+        ('EXPERT', 'Expert'),
+    ]
+    
     # Basic Information
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -75,6 +95,8 @@ class Assignment(TimeStampedUUIDModel):
     )
     
     # Assignment Details
+    assignment_type = models.CharField(max_length=20, choices=ASSIGNMENT_TYPES, default='HOMEWORK')
+    difficulty_level = models.CharField(max_length=15, choices=DIFFICULTY_LEVELS, default='INTERMEDIATE')
     max_marks = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 
@@ -82,11 +104,70 @@ class Assignment(TimeStampedUUIDModel):
     )
     due_date = models.DateTimeField()
     late_submission_allowed = models.BooleanField(default=False)
+    late_penalty_percentage = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Percentage penalty for late submissions (0-100)"
+    )
     
     # Assignment Settings
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='DRAFT')
     is_group_assignment = models.BooleanField(default=False)
     max_group_size = models.PositiveIntegerField(default=1, help_text="Maximum group size for group assignments")
+    
+    # AP-Specific Features
+    is_apaar_compliant = models.BooleanField(
+        default=True, 
+        help_text="Compliant with AP Academic Assessment and Accreditation Requirements"
+    )
+    requires_plagiarism_check = models.BooleanField(
+        default=True, 
+        help_text="Requires plagiarism detection check"
+    )
+    plagiarism_threshold = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=15.0,
+        help_text="Maximum allowed similarity percentage (0-100)"
+    )
+    
+    # Grading Integration
+    rubric = models.ForeignKey(
+        'AssignmentRubric', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='assignments',
+        help_text="Grading rubric for this assignment"
+    )
+    enable_peer_review = models.BooleanField(
+        default=False, 
+        help_text="Enable peer review for this assignment"
+    )
+    peer_review_weight = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Weight of peer review in final grade (0-100)"
+    )
+    
+    # Learning Outcomes
+    learning_objectives = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Learning objectives for this assignment"
+    )
+    
+    # Time Management
+    estimated_time_hours = models.PositiveIntegerField(
+        default=2, 
+        help_text="Estimated time to complete in hours"
+    )
+    submission_reminder_days = models.PositiveIntegerField(
+        default=1, 
+        help_text="Days before due date to send reminder"
+    )
     
     # Target Audience
     assigned_to_programs = models.ManyToManyField(
@@ -494,6 +575,396 @@ class AssignmentTemplate(TimeStampedUUIDModel):
         related_name='assignment_templates'
     )
     is_public = models.BooleanField(default=False, help_text="Available to all faculty")
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
+class AssignmentRubric(TimeStampedUUIDModel):
+    """Model for assignment grading rubrics"""
+    
+    RUBRIC_TYPES = [
+        ('ANALYTIC', 'Analytic Rubric'),
+        ('HOLISTIC', 'Holistic Rubric'),
+        ('CHECKLIST', 'Checklist Rubric'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    rubric_type = models.CharField(max_length=15, choices=RUBRIC_TYPES, default='ANALYTIC')
+    criteria = models.JSONField(
+        default=list,
+        help_text="List of rubric criteria with descriptions and point values"
+    )
+    total_points = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)]
+    )
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='assignment_rubrics'
+    )
+    is_public = models.BooleanField(default=False, help_text="Available to all faculty")
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
+class AssignmentRubricGrade(TimeStampedUUIDModel):
+    """Model for rubric-based grading"""
+    
+    submission = models.OneToOneField(
+        AssignmentSubmission, 
+        on_delete=models.CASCADE, 
+        related_name='rubric_grade'
+    )
+    rubric = models.ForeignKey(
+        AssignmentRubric, 
+        on_delete=models.CASCADE, 
+        related_name='grades'
+    )
+    criteria_scores = models.JSONField(
+        default=dict,
+        help_text="Scores for each rubric criterion"
+    )
+    total_score = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
+    feedback = models.TextField(blank=True, null=True)
+    graded_by = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='rubric_grades'
+    )
+    graded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-graded_at']
+    
+    def __str__(self):
+        return f"{self.submission.student} - {self.rubric.name}: {self.total_score}"
+
+
+class AssignmentPeerReview(TimeStampedUUIDModel):
+    """Model for peer review assignments"""
+    
+    assignment = models.ForeignKey(
+        Assignment, 
+        on_delete=models.CASCADE, 
+        related_name='peer_reviews'
+    )
+    reviewer = models.ForeignKey(
+        'students.Student', 
+        on_delete=models.CASCADE, 
+        related_name='peer_reviews_given'
+    )
+    reviewee = models.ForeignKey(
+        'students.Student', 
+        on_delete=models.CASCADE, 
+        related_name='peer_reviews_received'
+    )
+    submission = models.ForeignKey(
+        AssignmentSubmission, 
+        on_delete=models.CASCADE, 
+        related_name='peer_reviews'
+    )
+    
+    # Peer Review Content
+    content_rating = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Rating for content quality (1-5)"
+    )
+    clarity_rating = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Rating for clarity (1-5)"
+    )
+    creativity_rating = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Rating for creativity (1-5)"
+    )
+    overall_rating = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Overall rating (1-5)"
+    )
+    
+    # Feedback
+    strengths = models.TextField(help_text="What the student did well")
+    improvements = models.TextField(help_text="Areas for improvement")
+    additional_comments = models.TextField(blank=True, null=True)
+    
+    # Status
+    is_completed = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('assignment', 'reviewer', 'reviewee')
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.reviewer} reviews {self.reviewee} - {self.assignment.title}"
+
+
+class AssignmentPlagiarismCheck(TimeStampedUUIDModel):
+    """Model for plagiarism detection results"""
+    
+    PLAGIARISM_STATUS = [
+        ('PENDING', 'Pending'),
+        ('CLEAN', 'No Plagiarism Detected'),
+        ('SUSPICIOUS', 'Suspicious Content'),
+        ('PLAGIARIZED', 'Plagiarism Detected'),
+    ]
+    
+    submission = models.OneToOneField(
+        AssignmentSubmission, 
+        on_delete=models.CASCADE, 
+        related_name='plagiarism_check'
+    )
+    status = models.CharField(max_length=15, choices=PLAGIARISM_STATUS, default='PENDING')
+    similarity_percentage = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Percentage of similarity detected"
+    )
+    sources = models.JSONField(
+        default=list,
+        help_text="List of potential sources with similarity percentages"
+    )
+    checked_at = models.DateTimeField(auto_now_add=True)
+    checked_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='plagiarism_checks'
+    )
+    notes = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-checked_at']
+    
+    def __str__(self):
+        return f"{self.submission.student} - {self.status} ({self.similarity_percentage}%)"
+
+
+class AssignmentLearningOutcome(TimeStampedUUIDModel):
+    """Model for assignment learning outcomes"""
+    
+    BLOOM_TAXONOMY_LEVELS = [
+        ('REMEMBER', 'Remember'),
+        ('UNDERSTAND', 'Understand'),
+        ('APPLY', 'Apply'),
+        ('ANALYZE', 'Analyze'),
+        ('EVALUATE', 'Evaluate'),
+        ('CREATE', 'Create'),
+    ]
+    
+    assignment = models.ForeignKey(
+        Assignment, 
+        on_delete=models.CASCADE, 
+        related_name='learning_outcomes'
+    )
+    outcome_code = models.CharField(max_length=20, help_text="Learning outcome code (e.g., LO1, LO2)")
+    description = models.TextField(help_text="Description of the learning outcome")
+    bloom_level = models.CharField(max_length=15, choices=BLOOM_TAXONOMY_LEVELS)
+    weight = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Weight of this outcome in the assignment (0-100)"
+    )
+    
+    class Meta:
+        ordering = ['outcome_code']
+        unique_together = ('assignment', 'outcome_code')
+    
+    def __str__(self):
+        return f"{self.assignment.title} - {self.outcome_code}"
+
+
+class AssignmentAnalytics(TimeStampedUUIDModel):
+    """Model for assignment analytics and insights"""
+    
+    assignment = models.OneToOneField(
+        Assignment, 
+        on_delete=models.CASCADE, 
+        related_name='analytics'
+    )
+    
+    # Submission Analytics
+    total_expected_submissions = models.PositiveIntegerField(default=0)
+    actual_submissions = models.PositiveIntegerField(default=0)
+    submission_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Submission rate percentage"
+    )
+    
+    # Grade Analytics
+    average_grade = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        null=True, 
+        blank=True
+    )
+    median_grade = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        null=True, 
+        blank=True
+    )
+    grade_distribution = models.JSONField(
+        default=dict,
+        help_text="Distribution of grades across different ranges"
+    )
+    
+    # Time Analytics
+    average_submission_time = models.DurationField(
+        null=True, 
+        blank=True,
+        help_text="Average time taken to submit after assignment creation"
+    )
+    late_submission_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Percentage of late submissions"
+    )
+    
+    # Learning Outcome Analytics
+    outcome_achievement = models.JSONField(
+        default=dict,
+        help_text="Achievement rates for each learning outcome"
+    )
+    
+    # Plagiarism Analytics
+    plagiarism_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        help_text="Percentage of submissions flagged for plagiarism"
+    )
+    
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-last_updated']
+    
+    def __str__(self):
+        return f"Analytics for {self.assignment.title}"
+
+
+class AssignmentNotification(TimeStampedUUIDModel):
+    """Model for assignment-related notifications"""
+    
+    NOTIFICATION_TYPES = [
+        ('ASSIGNMENT_CREATED', 'Assignment Created'),
+        ('ASSIGNMENT_DUE_SOON', 'Assignment Due Soon'),
+        ('ASSIGNMENT_OVERDUE', 'Assignment Overdue'),
+        ('SUBMISSION_RECEIVED', 'Submission Received'),
+        ('GRADE_POSTED', 'Grade Posted'),
+        ('FEEDBACK_POSTED', 'Feedback Posted'),
+        ('PEER_REVIEW_ASSIGNED', 'Peer Review Assigned'),
+        ('PLAGIARISM_DETECTED', 'Plagiarism Detected'),
+    ]
+    
+    assignment = models.ForeignKey(
+        Assignment, 
+        on_delete=models.CASCADE, 
+        related_name='notifications'
+    )
+    recipient = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='assignment_notifications'
+    )
+    notification_type = models.CharField(max_length=25, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    # Additional context
+    context_data = models.JSONField(
+        default=dict,
+        help_text="Additional context data for the notification"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', 'is_read']),
+            models.Index(fields=['notification_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.recipient.email} - {self.title}"
+
+
+class AssignmentSchedule(TimeStampedUUIDModel):
+    """Model for automated assignment scheduling"""
+    
+    SCHEDULE_TYPES = [
+        ('WEEKLY', 'Weekly'),
+        ('MONTHLY', 'Monthly'),
+        ('SEMESTER', 'Per Semester'),
+        ('CUSTOM', 'Custom Interval'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    template = models.ForeignKey(
+        AssignmentTemplate, 
+        on_delete=models.CASCADE, 
+        related_name='schedules'
+    )
+    schedule_type = models.CharField(max_length=15, choices=SCHEDULE_TYPES)
+    interval_days = models.PositiveIntegerField(
+        default=7, 
+        help_text="Interval in days for custom schedules"
+    )
+    
+    # Target Settings
+    target_programs = models.ManyToManyField(
+        'academics.AcademicProgram', 
+        blank=True, 
+        related_name='assignment_schedules'
+    )
+    target_departments = models.ManyToManyField(
+        'departments.Department', 
+        blank=True, 
+        related_name='assignment_schedules'
+    )
+    target_courses = models.ManyToManyField(
+        'academics.Course', 
+        blank=True, 
+        related_name='assignment_schedules'
+    )
+    
+    # Schedule Settings
+    is_active = models.BooleanField(default=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
+    last_run = models.DateTimeField(null=True, blank=True)
+    next_run = models.DateTimeField(null=True, blank=True)
+    
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='assignment_schedules'
+    )
     
     class Meta:
         ordering = ['name']

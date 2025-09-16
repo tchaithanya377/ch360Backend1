@@ -3,7 +3,10 @@ from django.contrib.auth import get_user_model
 from .models import (
     Assignment, AssignmentSubmission, AssignmentFile, 
     AssignmentGrade, AssignmentComment, AssignmentCategory,
-    AssignmentGroup, AssignmentTemplate
+    AssignmentGroup, AssignmentTemplate, AssignmentRubric,
+    AssignmentRubricGrade, AssignmentPeerReview, AssignmentPlagiarismCheck,
+    AssignmentLearningOutcome, AssignmentAnalytics, AssignmentNotification,
+    AssignmentSchedule
 )
 
 User = get_user_model()
@@ -160,21 +163,27 @@ class AssignmentSerializer(serializers.ModelSerializer):
         source='assigned_to_students', many=True, read_only=True
     )
     
+    # New enhanced fields - will be defined after the related serializers
+    rubric_name = serializers.CharField(source='rubric.name', read_only=True)
+    
     class Meta:
         model = Assignment
         fields = [
             'id', 'title', 'description', 'instructions', 'category', 'category_name',
-            'faculty', 'faculty_name', 'faculty_id', 'max_marks', 'due_date',
-            'late_submission_allowed', 'status', 'is_group_assignment', 'max_group_size',
+            'faculty', 'faculty_name', 'faculty_id', 'assignment_type', 'difficulty_level',
+            'max_marks', 'due_date', 'late_submission_allowed', 'late_penalty_percentage',
+            'status', 'is_group_assignment', 'max_group_size', 'is_apaar_compliant',
+            'requires_plagiarism_check', 'plagiarism_threshold', 'rubric', 'rubric_name',
+            'enable_peer_review', 'peer_review_weight', 'learning_objectives',
+            'estimated_time_hours', 'submission_reminder_days',
             'academic_year', 'academic_year_name', 'semester', 'semester_name',
             'assigned_to_programs', 'assigned_to_programs_names',
             'assigned_to_departments', 'assigned_to_departments_names',
             'assigned_to_courses', 'assigned_to_courses_names',
             'assigned_to_course_sections', 'assigned_to_course_sections_names',
-            'assigned_to_students',
-            'assigned_to_students_names', 'attachment_files', 'files', 'comments',
-            'submissions', 'submission_count', 'graded_count', 'is_overdue',
-            'created_at', 'updated_at'
+            'assigned_to_students', 'assigned_to_students_names', 'attachment_files', 
+            'files', 'comments', 'submissions', 'submission_count', 'graded_count', 
+            'is_overdue', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'submission_count', 'graded_count', 'is_overdue',
@@ -188,12 +197,14 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = [
-            'title', 'description', 'instructions', 'category', 'max_marks',
-            'due_date', 'late_submission_allowed', 'is_group_assignment',
-            'max_group_size', 'academic_year', 'semester',
+            'title', 'description', 'instructions', 'category', 'assignment_type',
+            'difficulty_level', 'max_marks', 'due_date', 'late_submission_allowed',
+            'late_penalty_percentage', 'is_group_assignment', 'max_group_size',
+            'is_apaar_compliant', 'requires_plagiarism_check', 'plagiarism_threshold',
+            'rubric', 'enable_peer_review', 'peer_review_weight', 'learning_objectives',
+            'estimated_time_hours', 'submission_reminder_days', 'academic_year', 'semester',
             'assigned_to_programs', 'assigned_to_departments', 'assigned_to_courses',
-            'assigned_to_course_sections', 'assigned_to_students',
-            'attachment_files'
+            'assigned_to_course_sections', 'assigned_to_students', 'attachment_files'
         ]
     
     def create(self, validated_data):
@@ -304,3 +315,132 @@ class FacultyAssignmentStatsSerializer(serializers.Serializer):
     pending_grades = serializers.IntegerField()
     average_grade = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True)
     overdue_assignments = serializers.IntegerField()
+
+
+class AssignmentRubricSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentRubric model"""
+    
+    created_by_name = serializers.CharField(source='created_by.email', read_only=True)
+    
+    class Meta:
+        model = AssignmentRubric
+        fields = [
+            'id', 'name', 'description', 'rubric_type', 'criteria',
+            'total_points', 'created_by', 'created_by_name', 'is_public',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+
+class AssignmentRubricGradeSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentRubricGrade model"""
+    
+    graded_by_name = serializers.CharField(source='graded_by.email', read_only=True)
+    
+    class Meta:
+        model = AssignmentRubricGrade
+        fields = [
+            'id', 'submission', 'rubric', 'criteria_scores', 'total_score',
+            'feedback', 'graded_by', 'graded_by_name', 'graded_at',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'graded_at', 'created_at', 'updated_at']
+
+
+class AssignmentPeerReviewSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentPeerReview model"""
+    
+    reviewer_name = serializers.CharField(source='reviewer.name', read_only=True)
+    reviewee_name = serializers.CharField(source='reviewee.name', read_only=True)
+    assignment_title = serializers.CharField(source='assignment.title', read_only=True)
+    
+    class Meta:
+        model = AssignmentPeerReview
+        fields = [
+            'id', 'assignment', 'assignment_title', 'reviewer', 'reviewer_name',
+            'reviewee', 'reviewee_name', 'submission', 'content_rating',
+            'clarity_rating', 'creativity_rating', 'overall_rating', 'strengths',
+            'improvements', 'additional_comments', 'is_completed', 'submitted_at',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'submitted_at', 'created_at', 'updated_at']
+
+
+class AssignmentPlagiarismCheckSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentPlagiarismCheck model"""
+    
+    student_name = serializers.CharField(source='submission.student.name', read_only=True)
+    assignment_title = serializers.CharField(source='submission.assignment.title', read_only=True)
+    checked_by_name = serializers.CharField(source='checked_by.email', read_only=True)
+    
+    class Meta:
+        model = AssignmentPlagiarismCheck
+        fields = [
+            'id', 'submission', 'student_name', 'assignment_title', 'status',
+            'similarity_percentage', 'sources', 'checked_at', 'checked_by',
+            'checked_by_name', 'notes', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'checked_at', 'created_at', 'updated_at']
+
+
+class AssignmentLearningOutcomeSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentLearningOutcome model"""
+    
+    assignment_title = serializers.CharField(source='assignment.title', read_only=True)
+    
+    class Meta:
+        model = AssignmentLearningOutcome
+        fields = [
+            'id', 'assignment', 'assignment_title', 'outcome_code', 'description',
+            'bloom_level', 'weight', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class AssignmentAnalyticsSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentAnalytics model"""
+    
+    assignment_title = serializers.CharField(source='assignment.title', read_only=True)
+    
+    class Meta:
+        model = AssignmentAnalytics
+        fields = [
+            'id', 'assignment', 'assignment_title', 'total_expected_submissions',
+            'actual_submissions', 'submission_rate', 'average_grade', 'median_grade',
+            'grade_distribution', 'average_submission_time', 'late_submission_rate',
+            'outcome_achievement', 'plagiarism_rate', 'last_updated', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'last_updated', 'created_at', 'updated_at']
+
+
+class AssignmentNotificationSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentNotification model"""
+    
+    assignment_title = serializers.CharField(source='assignment.title', read_only=True)
+    recipient_name = serializers.CharField(source='recipient.email', read_only=True)
+    
+    class Meta:
+        model = AssignmentNotification
+        fields = [
+            'id', 'assignment', 'assignment_title', 'recipient', 'recipient_name',
+            'notification_type', 'title', 'message', 'is_read', 'read_at',
+            'context_data', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'read_at', 'created_at', 'updated_at']
+
+
+class AssignmentScheduleSerializer(serializers.ModelSerializer):
+    """Serializer for AssignmentSchedule model"""
+    
+    template_name = serializers.CharField(source='template.name', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.email', read_only=True)
+    
+    class Meta:
+        model = AssignmentSchedule
+        fields = [
+            'id', 'name', 'description', 'template', 'template_name', 'schedule_type',
+            'interval_days', 'target_programs', 'target_departments', 'target_courses',
+            'is_active', 'start_date', 'end_date', 'last_run', 'next_run',
+            'created_by', 'created_by_name', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'last_run', 'next_run', 'created_by', 'created_at', 'updated_at']

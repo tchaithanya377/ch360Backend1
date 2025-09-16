@@ -1,0 +1,221 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Successfully authenticated with test user",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:25.696347"
+  },
+  {
+    "test": "Get Assignment Categories",
+    "success": true,
+    "message": "Found 10 categories",
+    "data": [
+      {
+        "id": "7ace83e4-5a52-4e39-8e4c-758b611c6350",
+        "name": "Test Category",
+        "description": "Test category for course assignments",
+        "color_code": "#007bff",
+        "is_active": true,
+        "created_at": "2025-09-14T16:01:29.409068Z",
+        "updated_at": "2025-09-14T16:01:29.409068Z"
+      },
+      {
+        "id": "24fb9bb4-e415-4eef-bd47-427ed5271b98",
+        "name": "Enhanced Test Category",
+        "description": "Test category for enhanced form testing",
+        "color_code": "#007bff",
+        "is_active": true,
+        "created_at": "2025-09-14T16:08:33.715746Z",
+        "updated_at": "2025-09-14T16:08:33.715746Z"
+      },
+      {
+        "id": "f7df43c5-59ea-4292-8093-96c9cef1a4c9",
+        "name": "Research Project",
+        "description": "Independent research projects aligned with AP academic standards",
+        "color_code": "#2E8B57",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:26.756281Z",
+        "updated_at": "2025-09-16T00:59:26.756281Z"
+      },
+      {
+        "id": "65438137-d61e-48e4-a93f-01ee90aba5a4",
+        "name": "Laboratory Assignment",
+        "description": "Practical laboratory work and experiments",
+        "color_code": "#4169E1",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:26.958972Z",
+        "updated_at": "2025-09-16T00:59:26.958972Z"
+      },
+      {
+        "id": "852a4415-763c-42fa-83b2-c02a1c75e5e2",
+        "name": "Field Work",
+        "description": "Field studies and practical applications",
+        "color_code": "#FF6347",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.092394Z",
+        "updated_at": "2025-09-16T00:59:27.092394Z"
+      },
+      {
+        "id": "aec720fe-c895-42d8-b954-384002879803",
+        "name": "Case Study",
+        "description": "Real-world case analysis and problem solving",
+        "color_code": "#9370DB",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.224681Z",
+        "updated_at": "2025-09-16T00:59:27.224681Z"
+      },
+      {
+        "id": "6c5dc65f-57d8-4a0d-9e5d-83de8f71b6f6",
+        "name": "Portfolio",
+        "description": "Comprehensive portfolio of student work",
+        "color_code": "#FFD700",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.356436Z",
+        "updated_at": "2025-09-16T00:59:27.356436Z"
+      },
+      {
+        "id": "2059bdda-becd-4bdb-9314-2245e344602a",
+        "name": "Presentation",
+        "description": "Oral presentations and demonstrations",
+        "color_code": "#FF69B4",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.488588Z",
+        "updated_at": "2025-09-16T00:59:27.488588Z"
+      },
+      {
+        "id": "b0023e2e-0258-4714-9b8f-6abf3b5ad10e",
+        "name": "Internship Report",
+        "description": "Reports from industry internships and placements",
+        "color_code": "#20B2AA",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.620154Z",
+        "updated_at": "2025-09-16T00:59:27.620154Z"
+      },
+      {
+        "id": "535f5f25-18c2-4cc9-9188-8a216f5ca571",
+        "name": "Thesis/Dissertation",
+        "description": "Final year thesis and dissertation work",
+        "color_code": "#8B4513",
+        "is_active": true,
+        "created_at": "2025-09-16T00:59:27.764962Z",
+        "updated_at": "2025-09-16T00:59:27.764962Z"
+      }
+    ],
+    "timestamp": "2025-09-16T06:45:26.138792"
+  },
+  {
+    "test": "Create Assignment Category",
+    "success": true,
+    "message": "Category created successfully",
+    "data": {
+      "id": "a7747f68-b300-4864-84c3-3bad6c6a6cf9",
+      "name": "Final Test Category",
+      "description": "Final test category for comprehensive testing",
+      "color_code": "#FF5733",
+      "is_active": true,
+      "created_at": "2025-09-16T01:15:26.197527Z",
+      "updated_at": "2025-09-16T01:15:26.197527Z"
+    },
+    "timestamp": "2025-09-16T06:45:26.618929"
+  },
+  {
+    "test": "Get Assignment Category Detail",
+    "success": true,
+    "message": "Category detail retrieved",
+    "data": {
+      "id": "a7747f68-b300-4864-84c3-3bad6c6a6cf9",
+      "name": "Final Test Category",
+      "description": "Final test category for comprehensive testing",
+      "color_code": "#FF5733",
+      "is_active": true,
+      "created_at": "2025-09-16T01:15:26.197527Z",
+      "updated_at": "2025-09-16T01:15:26.197527Z"
+    },
+    "timestamp": "2025-09-16T06:45:27.034821"
+  },
+  {
+    "test": "Get Assignment Rubrics",
+    "success": false,
+    "message": "Failed to get rubrics: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:27.457343"
+  },
+  {
+    "test": "Get Assignments",
+    "success": false,
+    "message": "Failed to get assignments: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:27.700261"
+  },
+  {
+    "test": "Get Assignment Analytics",
+    "success": false,
+    "message": "Failed to get assignments for analytics test",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:27.994011"
+  },
+  {
+    "test": "Get Assignment Notifications",
+    "success": false,
+    "message": "Failed to get notifications: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:28.160744"
+  },
+  {
+    "test": "Get Assignment Schedules",
+    "success": false,
+    "message": "Failed to get schedules: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:28.345280"
+  },
+  {
+    "test": "Peer Reviews Test",
+    "success": false,
+    "message": "Failed to get assignments for peer review test",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:28.559705"
+  },
+  {
+    "test": "Plagiarism Checks Test",
+    "success": false,
+    "message": "Failed to get assignments for plagiarism check test",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:28.771499"
+  },
+  {
+    "test": "Learning Outcomes Test",
+    "success": false,
+    "message": "Failed to get assignments for learning outcome test",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:29.014345"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:29.033531"
+  },
+  {
+    "test": "Error Handling - Invalid Rubric ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:29.049422"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment Data",
+    "success": true,
+    "message": "Correctly returned 400 for invalid data",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:29.229165"
+  },
+  {
+    "test": "Cleanup test_category",
+    "success": true,
+    "message": "Successfully deleted test_category",
+    "data": null,
+    "timestamp": "2025-09-16T06:45:29.616729"
+  }
+]

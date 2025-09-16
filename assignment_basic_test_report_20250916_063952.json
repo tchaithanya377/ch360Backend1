@@ -1,0 +1,86 @@
+[
+  {
+    "test": "Server Health Check",
+    "success": true,
+    "message": "Server is running",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.713719"
+  },
+  {
+    "test": "Admin Login Page",
+    "success": true,
+    "message": "Admin login page accessible",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.723644"
+  },
+  {
+    "test": "Admin Interface",
+    "success": true,
+    "message": "Admin interface accessible",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.734229"
+  },
+  {
+    "test": "API Endpoint /api/v1/assignments/",
+    "success": true,
+    "message": "Endpoint exists (status: 401)",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.736090"
+  },
+  {
+    "test": "API Endpoint /api/v1/assignments/categories/",
+    "success": false,
+    "message": "Unexpected status: 500",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.743881"
+  },
+  {
+    "test": "API Endpoint /api/v1/assignments/rubrics/",
+    "success": true,
+    "message": "Endpoint exists (status: 401)",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.746669"
+  },
+  {
+    "test": "API Endpoint /api/v1/assignments/notifications/",
+    "success": true,
+    "message": "Endpoint exists (status: 401)",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.752216"
+  },
+  {
+    "test": "API Endpoint /api/v1/assignments/schedules/",
+    "success": true,
+    "message": "Endpoint exists (status: 401)",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.755075"
+  },
+  {
+    "test": "API Endpoint /api/auth/token/",
+    "success": true,
+    "message": "Endpoint exists (status: 405)",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:40.760743"
+  },
+  {
+    "test": "Database Models",
+    "success": true,
+    "message": "All models accessible",
+    "data": "Assignment Categories: 10\nAssignment Rubrics: 2\nAssignments: 0\nAssignment Submissions: 0\nAssignment Analytics: 0\nAssignment Notifications: 0\nAssignment Schedules: 0\nAssignment Learning Outcomes: 0\nAssignment Peer Reviews: 0\nAssignment Plagiarism Checks: 0\n",
+    "timestamp": "2025-09-16T06:39:42.915060"
+  },
+  {
+    "test": "Migrations",
+    "success": true,
+    "message": "All 6 migrations applied",
+    "data": null,
+    "timestamp": "2025-09-16T06:39:47.497747"
+  },
+  {
+    "test": "Management Commands",
+    "success": true,
+    "message": "AP setup command executed successfully",
+    "data": "Setting up AP-specific assignment features...\nCategory already exists: Research Project\nCategory already exists: Laboratory Assignment\nCategory already exists: Field Work\nCategory already exists: Case Study\nCategory already exists: Portfolio\nCategory already exists: Presentation\nCategory already exists: Internship Report\nCategory already exists: Thesis/Dissertation\nRubric already exists: AP Research Project Rubric\nRubric already exists: AP Laboratory Assignment Rubric\nTemplate already exists: AP Research Project Template\nTemplate already exists: AP Laboratory Assignment Template\nTemplate already exists: AP Case Study Template\nSuccessfully set up AP assignment features!\n",
+    "timestamp": "2025-09-16T06:39:52.165966"
+  }
+]

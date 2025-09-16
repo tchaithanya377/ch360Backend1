@@ -16,7 +16,7 @@ class Command(BaseCommand):
             slug='feedback-api',
             defaults={
                 'name': 'Feedback API',
-                'description': 'Collect feedback items, comments, attachments and votes',
+                'description': 'University-grade feedback aligned with Indian standards; collect items, comments, attachments, and votes. Strong relevance for Andhra Pradesh institutions.',
                 'icon': 'fas fa-comment-dots',
                 'color': '#8e44ad',
                 'order': 90,
@@ -30,7 +30,7 @@ class Command(BaseCommand):
             {
                 'slug': 'feedback-overview',
                 'title': 'Feedback – Overview',
-                'desc': 'Create categories and tags, collect feedback items from users, comment, attach files, and vote.',
+                'desc': 'Create categories and tags, collect feedback items from users, comment, attach files, and vote—aligned with Indian university practices (notably AP).',
                 'order': 1,
                 'steps': [
                     ('Base URL', 'All endpoints under `/api/v1/feedback/`'),

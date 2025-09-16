@@ -28,7 +28,7 @@ from academics.models import Course, Syllabus, Timetable, CourseEnrollment, Acad
 from departments.models import Department
 from attendance.models import AttendanceSession, AttendanceRecord
 from enrollment.models import EnrollmentRule, CourseAssignment, FacultyAssignment, StudentEnrollmentPlan, PlannedCourse, EnrollmentRequest, WaitlistEntry
-from grads.models import GradeScale, Term, CourseResult, TermGPA, GraduateRecord
+from grads.models import GradeScale, MidTermGrade, SemesterGrade, SemesterGPA
 from rnd.models import Researcher as RndResearcher, Grant as RndGrant, Project as RndProject, Publication as RndPublication, Patent as RndPatent, Dataset as RndDataset, Collaboration as RndCollaboration
 from fees.models import FeeCategory, FeeStructure, FeeStructureDetail, StudentFee, Payment, FeeWaiver, FeeDiscount, FeeReceipt
 from transportation.models import Vehicle, Driver, Route, Stop, RouteStop, VehicleAssignment, TripSchedule, TransportPass
@@ -282,9 +282,8 @@ def audit_logs(request):
 def grads_dashboard(request):
     context = {
         'grade_scales_count': GradeScale.objects.count(),
-        'terms_count': Term.objects.count(),
-        'results_count': CourseResult.objects.count(),
-        'students_with_records': GraduateRecord.objects.count(),
+        'midterm_grades_count': MidTermGrade.objects.count(),
+        'semester_grades_count': SemesterGrade.objects.count(),
     }
     return render(request, 'dashboard/grads/dashboard.html', context)
 
@@ -305,8 +304,8 @@ def grads_grade_scales(request):
 @login_required
 @user_passes_test(is_admin)
 def grads_terms(request):
-    terms = Term.objects.order_by('-academic_year', 'semester')
-    return render(request, 'dashboard/grads/terms.html', {'terms': terms})
+    semesters = Semester.objects.order_by('-academic_year__year', 'semester_type')
+    return render(request, 'dashboard/grads/terms.html', {'terms': semesters})
 
 
 # ---------------------
@@ -577,34 +576,45 @@ def transport_pass_create(request):
 def grads_results(request):
     student_id = request.GET.get('student')
     term_id = request.GET.get('term')
+    semester_id = request.GET.get('semester')
     dept_code = request.GET.get('department')
     course_id = request.GET.get('course')
     year = request.GET.get('year')
     section = request.GET.get('section')
-    results = CourseResult.objects.select_related('student', 'term', 'course_section', 'course_section__course')
+    # Get both midterm and semester grades
+    midterm_results = MidTermGrade.objects.select_related('student', 'course_section', 'semester', 'course_section__course')
+    semester_results = SemesterGrade.objects.select_related('student', 'course_section', 'semester', 'course_section__course')
+    
     if student_id:
-        results = results.filter(student_id=student_id)
-    if term_id:
-        results = results.filter(term_id=term_id)
+        midterm_results = midterm_results.filter(student_id=student_id)
+        semester_results = semester_results.filter(student_id=student_id)
+    if semester_id:
+        midterm_results = midterm_results.filter(semester_id=semester_id)
+        semester_results = semester_results.filter(semester_id=semester_id)
     if dept_code:
-        results = results.filter(course_section__course__department__code__iexact=dept_code)
+        midterm_results = midterm_results.filter(course_section__course__department__code__iexact=dept_code)
+        semester_results = semester_results.filter(course_section__course__department__code__iexact=dept_code)
     if course_id:
-        results = results.filter(course_section__course_id=course_id)
-    if year:
-        results = results.filter(course_section__academic_year=year)
+        midterm_results = midterm_results.filter(course_section__course_id=course_id)
+        semester_results = semester_results.filter(course_section__course_id=course_id)
     if section:
-        results = results.filter(course_section__section_number__iexact=section)
-    results = results.order_by('-evaluated_at')[:500]
+        midterm_results = midterm_results.filter(course_section__section_number__iexact=section)
+        semester_results = semester_results.filter(course_section__section_number__iexact=section)
+    
+    midterm_results = midterm_results.order_by('-evaluated_at')[:250]
+    semester_results = semester_results.order_by('-evaluated_at')[:250]
+    
     # Build filter option lists
-    years = CourseSection.objects.values_list('academic_year', flat=True).distinct().order_by('-academic_year')
     sections = CourseSection.objects.values_list('section_number', flat=True).distinct().order_by('section_number')
     courses = Course.objects.order_by('code')[:500]
     students_qs = Student.objects.order_by('roll_number')[:500]
     course_sections = CourseSection.objects.select_related('course').order_by('course__code', 'section_number')[:500]
+    semesters = Semester.objects.select_related('academic_year').order_by('-academic_year__year')
+    
     return render(request, 'dashboard/grads/results.html', {
-        'results': results,
-        'terms': Term.objects.all().order_by('-academic_year'),
-        'years': years,
+        'midterm_results': midterm_results,
+        'semester_results': semester_results,
+        'semesters': semesters,
         'sections': sections,
         'courses': courses,
         'students_list': students_qs,
@@ -615,13 +625,13 @@ def grads_results(request):
 @login_required
 @user_passes_test(is_admin)
 def grads_bulk_entry(request):
-    terms = Term.objects.all().order_by('-academic_year')
+    semesters = Semester.objects.all().order_by('-academic_year__year')
     years = CourseSection.objects.values_list('academic_year', flat=True).distinct().order_by('-academic_year')
     sections = CourseSection.objects.values_list('section_number', flat=True).distinct().order_by('section_number')
     courses = Course.objects.order_by('code')[:500]
     students_qs = Student.objects.order_by('roll_number')[:500]
     return render(request, 'dashboard/grads/bulk_entry.html', {
-        'terms': terms,
+        'semesters': semesters,
         'years': years,
         'sections': sections,
         'courses': courses,
@@ -675,14 +685,14 @@ def grads_students_api(request):
 @user_passes_test(is_admin)
 def grads_transcript(request, student_id):
     student = get_object_or_404(Student, id=student_id)
-    grad = GraduateRecord.objects.filter(student=student).first()
-    term_gpas = TermGPA.objects.filter(student=student).select_related('term').order_by('-term__academic_year')
-    results = CourseResult.objects.filter(student=student).select_related('term', 'course_section', 'course_section__course').order_by('-term__academic_year')
+    semester_gpas = SemesterGPA.objects.filter(student=student).select_related('semester').order_by('-semester__academic_year__year')
+    midterm_grades = MidTermGrade.objects.filter(student=student).select_related('semester', 'course_section', 'course_section__course').order_by('-semester__academic_year__year')
+    semester_grades = SemesterGrade.objects.filter(student=student).select_related('semester', 'course_section', 'course_section__course').order_by('-semester__academic_year__year')
     context = {
         'student': student,
-        'grad': grad,
-        'term_gpas': term_gpas,
-        'results': results,
+        'semester_gpas': semester_gpas,
+        'midterm_grades': midterm_grades,
+        'semester_grades': semester_grades,
     }
     return render(request, 'dashboard/grads/transcript.html', context)
 

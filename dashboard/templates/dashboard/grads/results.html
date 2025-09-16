@@ -17,10 +17,10 @@
     </select>
   </div>
   <div class="col-3">
-  <select class="form-select" name="term">
-    <option value="">All Terms</option>
-    {% for t in terms %}
-      <option value="{{ t.id }}" {% if request.GET.term == t.id|stringformat:'s' %}selected{% endif %}>{{ t.academic_year }} {{ t.get_semester_display }}</option>
+  <select class="form-select" name="semester">
+    <option value="">All Semesters</option>
+    {% for s in semesters %}
+      <option value="{{ s.id }}" {% if request.GET.semester == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }} ({{ s.academic_year.year }})</option>
     {% endfor %}
   </select>
   </div>
@@ -94,10 +94,10 @@
             </select>
           </div>
           <div class="col-6">
-            <select class="form-select" name="term" required>
-              <option value="">Select Term</option>
-              {% for t in terms %}
-                <option value="{{ t.id }}">{{ t.academic_year }} {{ t.get_semester_display }}</option>
+            <select class="form-select" name="semester" required>
+              <option value="">Select Semester</option>
+              {% for s in semesters %}
+                <option value="{{ s.id }}">{{ s.name }} ({{ s.academic_year.year }})</option>
               {% endfor %}
             </select>
           </div>

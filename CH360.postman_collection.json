@@ -304,7 +304,11 @@
       "name": "Grads",
       "item": [
         { "name": "Terms", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/terms/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","terms","" ] } } },
-        { "name": "Graduates", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/graduates/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","graduates","" ] } } }
+        { "name": "Course Results (filtered)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/course-results/?student=1&semester=1&passed=true", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","course-results","" ], "query": [ {"key":"student","value":"1"}, {"key":"semester","value":"1"}, {"key":"passed","value":"true"} ] } } },
+        { "name": "Course Results - bulk upsert", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" }, { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/course-results/bulk_upsert/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","course-results","bulk_upsert","" ] }, "body": { "mode": "raw", "raw": "[\n  {\n    \"student\": 1,\n    \"course_section\": 1,\n    \"semester\": 1,\n    \"internal_marks\": 25,\n    \"external_marks\": 60\n  },\n  {\n    \"student\": 2,\n    \"course_section\": 1,\n    \"semester\": 1,\n    \"internal_marks\": 30,\n    \"external_marks\": 55\n  }\n]" } } },
+        { "name": "Graduates", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/graduates/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","graduates","" ] } } },
+        { "name": "Graduate Transcript", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/graduates/1/transcript/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","graduates","1","transcript","" ] } } },
+        { "name": "Graduate Eligibility", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/grads/graduates/1/eligibility/", "host": ["{{baseUrl}}"], "path": ["api","v1","grads","graduates","1","eligibility","" ] } } }
       ]
     },
     {
@@ -337,6 +341,7 @@
     },
     {
       "name": "Feedback",
+      "description": "Feedback adheres to Indian university standards (NAAC SSS, AICTE/UGC), aligned with Andhra Pradesh institutional practices.",
       "item": [
         { "name": "Items", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/feedback/items/", "host": ["{{baseUrl}}"], "path": ["api","v1","feedback","items","" ] } } },
         { "name": "Comments", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ], "url": { "raw": "{{baseUrl}}/api/v1/feedback/comments/", "host": ["{{baseUrl}}"], "path": ["api","v1","feedback","comments","" ] } } }

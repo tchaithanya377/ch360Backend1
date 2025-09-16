@@ -1,0 +1,93 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Successfully authenticated with test user",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:38.445561"
+  },
+  {
+    "test": "Get Assignment Categories",
+    "success": false,
+    "message": "Failed to get categories: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:38.605904"
+  },
+  {
+    "test": "Get Assignment Rubrics",
+    "success": false,
+    "message": "Failed to get rubrics: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:38.851442"
+  },
+  {
+    "test": "Get Assignments",
+    "success": false,
+    "message": "Failed to get assignments: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:39.115867"
+  },
+  {
+    "test": "Get Assignment Analytics",
+    "success": false,
+    "message": "Failed to get assignments for analytics test",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:39.351211"
+  },
+  {
+    "test": "Get Assignment Notifications",
+    "success": false,
+    "message": "Failed to get notifications: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:39.524054"
+  },
+  {
+    "test": "Get Assignment Schedules",
+    "success": false,
+    "message": "Failed to get schedules: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:39.724900"
+  },
+  {
+    "test": "Peer Reviews Test",
+    "success": false,
+    "message": "Failed to get assignments for peer review test",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:39.950427"
+  },
+  {
+    "test": "Plagiarism Checks Test",
+    "success": false,
+    "message": "Failed to get assignments for plagiarism check test",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:40.204431"
+  },
+  {
+    "test": "Learning Outcomes Test",
+    "success": false,
+    "message": "Failed to get assignments for learning outcome test",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:40.456421"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:40.470613"
+  },
+  {
+    "test": "Error Handling - Invalid Rubric ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:40.481323"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment Data",
+    "success": true,
+    "message": "Correctly returned 400 for invalid data",
+    "data": null,
+    "timestamp": "2025-09-16T06:42:40.751255"
+  }
+]

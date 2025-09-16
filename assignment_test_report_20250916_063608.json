@@ -1,0 +1,72 @@
+[
+  {
+    "test": "Server Health Check",
+    "success": true,
+    "message": "Server is running",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.921263"
+  },
+  {
+    "test": "Get Assignment Categories",
+    "success": false,
+    "message": "Failed to get categories: {\"success\":false,\"error\":\"Internal Server Error\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.924379"
+  },
+  {
+    "test": "Get Assignment Rubrics",
+    "success": false,
+    "message": "Failed to get rubrics: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.927411"
+  },
+  {
+    "test": "Get Assignments",
+    "success": false,
+    "message": "Failed to get assignments: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.930444"
+  },
+  {
+    "test": "Get Assignment Analytics",
+    "success": false,
+    "message": "No test assignment available",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.930444"
+  },
+  {
+    "test": "Get Assignment Notifications",
+    "success": false,
+    "message": "Failed to get notifications: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.934617"
+  },
+  {
+    "test": "Get Assignment Schedules",
+    "success": false,
+    "message": "Failed to get schedules: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.937086"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.945702"
+  },
+  {
+    "test": "Error Handling - Invalid Rubric ID",
+    "success": true,
+    "message": "Correctly returned 404 for invalid ID",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:07.955632"
+  },
+  {
+    "test": "Error Handling - Invalid Assignment Data",
+    "success": false,
+    "message": "Expected 400, got 401",
+    "data": null,
+    "timestamp": "2025-09-16T06:36:08.332230"
+  }
+]

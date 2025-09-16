@@ -1,8 +1,18 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from students.models import Student
 from departments.models import Department
 from academics.models import AcademicProgram
+import uuid
+
+
+class CompanySize(models.TextChoices):
+    STARTUP = 'STARTUP', 'Startup (1-50 employees)'
+    SMALL = 'SMALL', 'Small (51-200 employees)'
+    MEDIUM = 'MEDIUM', 'Medium (201-1000 employees)'
+    LARGE = 'LARGE', 'Large (1001-5000 employees)'
+    ENTERPRISE = 'ENTERPRISE', 'Enterprise (5000+ employees)'
 
 
 class Company(models.Model):
@@ -11,9 +21,17 @@ class Company(models.Model):
     website = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True)
     industry = models.CharField(max_length=100, blank=True)
+    company_size = models.CharField(max_length=20, choices=CompanySize.choices, blank=True)
     headquarters = models.CharField(max_length=255, blank=True)
     contact_email = models.EmailField(blank=True, null=True)
     contact_phone = models.CharField(max_length=30, blank=True)
+    # Company rating based on placement success and feedback
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00, 
+                                validators=[MinValueValidator(0.00), MaxValueValidator(5.00)])
+    # Track company performance metrics
+    total_placements = models.PositiveIntegerField(default=0)
+    total_drives = models.PositiveIntegerField(default=0)
+    last_visit_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -178,5 +196,154 @@ class Offer(models.Model):
 
     def __str__(self) -> str:
         return f"Offer: {self.application.student.roll_number} - {self.offered_role}"
+
+
+class PlacementStatistics(models.Model):
+    """Track placement statistics for reporting and compliance."""
+    academic_year = models.CharField(max_length=9, help_text='e.g., 2024-2025')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='placement_stats')
+    program = models.ForeignKey(AcademicProgram, on_delete=models.CASCADE, related_name='placement_stats')
+    
+    # Student counts
+    total_students = models.PositiveIntegerField(default=0)
+    eligible_students = models.PositiveIntegerField(default=0)
+    placed_students = models.PositiveIntegerField(default=0)
+    
+    # Placement metrics
+    placement_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    average_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    highest_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    lowest_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    # Company metrics
+    total_companies_visited = models.PositiveIntegerField(default=0)
+    total_job_offers = models.PositiveIntegerField(default=0)
+    
+    # Additional metrics for NIRF compliance
+    students_higher_studies = models.PositiveIntegerField(default=0)
+    students_entrepreneurship = models.PositiveIntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('academic_year', 'department', 'program')
+        ordering = ['-academic_year', 'department__name']
+
+    def __str__(self) -> str:
+        return f"{self.academic_year} - {self.department.name} - {self.program.name}"
+
+
+class CompanyFeedback(models.Model):
+    """Feedback from companies about placement drives and students."""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='feedbacks')
+    drive = models.ForeignKey(PlacementDrive, on_delete=models.CASCADE, related_name='feedbacks')
+    
+    # Feedback ratings (1-5 scale)
+    overall_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    student_quality_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    process_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    infrastructure_rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    
+    # Feedback text
+    positive_feedback = models.TextField(blank=True)
+    areas_for_improvement = models.TextField(blank=True)
+    suggestions = models.TextField(blank=True)
+    
+    # Would they visit again?
+    would_visit_again = models.BooleanField(default=True)
+    
+    # Contact person for feedback
+    feedback_by = models.CharField(max_length=255, blank=True)
+    feedback_by_designation = models.CharField(max_length=255, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('company', 'drive')
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"Feedback: {self.company.name} - {self.drive.title}"
+
+
+class PlacementDocument(models.Model):
+    """Track placement-related documents and agreements."""
+    DOCUMENT_TYPE = [
+        ('MOU', 'Memorandum of Understanding'),
+        ('AGREEMENT', 'Placement Agreement'),
+        ('OFFER_LETTER', 'Offer Letter'),
+        ('JOINING_LETTER', 'Joining Letter'),
+        ('VERIFICATION', 'Placement Verification'),
+        ('OTHER', 'Other'),
+    ]
+    
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to='placements/documents/')
+    
+    # Related entities
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='documents', null=True, blank=True)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='placement_documents', null=True, blank=True)
+    drive = models.ForeignKey(PlacementDrive, on_delete=models.CASCADE, related_name='documents', null=True, blank=True)
+    
+    # Document metadata
+    document_date = models.DateField()
+    expiry_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"{self.title} - {self.document_type}"
+
+
+class AlumniPlacement(models.Model):
+    """Track alumni career progression and placement history."""
+    student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='alumni_placement')
+    
+    # Current employment details
+    current_company = models.CharField(max_length=255, blank=True)
+    current_designation = models.CharField(max_length=255, blank=True)
+    current_salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    current_location = models.CharField(max_length=255, blank=True)
+    
+    # Career progression
+    total_experience_years = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
+    job_changes = models.PositiveIntegerField(default=0)
+    
+    # Higher studies
+    pursuing_higher_studies = models.BooleanField(default=False)
+    higher_studies_institution = models.CharField(max_length=255, blank=True)
+    higher_studies_program = models.CharField(max_length=255, blank=True)
+    
+    # Entrepreneurship
+    is_entrepreneur = models.BooleanField(default=False)
+    startup_name = models.CharField(max_length=255, blank=True)
+    startup_description = models.TextField(blank=True)
+    
+    # Contact and networking
+    linkedin_profile = models.URLField(blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+    
+    # Alumni engagement
+    willing_to_mentor = models.BooleanField(default=False)
+    willing_to_recruit = models.BooleanField(default=False)
+    
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-last_updated']
+
+    def __str__(self) -> str:
+        return f"Alumni: {self.student.roll_number} - {self.current_designation}"
 
 

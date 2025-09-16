@@ -10,30 +10,51 @@ from django.contrib.auth import get_user_model
 from .models import (
     Assignment, AssignmentSubmission, AssignmentFile, 
     AssignmentGrade, AssignmentComment, AssignmentCategory,
-    AssignmentGroup, AssignmentTemplate
+    AssignmentGroup, AssignmentTemplate, AssignmentRubric,
+    AssignmentRubricGrade, AssignmentPeerReview, AssignmentPlagiarismCheck,
+    AssignmentLearningOutcome, AssignmentAnalytics, AssignmentNotification,
+    AssignmentSchedule
 )
 from .serializers import (
     AssignmentSerializer, AssignmentCreateSerializer, AssignmentSubmissionSerializer,
     AssignmentSubmissionCreateSerializer, AssignmentFileSerializer, AssignmentGradeSerializer,
     AssignmentCommentSerializer, AssignmentCategorySerializer, AssignmentGroupSerializer,
     AssignmentTemplateSerializer, AssignmentTemplateCreateSerializer,
-    AssignmentStatsSerializer, StudentAssignmentStatsSerializer, FacultyAssignmentStatsSerializer
+    AssignmentStatsSerializer, StudentAssignmentStatsSerializer, FacultyAssignmentStatsSerializer,
+    AssignmentRubricSerializer, AssignmentRubricGradeSerializer, AssignmentPeerReviewSerializer,
+    AssignmentPlagiarismCheckSerializer, AssignmentLearningOutcomeSerializer,
+    AssignmentAnalyticsSerializer, AssignmentNotificationSerializer, AssignmentScheduleSerializer
 )
 
 User = get_user_model()
 
 
-class AssignmentCategoryListCreateView(generics.ListCreateAPIView):
+class BaseAssignmentViewMixin:
+    """Base mixin for assignment views to handle common functionality"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.format_kwarg = None
+    
+    def get_serializer_context(self):
+        """Add format_kwarg to context"""
+        context = super().get_serializer_context()
+        context['format'] = getattr(self, 'format_kwarg', None)
+        return context
+
+
+class AssignmentCategoryListCreateView(BaseAssignmentViewMixin, generics.ListCreateAPIView):
     """View for listing and creating assignment categories"""
-    queryset = AssignmentCategory.objects.filter(is_active=True)
+    queryset = AssignmentCategory.objects.filter(is_active=True).order_by('created_at')
     serializer_class = AssignmentCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
     
     def get_permissions(self):
         """Set permissions based on request method"""
         if self.request.method == 'POST':
-            return [permissions.IsAuthenticated, permissions.IsAdminUser]
-        return [permissions.IsAuthenticated]
+            return [permissions.IsAuthenticated(), permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
 
 class AssignmentCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -46,6 +67,7 @@ class AssignmentCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 class AssignmentListCreateView(generics.ListCreateAPIView):
     """View for listing and creating assignments"""
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
     
     def get_queryset(self):
         """Filter assignments based on user role"""
@@ -491,4 +513,386 @@ def assignment_submissions(request, assignment_id):
     ).order_by('-submission_date')
     
     serializer = AssignmentSubmissionSerializer(submissions, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+# Enhanced Views for University-Level Features
+
+class AssignmentRubricListCreateView(BaseAssignmentViewMixin, generics.ListCreateAPIView):
+    """View for listing and creating assignment rubrics"""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
+    
+    def get_queryset(self):
+        """Filter rubrics based on user and public status"""
+        user = self.request.user
+        return AssignmentRubric.objects.filter(
+            Q(is_public=True) | Q(created_by=user)
+        ).order_by('created_at')
+    
+    serializer_class = AssignmentRubricSerializer
+    
+    def perform_create(self, serializer):
+        """Set created_by when creating rubric"""
+        serializer.save(created_by=self.request.user)
+
+
+class AssignmentRubricDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """View for retrieving, updating, and deleting assignment rubrics"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter rubrics based on user permissions"""
+        user = self.request.user
+        return AssignmentRubric.objects.filter(
+            Q(is_public=True) | Q(created_by=user)
+        )
+    
+    serializer_class = AssignmentRubricSerializer
+
+
+class AssignmentRubricGradeCreateUpdateView(generics.CreateAPIView, generics.UpdateAPIView):
+    """View for creating and updating rubric-based grades"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = AssignmentRubricGradeSerializer
+    
+    def get_queryset(self):
+        """Filter submissions based on faculty permissions"""
+        user = self.request.user
+        
+        if hasattr(user, 'faculty_profile'):
+            return AssignmentSubmission.objects.filter(assignment__faculty=user.faculty_profile)
+        elif user.is_staff:
+            return AssignmentSubmission.objects.all()
+        
+        return AssignmentSubmission.objects.none()
+    
+    def perform_create(self, serializer):
+        """Set graded_by when creating rubric grade"""
+        submission_id = self.kwargs.get('submission_id')
+        submission = get_object_or_404(self.get_queryset(), id=submission_id)
+        
+        # Create rubric grade
+        rubric_grade = serializer.save(graded_by=self.request.user)
+        
+        # Update submission with rubric grade
+        submission.rubric_grade = rubric_grade
+        submission.save()
+
+
+class AssignmentPeerReviewListCreateView(generics.ListCreateAPIView):
+    """View for listing and creating peer reviews"""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
+    serializer_class = AssignmentPeerReviewSerializer
+    
+    def get_queryset(self):
+        """Filter peer reviews based on user role"""
+        user = self.request.user
+        assignment_id = self.kwargs.get('assignment_id')
+        
+        if hasattr(user, 'student_profile'):
+            # Students can see peer reviews they gave or received
+            return AssignmentPeerReview.objects.filter(
+                Q(reviewer=user.student_profile) | Q(reviewee=user.student_profile),
+                assignment_id=assignment_id
+            )
+        elif hasattr(user, 'faculty_profile'):
+            # Faculty can see all peer reviews for their assignments
+            return AssignmentPeerReview.objects.filter(
+                assignment__faculty=user.faculty_profile,
+                assignment_id=assignment_id
+            )
+        elif user.is_staff:
+            # Admin can see all peer reviews
+            return AssignmentPeerReview.objects.filter(assignment_id=assignment_id)
+        
+        return AssignmentPeerReview.objects.none()
+    
+    def perform_create(self, serializer):
+        """Set reviewer when creating peer review"""
+        if hasattr(self.request.user, 'student_profile'):
+            serializer.save(reviewer=self.request.user.student_profile)
+        else:
+            raise permissions.PermissionDenied("Only students can create peer reviews")
+
+
+class AssignmentPlagiarismCheckListCreateView(generics.ListCreateAPIView):
+    """View for listing and creating plagiarism checks"""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
+    serializer_class = AssignmentPlagiarismCheckSerializer
+    
+    def get_queryset(self):
+        """Filter plagiarism checks based on user role"""
+        user = self.request.user
+        assignment_id = self.kwargs.get('assignment_id')
+        
+        if hasattr(user, 'student_profile'):
+            # Students can see plagiarism checks for their submissions
+            return AssignmentPlagiarismCheck.objects.filter(
+                submission__student=user.student_profile,
+                submission__assignment_id=assignment_id
+            )
+        elif hasattr(user, 'faculty_profile'):
+            # Faculty can see plagiarism checks for their assignments
+            return AssignmentPlagiarismCheck.objects.filter(
+                submission__assignment__faculty=user.faculty_profile,
+                submission__assignment_id=assignment_id
+            )
+        elif user.is_staff:
+            # Admin can see all plagiarism checks
+            return AssignmentPlagiarismCheck.objects.filter(
+                submission__assignment_id=assignment_id
+            )
+        
+        return AssignmentPlagiarismCheck.objects.none()
+    
+    def perform_create(self, serializer):
+        """Set checked_by when creating plagiarism check"""
+        serializer.save(checked_by=self.request.user)
+
+
+class AssignmentLearningOutcomeListCreateView(generics.ListCreateAPIView):
+    """View for listing and creating learning outcomes"""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
+    serializer_class = AssignmentLearningOutcomeSerializer
+    
+    def get_queryset(self):
+        """Get learning outcomes for specific assignment"""
+        assignment_id = self.kwargs.get('assignment_id')
+        return AssignmentLearningOutcome.objects.filter(assignment_id=assignment_id)
+    
+    def perform_create(self, serializer):
+        """Set assignment when creating learning outcome"""
+        assignment_id = self.kwargs.get('assignment_id')
+        assignment = get_object_or_404(Assignment, id=assignment_id)
+        serializer.save(assignment=assignment)
+
+
+class AssignmentAnalyticsView(generics.RetrieveAPIView):
+    """View for retrieving assignment analytics"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = AssignmentAnalyticsSerializer
+    
+    def get_queryset(self):
+        """Filter analytics based on user permissions"""
+        user = self.request.user
+        assignment_id = self.kwargs.get('assignment_id')
+        
+        if hasattr(user, 'faculty_profile'):
+            return AssignmentAnalytics.objects.filter(
+                assignment__faculty=user.faculty_profile,
+                assignment_id=assignment_id
+            )
+        elif user.is_staff:
+            return AssignmentAnalytics.objects.filter(assignment_id=assignment_id)
+        
+        return AssignmentAnalytics.objects.none()
+
+
+class AssignmentNotificationListCreateView(generics.ListCreateAPIView):
+    """View for listing and creating assignment notifications"""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
+    serializer_class = AssignmentNotificationSerializer
+    
+    def get_queryset(self):
+        """Get notifications for the current user"""
+        return AssignmentNotification.objects.filter(
+            recipient=self.request.user
+        ).order_by('-created_at')
+
+
+class AssignmentNotificationDetailView(generics.RetrieveUpdateAPIView):
+    """View for retrieving and updating assignment notifications"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = AssignmentNotificationSerializer
+    
+    def get_queryset(self):
+        """Get notifications for the current user"""
+        return AssignmentNotification.objects.filter(
+            recipient=self.request.user
+        )
+    
+    def perform_update(self, serializer):
+        """Mark notification as read when updating"""
+        if serializer.validated_data.get('is_read') and not serializer.instance.is_read:
+            serializer.save(read_at=timezone.now())
+        else:
+            serializer.save()
+
+
+class AssignmentScheduleListCreateView(generics.ListCreateAPIView):
+    """View for listing and creating assignment schedules"""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Disable pagination for now
+    serializer_class = AssignmentScheduleSerializer
+    
+    def get_queryset(self):
+        """Filter schedules based on user permissions"""
+        user = self.request.user
+        
+        if hasattr(user, 'faculty_profile'):
+            return AssignmentSchedule.objects.filter(created_by=user)
+        elif user.is_staff:
+            return AssignmentSchedule.objects.all()
+        
+        return AssignmentSchedule.objects.none()
+    
+    def perform_create(self, serializer):
+        """Set created_by when creating schedule"""
+        serializer.save(created_by=self.request.user)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def run_plagiarism_check(request, submission_id):
+    """Run plagiarism check on a submission"""
+    user = request.user
+    
+    if not hasattr(user, 'faculty_profile') and not user.is_staff:
+        return Response(
+            {'error': 'Only faculty can run plagiarism checks'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    submission = get_object_or_404(AssignmentSubmission, id=submission_id)
+    
+    # Check if plagiarism check already exists
+    plagiarism_check, created = AssignmentPlagiarismCheck.objects.get_or_create(
+        submission=submission,
+        defaults={
+            'status': 'PENDING',
+            'checked_by': user
+        }
+    )
+    
+    if not created:
+        return Response(
+            {'error': 'Plagiarism check already exists for this submission'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # TODO: Integrate with actual plagiarism detection service
+    # For now, simulate the check
+    plagiarism_check.status = 'CLEAN'
+    plagiarism_check.similarity_percentage = 5.0
+    plagiarism_check.sources = []
+    plagiarism_check.save()
+    
+    serializer = AssignmentPlagiarismCheckSerializer(plagiarism_check)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def assign_peer_reviews(request, assignment_id):
+    """Assign peer reviews for an assignment"""
+    user = request.user
+    
+    if not hasattr(user, 'faculty_profile'):
+        return Response(
+            {'error': 'Only faculty can assign peer reviews'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    assignment = get_object_or_404(
+        Assignment, 
+        id=assignment_id, 
+        faculty=user.faculty_profile
+    )
+    
+    if not assignment.enable_peer_review:
+        return Response(
+            {'error': 'Peer review is not enabled for this assignment'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Get all submissions for the assignment
+    submissions = AssignmentSubmission.objects.filter(assignment=assignment)
+    
+    if submissions.count() < 2:
+        return Response(
+            {'error': 'Need at least 2 submissions for peer review'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Simple round-robin assignment
+    reviewers = list(submissions.values_list('student', flat=True))
+    reviewees = list(submissions.values_list('student', flat=True))
+    
+    created_reviews = []
+    for i, reviewer_id in enumerate(reviewers):
+        # Each student reviews the next student (with wraparound)
+        reviewee_id = reviewees[(i + 1) % len(reviewees)]
+        
+        if reviewer_id != reviewee_id:  # Don't assign self-review
+            submission = submissions.get(student_id=reviewee_id)
+            peer_review, created = AssignmentPeerReview.objects.get_or_create(
+                assignment=assignment,
+                reviewer_id=reviewer_id,
+                reviewee_id=reviewee_id,
+                submission=submission
+            )
+            if created:
+                created_reviews.append(peer_review)
+    
+    serializer = AssignmentPeerReviewSerializer(created_reviews, many=True)
+    return Response({
+        'message': f'Created {len(created_reviews)} peer review assignments',
+        'peer_reviews': serializer.data
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def assignment_analytics_dashboard(request, assignment_id):
+    """Get comprehensive analytics dashboard for an assignment"""
+    user = request.user
+    
+    if not hasattr(user, 'faculty_profile') and not user.is_staff:
+        return Response(
+            {'error': 'Only faculty can view analytics dashboard'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    
+    if hasattr(user, 'faculty_profile') and assignment.faculty != user.faculty_profile:
+        return Response(
+            {'error': 'You can only view analytics for your own assignments'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get or create analytics
+    analytics, created = AssignmentAnalytics.objects.get_or_create(assignment=assignment)
+    
+    # Update analytics with current data
+    submissions = AssignmentSubmission.objects.filter(assignment=assignment)
+    grades = AssignmentGrade.objects.filter(submission__assignment=assignment)
+    
+    analytics.actual_submissions = submissions.count()
+    analytics.submission_rate = (analytics.actual_submissions / max(analytics.total_expected_submissions, 1)) * 100
+    
+    if grades.exists():
+        analytics.average_grade = grades.aggregate(avg=Avg('marks_obtained'))['avg']
+        analytics.median_grade = grades.aggregate(median=Avg('marks_obtained'))['avg']  # Simplified median
+    
+    analytics.late_submission_rate = (submissions.filter(is_late=True).count() / max(analytics.actual_submissions, 1)) * 100
+    
+    # Plagiarism rate
+    plagiarism_checks = AssignmentPlagiarismCheck.objects.filter(
+        submission__assignment=assignment
+    )
+    if plagiarism_checks.exists():
+        flagged_count = plagiarism_checks.filter(
+            status__in=['SUSPICIOUS', 'PLAGIARIZED']
+        ).count()
+        analytics.plagiarism_rate = (flagged_count / plagiarism_checks.count()) * 100
+    
+    analytics.save()
+    
+    serializer = AssignmentAnalyticsSerializer(analytics)
     return Response(serializer.data)

@@ -1,0 +1,59 @@
+[
+  {
+    "test": "Health Endpoint",
+    "status": "PASS",
+    "timestamp": "2025-09-16T03:25:39.272895",
+    "status_code": 200,
+    "response_size": 32
+  },
+  {
+    "test": "Get All Grade Scales - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.277788"
+  },
+  {
+    "test": "Get All Midterm Grades - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.281428"
+  },
+  {
+    "test": "Get All Semester Grades - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.284828"
+  },
+  {
+    "test": "Get All SGPA Records - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.287830"
+  },
+  {
+    "test": "Get All CGPA Records - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.291368"
+  },
+  {
+    "test": "SGPA Student Filter - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.294426"
+  },
+  {
+    "test": "CGPA Student Filter - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.298617"
+  },
+  {
+    "test": "404 Error Handling - Grade Scale",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.301114"
+  },
+  {
+    "test": "404 Error Handling - Midterm Grade",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.304298"
+  },
+  {
+    "test": "Pagination - Grade Scales - Wrong Status Code",
+    "status": "FAIL",
+    "timestamp": "2025-09-16T03:25:39.307629"
+  }
+]
