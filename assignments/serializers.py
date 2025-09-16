@@ -80,14 +80,25 @@ class AssignmentGradeSerializer(serializers.ModelSerializer):
     """Serializer for AssignmentGrade model"""
     
     graded_by_name = serializers.CharField(source='graded_by.email', read_only=True)
+    out_of_marks = serializers.DecimalField(source='submission.assignment.max_marks', max_digits=5, decimal_places=2, read_only=True)
+    percentage = serializers.SerializerMethodField()
     
     class Meta:
         model = AssignmentGrade
         fields = [
-            'id', 'marks_obtained', 'grade_letter', 'feedback',
+            'id', 'marks_obtained', 'out_of_marks', 'percentage', 'grade_letter', 'feedback',
             'graded_by', 'graded_by_name', 'graded_at', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'graded_at', 'created_at', 'updated_at']
+
+    def get_percentage(self, obj):
+        try:
+            max_marks = obj.submission.assignment.max_marks if hasattr(obj, 'submission') and obj.submission else None
+            if max_marks and max_marks > 0 and obj.marks_obtained is not None:
+                return round((obj.marks_obtained / max_marks) * 100, 2)
+        except Exception:
+            return None
+        return None
 
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
@@ -444,3 +455,65 @@ class AssignmentScheduleSerializer(serializers.ModelSerializer):
             'created_by', 'created_by_name', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'last_run', 'next_run', 'created_by', 'created_at', 'updated_at']
+
+
+# -------------------------
+# Simple serializers (minimal fields for streamlined UI/API)
+# -------------------------
+
+class SimpleAssignmentSerializer(serializers.ModelSerializer):
+    """Lightweight serializer exposing only core fields and simple relationships."""
+
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True)
+    department_ids = serializers.PrimaryKeyRelatedField(source='assigned_to_departments', many=True, read_only=True)
+    course_ids = serializers.PrimaryKeyRelatedField(source='assigned_to_courses', many=True, read_only=True)
+    section_ids = serializers.PrimaryKeyRelatedField(source='assigned_to_course_sections', many=True, read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    course_code = serializers.CharField(source='course.code', read_only=True)
+    section_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Assignment
+        fields = [
+            'id', 'title', 'description', 'assignment_type', 'max_marks', 'due_date',
+            'status', 'available_from', 'available_until', 'published_at', 'is_active',
+            'faculty', 'faculty_name', 'academic_year', 'semester',
+            'department', 'department_name', 'course', 'course_code', 'course_section', 'section_display',
+            'department_ids', 'course_ids', 'section_ids', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'faculty', 'created_at', 'updated_at']
+
+    def get_section_display(self, obj):
+        section = obj.course_section
+        if not section:
+            return None
+        # Prefer course code + batch name when available
+        try:
+            return str(section)
+        except Exception:
+            return None
+
+
+class SimpleAssignmentCreateSerializer(serializers.ModelSerializer):
+    """Create/update with minimal required fields, using existing relations."""
+
+    class Meta:
+        model = Assignment
+        fields = [
+            'title', 'description', 'assignment_type', 'max_marks', 'due_date',
+            'status', 'available_from', 'available_until', 'academic_year', 'semester',
+            'department', 'course', 'course_section',
+            'assigned_to_departments', 'assigned_to_courses', 'assigned_to_course_sections',
+            'is_active'
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request.user, 'faculty_profile'):
+            validated_data['faculty'] = request.user.faculty_profile
+        else:
+            raise serializers.ValidationError('Faculty profile not found')
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)

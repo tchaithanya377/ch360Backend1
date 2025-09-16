@@ -6,6 +6,7 @@ from django.db.models import Q, Count, Avg, Sum
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from .models import (
     Assignment, AssignmentSubmission, AssignmentFile, 
@@ -23,10 +24,158 @@ from .serializers import (
     AssignmentStatsSerializer, StudentAssignmentStatsSerializer, FacultyAssignmentStatsSerializer,
     AssignmentRubricSerializer, AssignmentRubricGradeSerializer, AssignmentPeerReviewSerializer,
     AssignmentPlagiarismCheckSerializer, AssignmentLearningOutcomeSerializer,
-    AssignmentAnalyticsSerializer, AssignmentNotificationSerializer, AssignmentScheduleSerializer
+    AssignmentAnalyticsSerializer, AssignmentNotificationSerializer, AssignmentScheduleSerializer,
+    SimpleAssignmentSerializer, SimpleAssignmentCreateSerializer
 )
 
 User = get_user_model()
+# -------------------------
+# Utility: auto-group students for an assignment from a StudentBatch
+# -------------------------
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def auto_create_groups_from_batch(request, assignment_id):
+    """Create assignment groups from a given StudentBatch.
+
+    Body accepts either `group_size` or `num_groups` (prefer group_size).
+    Example: {"student_batch_id": "...", "group_size": 10}
+    """
+    if not hasattr(request.user, 'faculty_profile') and not request.user.is_staff:
+        return Response({'error': 'Only faculty or admins can create groups'}, status=status.HTTP_403_FORBIDDEN)
+
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+
+    student_batch_id = request.data.get('student_batch_id')
+    group_size = request.data.get('group_size')
+    num_groups = request.data.get('num_groups')
+
+    if not student_batch_id:
+        return Response({'error': 'student_batch_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        from students.models import StudentBatch, Student
+        batch = StudentBatch.objects.get(id=student_batch_id)
+    except Exception:
+        return Response({'error': 'Invalid student_batch_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Fetch active students of the batch
+    students_qs = Student.objects.filter(student_batch=batch, status='ACTIVE').order_by('apaar_student_id')
+    total = students_qs.count()
+    if total == 0:
+        return Response({'error': 'No active students in batch'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if group_size:
+        try:
+            group_size = int(group_size)
+        except Exception:
+            return Response({'error': 'group_size must be an integer'}, status=status.HTTP_400_BAD_REQUEST)
+        if group_size <= 0:
+            return Response({'error': 'group_size must be > 0'}, status=status.HTTP_400_BAD_REQUEST)
+        import math
+        num_groups = math.ceil(total / group_size)
+    elif num_groups:
+        try:
+            num_groups = int(num_groups)
+        except Exception:
+            return Response({'error': 'num_groups must be an integer'}, status=status.HTTP_400_BAD_REQUEST)
+        if num_groups <= 0:
+            return Response({'error': 'num_groups must be > 0'}, status=status.HTTP_400_BAD_REQUEST)
+        group_size = max(1, (total + num_groups - 1) // num_groups)
+    else:
+        # Default: 10 per group
+        import math
+        group_size = 10
+        num_groups = math.ceil(total / group_size)
+
+    students = list(students_qs.values_list('id', flat=True))
+
+    created = []
+    with transaction.atomic():
+        for i in range(num_groups):
+            start = i * group_size
+            end = min(start + group_size, total)
+            if start >= end:
+                break
+            member_ids = students[start:end]
+            group = AssignmentGroup.objects.create(
+                assignment=assignment,
+                group_name=f"Batch {batch.batch_code} - Group {i+1}",
+                leader_id=member_ids[0]
+            )
+            group.members.add(*member_ids)
+            created.append(group)
+
+    serializer = AssignmentGroupSerializer(created, many=True)
+    return Response({
+        'message': f'Created {len(created)} groups (size ~{group_size}) for {total} students',
+        'groups': serializer.data
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def assign_assignment_to_section(request, assignment_id):
+    """Assign an existing assignment to a CourseSection and auto-link related entities.
+
+    Body: {"course_section_id": "<uuid>", "include_students": true}
+    - Sets canonical `course`, `course_section`, `department`.
+    - Sets `academic_year` and `semester` from the section's `student_batch`.
+    - Adds to M2M: `assigned_to_course_sections`, `assigned_to_courses`, `assigned_to_departments`.
+    - Optionally adds all active students of the batch to `assigned_to_students`.
+    """
+    user = request.user
+    if not hasattr(user, 'faculty_profile') and not user.is_staff:
+        return Response({'error': 'Only faculty or admins can assign sections'}, status=status.HTTP_403_FORBIDDEN)
+
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+
+    section_id = request.data.get('course_section_id')
+    include_students = bool(request.data.get('include_students', True))
+    if not section_id:
+        return Response({'error': 'course_section_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    from academics.models import CourseSection
+    from students.models import Student
+
+    section = get_object_or_404(CourseSection, id=section_id)
+
+    # Authorization: faculty must match section faculty unless admin
+    if hasattr(user, 'faculty_profile') and section.faculty_id != user.faculty_profile.id:
+        return Response({'error': 'You can only assign to your own course sections'}, status=status.HTTP_403_FORBIDDEN)
+
+    with transaction.atomic():
+        assignment.course_section = section
+        assignment.course = section.course
+        # Derive department from course
+        try:
+            assignment.department = section.course.department
+        except Exception:
+            pass
+        # Derive academic year and semester from batch
+        batch = section.student_batch
+        if batch and hasattr(batch, 'academic_year'):
+            assignment.academic_year = batch.academic_year
+        if batch and hasattr(batch, 'get_semester_object'):
+            sem_obj = batch.get_semester_object()
+            if sem_obj:
+                assignment.semester = sem_obj
+
+        # Add to M2M sets
+        assignment.save()
+        assignment.assigned_to_course_sections.add(section)
+        assignment.assigned_to_courses.add(section.course)
+        if assignment.department_id:
+            assignment.assigned_to_departments.add(assignment.department)
+
+        # Optionally link all active students of the batch
+        if include_students and batch:
+            student_ids = list(Student.objects.filter(student_batch=batch, status='ACTIVE').values_list('id', flat=True))
+            if student_ids:
+                assignment.assigned_to_students.add(*student_ids)
+
+    serializer = SimpleAssignmentSerializer(assignment, context={'request': request})
+    return Response(serializer.data)
 
 
 class BaseAssignmentViewMixin:
@@ -214,6 +363,10 @@ class AssignmentGradeCreateUpdateView(generics.CreateAPIView, generics.UpdateAPI
         """Set graded_by when creating grade"""
         submission_id = self.kwargs.get('submission_id')
         submission = get_object_or_404(self.get_queryset(), id=submission_id)
+        # Validate marks do not exceed assignment max
+        marks = serializer.validated_data.get('marks_obtained')
+        if marks is not None and submission.assignment.max_marks is not None and marks > submission.assignment.max_marks:
+            raise permissions.PermissionDenied("Marks obtained cannot exceed assignment max marks")
         
         # Create grade
         grade = serializer.save(graded_by=self.request.user)
@@ -415,6 +568,70 @@ def publish_assignment(request, assignment_id):
     
     serializer = AssignmentSerializer(assignment)
     return Response(serializer.data)
+
+
+# -------------------------
+# Simple views (minimal endpoints)
+# -------------------------
+
+class SimpleAssignmentListCreateView(generics.ListCreateAPIView):
+    """Minimal assignment listing/creation with straightforward filters."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = Assignment.objects.all().order_by('-created_at')
+
+        department_id = self.request.query_params.get('department')
+        course_id = self.request.query_params.get('course')
+        section_id = self.request.query_params.get('section')
+        academic_year_id = self.request.query_params.get('academic_year')
+        semester_id = self.request.query_params.get('semester')
+        status_param = self.request.query_params.get('status')
+        due_before = self.request.query_params.get('due_before')
+        due_after = self.request.query_params.get('due_after')
+
+        if department_id:
+            qs = qs.filter(assigned_to_departments__id=department_id)
+        if course_id:
+            qs = qs.filter(assigned_to_courses__id=course_id)
+        if section_id:
+            qs = qs.filter(assigned_to_course_sections__id=section_id)
+        if academic_year_id:
+            qs = qs.filter(academic_year_id=academic_year_id)
+        if semester_id:
+            qs = qs.filter(semester_id=semester_id)
+        if status_param:
+            qs = qs.filter(status=status_param)
+        if due_before:
+            qs = qs.filter(due_date__lte=due_before)
+        if due_after:
+            qs = qs.filter(due_date__gte=due_after)
+
+        return qs.distinct()
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return SimpleAssignmentCreateSerializer
+        return SimpleAssignmentSerializer
+
+    def perform_create(self, serializer):
+        if hasattr(self.request.user, 'faculty_profile'):
+            serializer.save(faculty=self.request.user.faculty_profile)
+        else:
+            raise permissions.PermissionDenied('Only faculty can create assignments')
+
+
+class SimpleAssignmentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    queryset = Assignment.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return SimpleAssignmentCreateSerializer
+        return SimpleAssignmentSerializer
 
 
 @api_view(['POST'])

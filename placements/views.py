@@ -73,6 +73,11 @@ class JobPostingViewSet(viewsets.ModelViewSet):
     serializer_class = JobPostingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    class JobPostingCursorPagination(CursorPagination):
+        ordering = '-created_at'
+
+    pagination_class = JobPostingCursorPagination
+
     def perform_create(self, serializer):
         serializer.save(posted_by=self.request.user)
 
@@ -89,10 +94,20 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    class ApplicationCursorPagination(CursorPagination):
+        ordering = '-applied_at'
+
+    pagination_class = ApplicationCursorPagination
+
 class PlacementDriveViewSet(viewsets.ModelViewSet):
     queryset = PlacementDrive.objects.select_related('company').all()
     serializer_class = PlacementDriveSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    class DriveCursorPagination(CursorPagination):
+        ordering = '-created_at'
+
+    pagination_class = DriveCursorPagination
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)

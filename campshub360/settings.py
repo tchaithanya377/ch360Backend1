@@ -121,10 +121,10 @@ INSTALLED_APPS = [
     'core',
     'accounts',
     'dashboard',
+    'departments',
+    'academics',
     'students',
     'faculty',
-    'academics',
-    'departments',
     'enrollment',
     'attendance',
     'placements',
@@ -139,6 +139,7 @@ INSTALLED_APPS = [
     'assignments',
     # 'docs' app removed
     'campshub360',
+    'achievements',
 ]
 
 # drf-spectacular removed
@@ -306,7 +307,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.CursorPagination',
+    'DEFAULT_PAGINATION_CLASS': 'campshub360.pagination.DefaultCursorPagination',
     'PAGE_SIZE': int(os.getenv('API_PAGE_SIZE', '50')),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',

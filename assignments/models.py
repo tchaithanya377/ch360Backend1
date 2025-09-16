@@ -168,6 +168,22 @@ class Assignment(TimeStampedUUIDModel):
         default=1, 
         help_text="Days before due date to send reminder"
     )
+    # Availability window (research-backed: explicit open/close improves student UX)
+    available_from = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the assignment becomes visible and open for submissions"
+    )
+    available_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Optional hard close; after this, no submissions are allowed"
+    )
+    published_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when status first became PUBLISHED"
+    )
     
     # Target Audience
     assigned_to_programs = models.ManyToManyField(
@@ -218,6 +234,33 @@ class Assignment(TimeStampedUUIDModel):
         related_name='assignments',
         help_text="Semester for this assignment"
     )
+
+    # Canonical links (simple assignment target)
+    department = models.ForeignKey(
+        'departments.Department',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='primary_assignments',
+        help_text="Primary department for this assignment"
+    )
+    course = models.ForeignKey(
+        'academics.Course',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='primary_assignments',
+        help_text="Primary course for this assignment"
+    )
+    course_section = models.ForeignKey(
+        'academics.CourseSection',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='primary_assignments',
+        help_text="Primary course section for this assignment"
+    )
+    is_active = models.BooleanField(default=True)
     
     # Additional Information
     attachment_files = models.JSONField(
@@ -233,6 +276,9 @@ class Assignment(TimeStampedUUIDModel):
             models.Index(fields=['due_date']),
             models.Index(fields=['status', 'due_date']),
             models.Index(fields=['academic_year', 'semester']),
+            models.Index(fields=['department']),
+            models.Index(fields=['course']),
+            models.Index(fields=['course_section']),
         ]
     
     def __str__(self):
@@ -260,6 +306,40 @@ class Assignment(TimeStampedUUIDModel):
         
         if self.due_date <= timezone.now() and self.status == 'PUBLISHED':
             raise ValidationError("Due date must be in the future for published assignments")
+
+        if self.available_until and self.due_date and self.available_until < self.due_date:
+            raise ValidationError("available_until cannot be earlier than due_date")
+
+        if self.course_section and self.course and self.course_section.course_id != self.course.id:
+            raise ValidationError("course_section must belong to the selected course")
+
+        if self.course and self.department and self.course.department_id and self.course.department_id != self.department.id:
+            # Not fatal, but helps maintain canonical link integrity
+            raise ValidationError("Selected course does not belong to the selected department")
+
+        # If a course_section is selected, enforce integrity:
+        if self.course_section:
+            # Section must belong to selected course when course is set
+            if self.course and self.course_section.course_id != self.course.id:
+                raise ValidationError("Selected course_section does not belong to the chosen course")
+            # Faculty teaching the section should match assignment faculty
+            section_faculty_id = getattr(self.course_section, 'faculty_id', None)
+            if section_faculty_id and self.faculty_id and section_faculty_id != self.faculty_id:
+                raise ValidationError("Assignment faculty must match the course section faculty")
+            # AP university rule: Max two assignments per section per semester
+            try:
+                from django.db.models import Q
+                existing_count = Assignment.objects.filter(
+                    course_section=self.course_section,
+                    academic_year=self.academic_year,
+                    semester=self.semester,
+                    status__in=['DRAFT', 'PUBLISHED', 'CLOSED']
+                ).exclude(id=self.id).count()
+                if existing_count >= 2:
+                    raise ValidationError("Only two assignments are allowed per course section in a semester")
+            except Exception:
+                # If validation query fails during migrations, ignore silently
+                pass
 
 
 class AssignmentSubmission(TimeStampedUUIDModel):
@@ -344,6 +424,17 @@ class AssignmentSubmission(TimeStampedUUIDModel):
                 self.is_late = True
                 if self.status == 'SUBMITTED':
                     self.status = 'LATE'
+        # Validate student belongs to the course section batch if applicable
+        try:
+            if self.assignment and self.assignment.course_section and hasattr(self.student, 'student_batch'):
+                section_batch = getattr(self.assignment.course_section, 'student_batch_id', None)
+                if section_batch and self.student.student_batch_id != section_batch:
+                    raise ValidationError("Student is not part of the assignment's course section batch")
+        except ValidationError:
+            raise
+        except Exception:
+            # Avoid hard failures on legacy data paths
+            pass
         super().save(*args, **kwargs)
 
 

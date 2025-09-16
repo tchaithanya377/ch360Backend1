@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Mentorship, Project, Meeting, Feedback
+from .models import Mentorship, Project, Meeting, Feedback, ActionItem
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -20,10 +20,17 @@ class FeedbackSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ActionItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActionItem
+        fields = '__all__'
+
+
 class MentorshipSerializer(serializers.ModelSerializer):
     projects = ProjectSerializer(many=True, read_only=True)
     meetings = MeetingSerializer(many=True, read_only=True)
     feedback = FeedbackSerializer(many=True, read_only=True)
+    action_items = ActionItemSerializer(many=True, read_only=True)
     mentor_name = serializers.CharField(source='mentor.name', read_only=True)
     student_name = serializers.CharField(source='student.full_name', read_only=True)
     department_name = serializers.CharField(source='department_ref.name', read_only=True)

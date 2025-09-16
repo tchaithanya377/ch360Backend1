@@ -173,6 +173,22 @@ class RateLimitedTokenView(RollOrEmailTokenView):
 class RateLimitedRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
 
+    def post(self, request, *args, **kwargs):
+        """Accept both 'refresh' and 'refresh_token' keys for compatibility.
+
+        Some clients send payload as {"refresh_token": "..."} causing 400/401.
+        Normalize input before delegating to parent view.
+        """
+        data = request.data
+        # If refresh key missing but refresh_token provided, adapt it
+        if isinstance(data, dict) and 'refresh' not in data and 'refresh_token' in data:
+            mutable = getattr(data, 'copy', None)
+            if callable(mutable):
+                data = mutable()
+            data['refresh'] = data.get('refresh_token')
+            request._full_data = data  # type: ignore[attr-defined]
+        return super().post(request, *args, **kwargs)
+
 
 class RolesPermissionsView(APIView):
     permission_classes = [permissions.IsAuthenticated]

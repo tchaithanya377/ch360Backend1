@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.core.exceptions import ValidationError
 from django import forms
 from .models import (
     Assignment, AssignmentSubmission, AssignmentFile, 
@@ -45,11 +46,12 @@ class AssignmentCategoryAdmin(admin.ModelAdmin):
 class AssignmentAdmin(admin.ModelAdmin):
     form = AssignmentAdminForm
     list_display = [
-        'title', 'faculty', 'category', 'due_date', 'status', 
+        'title', 'course_section', 'academic_year', 'semester', 'due_date', 'status', 
         'max_marks', 'submission_count', 'created_at'
     ]
+    list_editable = ['due_date', 'status', 'max_marks']
     list_filter = [
-        'status', 'category', 'faculty__department', 
+        'status', 'category', 'faculty__department', 'course', 'course_section',
         'due_date', 'created_at', 'academic_year', 'semester'
     ]
     search_fields = [
@@ -57,15 +59,18 @@ class AssignmentAdmin(admin.ModelAdmin):
         'faculty__apaar_faculty_id'
     ]
     readonly_fields = ['created_at', 'updated_at', 'submission_count']
+    exclude = ('faculty', 'department', 'course')
     filter_horizontal = [
         'assigned_to_programs', 'assigned_to_departments', 
         'assigned_to_courses', 'assigned_to_course_sections', 'assigned_to_students'
     ]
+    autocomplete_fields = ['course_section', 'academic_year', 'semester']
+    list_select_related = ['course_section', 'academic_year', 'semester']
     date_hierarchy = 'due_date'
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'description', 'category', 'faculty')
+            'fields': ('title', 'description', 'category', 'course_section')
         }),
         ('Assignment Details', {
             'fields': ('instructions', 'max_marks', 'due_date', 'late_submission_allowed', 'academic_year', 'semester')
@@ -91,14 +96,35 @@ class AssignmentAdmin(admin.ModelAdmin):
         return obj.submissions.count()
     submission_count.short_description = 'Submissions'
     
-    def get_form(self, request, obj=None, **kwargs):
-        """Override to set faculty field based on current user"""
-        form = super().get_form(request, obj, **kwargs)
-        if hasattr(request.user, 'faculty_profile'):
-            # Set the faculty field to the current user's faculty profile
-            form.base_fields['faculty'].initial = request.user.faculty_profile
-            form.base_fields['faculty'].widget.attrs['readonly'] = True
-        return form
+    def save_model(self, request, obj, form, change):
+        """Auto-derive hidden linking fields from selected course_section."""
+        # Auto-set faculty from current user on create if missing
+        if not obj.faculty_id and hasattr(request.user, 'faculty_profile'):
+            obj.faculty = request.user.faculty_profile
+        # Derive department/course/year/semester from course_section
+        try:
+            if obj.course_section:
+                obj.course = obj.course_section.course
+                try:
+                    obj.department = obj.course_section.course.department
+                except Exception:
+                    pass
+                batch = obj.course_section.student_batch
+                if batch and hasattr(batch, 'academic_year'):
+                    obj.academic_year = batch.academic_year
+                if batch and hasattr(batch, 'get_semester_object'):
+                    sem_obj = batch.get_semester_object()
+                    if sem_obj:
+                        obj.semester = sem_obj
+                # If faculty still missing, derive from section faculty
+                if not obj.faculty_id and getattr(obj.course_section, 'faculty_id', None):
+                    obj.faculty_id = obj.course_section.faculty_id
+        except Exception:
+            pass
+        # Final guard: ensure faculty resolved
+        if not obj.faculty_id:
+            raise ValidationError("Faculty could not be determined. Please select a course section with an assigned faculty.")
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(AssignmentSubmission)
@@ -146,18 +172,10 @@ class AssignmentSubmissionAdmin(admin.ModelAdmin):
     grade_display.short_description = 'Grade'
 
 
-@admin.register(AssignmentFile)
-class AssignmentFileAdmin(admin.ModelAdmin):
-    list_display = ['file_name', 'assignment', 'file_type', 'file_size', 'uploaded_at']
-    list_filter = ['file_type', 'uploaded_at', 'assignment__faculty']
-    search_fields = ['file_name', 'assignment__title']
-    readonly_fields = ['file_size', 'uploaded_at']
-
-
 @admin.register(AssignmentGrade)
 class AssignmentGradeAdmin(admin.ModelAdmin):
     list_display = [
-        'submission', 'marks_obtained', 'max_marks', 'grade_letter', 
+        'submission', 'marks_obtained', 'max_marks', 'percentage_display', 'grade_letter', 
         'graded_by', 'graded_at'
     ]
     list_filter = ['grade_letter', 'graded_at', 'graded_by']
@@ -170,96 +188,40 @@ class AssignmentGradeAdmin(admin.ModelAdmin):
         return obj.submission.assignment.max_marks
     max_marks.short_description = 'Max Marks'
 
-
-@admin.register(AssignmentComment)
-class AssignmentCommentAdmin(admin.ModelAdmin):
-    list_display = ['assignment', 'author', 'comment_type', 'created_at']
-    list_filter = ['comment_type', 'created_at', 'author']
-    search_fields = ['content', 'assignment__title', 'author__name']
-    readonly_fields = ['created_at']
-
-
-@admin.register(AssignmentRubric)
-class AssignmentRubricAdmin(admin.ModelAdmin):
-    list_display = ['name', 'rubric_type', 'total_points', 'created_by', 'is_public', 'created_at']
-    list_filter = ['rubric_type', 'is_public', 'created_at', 'created_by']
-    search_fields = ['name', 'description', 'created_by__email']
-    readonly_fields = ['created_at', 'updated_at']
-    filter_horizontal = []
+    def percentage_display(self, obj):
+        try:
+            max_m = obj.submission.assignment.max_marks
+            if max_m and obj.marks_obtained is not None and max_m > 0:
+                return f"{round((obj.marks_obtained / max_m) * 100, 2)}%"
+        except Exception:
+            return '-'
+        return '-'
+    percentage_display.short_description = 'Percentage'
 
 
-@admin.register(AssignmentRubricGrade)
-class AssignmentRubricGradeAdmin(admin.ModelAdmin):
-    list_display = ['submission', 'rubric', 'total_score', 'graded_by', 'graded_at']
-    list_filter = ['graded_at', 'graded_by', 'rubric']
-    search_fields = ['submission__student__name', 'submission__assignment__title', 'rubric__name']
-    readonly_fields = ['graded_at']
+"""
+Minimal admin: keep only Categories, Assignments, Submissions, Grades.
+Hide advanced models to simplify the admin UI per product direction.
+"""
 
+from django.contrib.admin.sites import NotRegistered
 
-@admin.register(AssignmentPeerReview)
-class AssignmentPeerReviewAdmin(admin.ModelAdmin):
-    list_display = ['assignment', 'reviewer', 'reviewee', 'overall_rating', 'is_completed', 'submitted_at']
-    list_filter = ['is_completed', 'overall_rating', 'submitted_at', 'assignment']
-    search_fields = ['assignment__title', 'reviewer__name', 'reviewee__name']
-    readonly_fields = ['submitted_at']
+def _safe_unregister(model):
+    try:
+        admin.site.unregister(model)
+    except NotRegistered:
+        pass
 
-
-@admin.register(AssignmentPlagiarismCheck)
-class AssignmentPlagiarismCheckAdmin(admin.ModelAdmin):
-    list_display = ['submission', 'status', 'similarity_percentage', 'checked_by', 'checked_at']
-    list_filter = ['status', 'checked_at', 'checked_by']
-    search_fields = ['submission__student__name', 'submission__assignment__title']
-    readonly_fields = ['checked_at']
-
-
-@admin.register(AssignmentLearningOutcome)
-class AssignmentLearningOutcomeAdmin(admin.ModelAdmin):
-    list_display = ['assignment', 'outcome_code', 'bloom_level', 'weight']
-    list_filter = ['bloom_level', 'assignment']
-    search_fields = ['outcome_code', 'description', 'assignment__title']
-    ordering = ['assignment', 'outcome_code']
-
-
-@admin.register(AssignmentAnalytics)
-class AssignmentAnalyticsAdmin(admin.ModelAdmin):
-    list_display = ['assignment', 'submission_rate', 'average_grade', 'plagiarism_rate', 'last_updated']
-    list_filter = ['last_updated']
-    search_fields = ['assignment__title']
-    readonly_fields = ['last_updated']
-
-
-@admin.register(AssignmentNotification)
-class AssignmentNotificationAdmin(admin.ModelAdmin):
-    list_display = ['assignment', 'recipient', 'notification_type', 'is_read', 'created_at']
-    list_filter = ['notification_type', 'is_read', 'created_at']
-    search_fields = ['title', 'message', 'assignment__title', 'recipient__email']
-    readonly_fields = ['created_at', 'updated_at']
-
-
-@admin.register(AssignmentSchedule)
-class AssignmentScheduleAdmin(admin.ModelAdmin):
-    list_display = ['name', 'schedule_type', 'is_active', 'next_run', 'created_by']
-    list_filter = ['schedule_type', 'is_active', 'created_by']
-    search_fields = ['name', 'description', 'created_by__email']
-    readonly_fields = ['last_run', 'next_run']
-    filter_horizontal = ['target_programs', 'target_departments', 'target_courses']
-
-
-@admin.register(AssignmentTemplate)
-class AssignmentTemplateAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'max_marks', 'is_group_assignment', 'is_public', 'created_by']
-    list_filter = ['category', 'is_group_assignment', 'is_public', 'created_by']
-    search_fields = ['name', 'description', 'created_by__email']
-    readonly_fields = ['created_at', 'updated_at']
-
-
-@admin.register(AssignmentGroup)
-class AssignmentGroupAdmin(admin.ModelAdmin):
-    list_display = ['assignment', 'group_name', 'leader', 'member_count']
-    list_filter = ['assignment']
-    search_fields = ['group_name', 'assignment__title', 'leader__name']
-    filter_horizontal = ['members']
-    
-    def member_count(self, obj):
-        return obj.members.count()
-    member_count.short_description = 'Members'
+# Hide advanced/optional models
+_safe_unregister(AssignmentFile)
+_safe_unregister(AssignmentComment)
+_safe_unregister(AssignmentRubric)
+_safe_unregister(AssignmentRubricGrade)
+_safe_unregister(AssignmentPeerReview)
+_safe_unregister(AssignmentPlagiarismCheck)
+_safe_unregister(AssignmentLearningOutcome)
+_safe_unregister(AssignmentAnalytics)
+_safe_unregister(AssignmentNotification)
+_safe_unregister(AssignmentSchedule)
+_safe_unregister(AssignmentTemplate)
+_safe_unregister(AssignmentGroup)

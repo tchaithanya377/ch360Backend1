@@ -12,8 +12,8 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('me/', MeView.as_view(), name='me'),
     # Compatibility endpoints expected by some clients
-    path('user/', lambda request: JsonResponse({'detail': 'Use /api/accounts/me/'}, status=404), name='auth_user_compat'),
-    path('session/', lambda request: JsonResponse({'detail': 'Use /api/accounts/me/session/active/'}, status=404), name='auth_session_compat'),
+    path('user/', lambda request: JsonResponse({'ok': False, 'detail': 'Use /api/accounts/me/'}, status=404), name='auth_user_compat'),
+    path('session/', lambda request: JsonResponse({'ok': False, 'detail': 'Use /api/accounts/me/session/active/'}, status=404), name='auth_session_compat'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('token/', RateLimitedTokenView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', RateLimitedRefreshView.as_view(), name='token_refresh'),
