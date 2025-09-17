@@ -77,9 +77,10 @@ class Booking(models.Model):
     def clean(self):
         if self.ends_at <= self.starts_at:
             raise ValidationError("Booking end time must be after start time.")
-        if self.starts_at < timezone.now() and not self.pk:
-            # do not allow creating past bookings
-            raise ValidationError("Cannot create bookings in the past.")
+        # Allow creating bookings whose start is before current time as long as they
+        # haven't fully ended yet. Only block bookings that have entirely passed.
+        if not self.pk and self.ends_at <= timezone.now():
+            raise ValidationError("Cannot create bookings that have already ended.")
 
         # check overlapping bookings
         overlapping = (

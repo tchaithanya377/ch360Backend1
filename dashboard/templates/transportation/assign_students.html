@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="get" class="form-inline" style="margin-bottom:16px;">
+  {{ filter_form.as_p }}
+  <button class="default" type="submit">Filter</button>
+  <a class="button" href="?">Reset</a>
+  <a class="button" href="{% url 'admin:transport_pass_assign_students' %}">Refresh</a>
+  <a class="button" href="{% url 'admin:transportation_transportpass_changelist' %}">Back to passes</a>
+  <a class="button" href="{% url 'admin:transport_pass_assign_faculty' %}">Assign Faculty</a>
+  <a class="button" href="{% url 'admin:index' %}">Admin Home</a>
+  <a class="button" href="{% url 'admin:transportation_transportpass_add' %}">Add Single Pass</a>
+</form>
+
+<form method="post">
+  {% csrf_token %}
+  <fieldset>
+    <legend>Pass Details</legend>
+    {{ pass_form.as_p }}
+  </fieldset>
+
+  <fieldset>
+    <legend>Students</legend>
+    {% if students %}
+      <table class="adminlist">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all" onclick="for(const cb of document.querySelectorAll('input[name=selected_ids]')) cb.checked=this.checked"/></th>
+            <th>Roll No</th>
+            <th>Name</th>
+            <th>User Linked</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in students %}
+          <tr>
+            <td><input type="checkbox" name="selected_ids" value="{{ s.id }}" /></td>
+            <td>{{ s.roll_number }}</td>
+            <td>{{ s.first_name }} {{ s.last_name }}</td>
+            <td>{% if s.user_id %}Yes{% else %}<span style="color:#c00">No</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <button class="default" type="submit">Create Passes for Selected</button>
+    {% else %}
+      <p>No students found for the selected filters.</p>
+    {% endif %}
+  </fieldset>
+</form>
+
+{% endblock %}
+
+

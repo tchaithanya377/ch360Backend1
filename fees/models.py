@@ -182,18 +182,25 @@ class StudentFee(TimeStampedUUIDModel):
     def balance_amount(self):
         """Calculate remaining balance"""
         from decimal import Decimal
-        return float(self.amount_due) - float(self.amount_paid)
+        amount_due = self.amount_due if self.amount_due is not None else Decimal('0.00')
+        amount_paid = self.amount_paid if self.amount_paid is not None else Decimal('0.00')
+        return amount_due - amount_paid
     
     @property
     def is_overdue(self):
         """Check if fee is overdue"""
-        return self.due_date < timezone.now().date() and self.status == 'PENDING'
+        if not self.due_date:
+            return False
+        today = timezone.now().date()
+        return self.due_date < today and self.status == 'PENDING'
     
     @property
     def total_amount_due(self):
         """Total amount including late fees"""
         from decimal import Decimal
-        return float(self.amount_due) + float(self.late_fee_amount)
+        amount_due = self.amount_due if self.amount_due is not None else Decimal('0.00')
+        late_fee = self.late_fee_amount if self.late_fee_amount is not None else Decimal('0.00')
+        return amount_due + late_fee
 
 
 class Payment(TimeStampedUUIDModel):

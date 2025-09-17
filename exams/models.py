@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -246,10 +247,17 @@ class StudentDue(models.Model):
     
     @property
     def remaining_amount(self):
-        return self.amount - self.paid_amount
+        amount = self.amount if self.amount is not None else Decimal('0')
+        paid = self.paid_amount if self.paid_amount is not None else Decimal('0')
+        try:
+            return amount - paid
+        except Exception:
+            return Decimal('0')
     
     @property
     def is_overdue(self):
+        if not self.due_date:
+            return False
         return self.due_date < timezone.now().date() and self.status == 'PENDING'
 
 

@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/v1/feedback/', include('feedback.urls', namespace='feedback')),
     path('api/v1/assignments/', include('assignments.urls', namespace='assignments')),
     path('api/v1/achievements/', include('achievements.urls')),
+    path('api/v1/events/', include('events.urls', namespace='events')),
     # Prometheus metrics (conditionally added below if installed)
     # Docs and API schema routes removed
     path('facilities/', include('facilities.urls', namespace='facilities_dashboard')),

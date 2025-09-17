@@ -140,6 +140,7 @@ INSTALLED_APPS = [
     # 'docs' app removed
     'campshub360',
     'achievements',
+    'events',
 ]
 
 # drf-spectacular removed
