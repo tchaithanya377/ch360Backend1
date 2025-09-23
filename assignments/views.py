@@ -1,4 +1,4 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status, permissions, exceptions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -230,8 +230,7 @@ class AssignmentListCreateView(generics.ListCreateAPIView):
         elif hasattr(user, 'student_profile'):
             student = user.student_profile
             return Assignment.objects.filter(
-                Q(assigned_to_students=student) | 
-                Q(assigned_to_grades__students=student)
+                assigned_to_students=student
             ).distinct()
         
         # Admin can see all assignments
@@ -242,6 +241,7 @@ class AssignmentListCreateView(generics.ListCreateAPIView):
     
     def get_serializer_class(self):
         """Return appropriate serializer based on request method"""
+        # Use create serializer for validation on input, but respond with full serializer
         if self.request.method == 'POST':
             return AssignmentCreateSerializer
         return AssignmentSerializer
@@ -249,9 +249,24 @@ class AssignmentListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         """Set faculty when creating assignment"""
         if hasattr(self.request.user, 'faculty_profile'):
-            serializer.save(faculty=self.request.user.faculty_profile)
+            # Save using create serializer then re-serialize with full serializer for response
+            assignment = serializer.save(faculty=self.request.user.faculty_profile)
+            # Attach the full serializer instance to view for create() to return correctly
+            self.created_instance = assignment
         else:
-            raise permissions.PermissionDenied("Only faculty can create assignments")
+            raise exceptions.PermissionDenied("Only faculty can create assignments")
+
+    def create(self, request, *args, **kwargs):
+        """Override to return full AssignmentSerializer in response"""
+        response = super().create(request, *args, **kwargs)
+        try:
+            instance = getattr(self, 'created_instance', None)
+            if instance is not None and response.status_code == status.HTTP_201_CREATED:
+                data = AssignmentSerializer(instance, context={'request': request}).data
+                return Response(data, status=status.HTTP_201_CREATED)
+        except Exception:
+            pass
+        return response
 
 
 class AssignmentDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -266,10 +281,7 @@ class AssignmentDetailView(generics.RetrieveUpdateDestroyAPIView):
             return Assignment.objects.filter(faculty=user.faculty_profile)
         elif hasattr(user, 'student_profile'):
             student = user.student_profile
-            return Assignment.objects.filter(
-                Q(assigned_to_students=student) | 
-                Q(assigned_to_grades__students=student)
-            ).distinct()
+            return Assignment.objects.filter(assigned_to_students=student).distinct()
         elif user.is_staff:
             return Assignment.objects.all()
         
@@ -285,6 +297,7 @@ class AssignmentDetailView(generics.RetrieveUpdateDestroyAPIView):
 class AssignmentSubmissionListCreateView(generics.ListCreateAPIView):
     """View for listing and creating assignment submissions"""
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
     
     def get_queryset(self):
         """Filter submissions based on user role"""
@@ -296,13 +309,13 @@ class AssignmentSubmissionListCreateView(generics.ListCreateAPIView):
             return AssignmentSubmission.objects.filter(
                 student=user.student_profile,
                 assignment_id=assignment_id
-            )
+            ).distinct()
         elif hasattr(user, 'faculty_profile'):
             # Faculty can see all submissions for their assignments
             return AssignmentSubmission.objects.filter(
                 assignment__faculty=user.faculty_profile,
                 assignment_id=assignment_id
-            )
+            ).distinct()
         elif user.is_staff:
             # Admin can see all submissions
             return AssignmentSubmission.objects.filter(assignment_id=assignment_id)
@@ -317,10 +330,38 @@ class AssignmentSubmissionListCreateView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         """Set student when creating submission"""
-        if hasattr(self.request.user, 'student_profile'):
-            serializer.save(student=self.request.user.student_profile)
-        else:
-            raise permissions.PermissionDenied("Only students can submit assignments")
+        if not hasattr(self.request.user, 'student_profile'):
+            raise exceptions.PermissionDenied("Only students can submit assignments")
+
+        assignment_id = self.kwargs.get('assignment_id')
+        assignment = get_object_or_404(Assignment, id=assignment_id)
+
+        # Determine if the submission is late and set status accordingly
+        is_late = False
+        status_value = 'SUBMITTED'
+        if assignment.due_date and timezone.now() > assignment.due_date:
+            is_late = True
+            status_value = 'LATE'
+
+        from django.db import IntegrityError
+        try:
+            serializer.save(student=self.request.user.student_profile, assignment=assignment, is_late=is_late, status=status_value)
+        except IntegrityError:
+            raise exceptions.ValidationError({"detail": "Duplicate submission for this assignment is not allowed"})
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        # Re-serialize with full serializer to include id and is_late
+        try:
+            if response.status_code == status.HTTP_201_CREATED:
+                assignment_id = kwargs.get('assignment_id')
+                instance = AssignmentSubmission.objects.filter(assignment_id=assignment_id, student=getattr(request.user, 'student_profile', None)).order_by('-created_at').first()
+                if instance is not None:
+                    data = AssignmentSubmissionSerializer(instance, context={'request': request}).data
+                    return Response(data, status=status.HTTP_201_CREATED)
+        except Exception:
+            pass
+        return response
 
 
 class AssignmentSubmissionDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -349,24 +390,25 @@ class AssignmentGradeCreateUpdateView(generics.CreateAPIView, generics.UpdateAPI
     serializer_class = AssignmentGradeSerializer
     
     def get_queryset(self):
-        """Filter submissions based on faculty permissions"""
-        user = self.request.user
-        
-        if hasattr(user, 'faculty_profile'):
-            return AssignmentSubmission.objects.filter(assignment__faculty=user.faculty_profile)
-        elif user.is_staff:
-            return AssignmentSubmission.objects.all()
-        
-        return AssignmentSubmission.objects.none()
+        # For update() path DRF expects queryset of the object being updated.
+        # We update the Grade via the Submission id in URL, so return AssignmentSubmission queryset.
+        return AssignmentSubmission.objects.all()
     
     def perform_create(self, serializer):
         """Set graded_by when creating grade"""
         submission_id = self.kwargs.get('submission_id')
-        submission = get_object_or_404(self.get_queryset(), id=submission_id)
+        # Get submission directly; permission errors handled below
+        submission = get_object_or_404(AssignmentSubmission, id=submission_id)
+        # Only faculty (owner) or admin can grade
+        user = self.request.user
+        if hasattr(user, 'student_profile'):
+            raise exceptions.PermissionDenied("Students cannot grade submissions")
+        if hasattr(user, 'faculty_profile') and submission.assignment.faculty_id != user.faculty_profile.id:
+            raise exceptions.PermissionDenied("You can only grade your own assignment submissions")
         # Validate marks do not exceed assignment max
         marks = serializer.validated_data.get('marks_obtained')
         if marks is not None and submission.assignment.max_marks is not None and marks > submission.assignment.max_marks:
-            raise permissions.PermissionDenied("Marks obtained cannot exceed assignment max marks")
+            raise exceptions.PermissionDenied("Marks obtained cannot exceed assignment max marks")
         
         # Create grade
         grade = serializer.save(graded_by=self.request.user)
@@ -377,23 +419,48 @@ class AssignmentGradeCreateUpdateView(generics.CreateAPIView, generics.UpdateAPI
         submission.graded_at = timezone.now()
         submission.save()
 
+    def update(self, request, *args, **kwargs):
+        # PUT should update the existing grade on the submission id in URL
+        submission_id = self.kwargs.get('submission_id')
+        submission = get_object_or_404(AssignmentSubmission, id=submission_id)
+        user = request.user
+        if hasattr(user, 'student_profile'):
+            raise exceptions.PermissionDenied("Students cannot grade submissions")
+        if hasattr(user, 'faculty_profile') and submission.assignment.faculty_id != user.faculty_profile.id:
+            raise exceptions.PermissionDenied("You can only grade your own assignment submissions")
+
+        grade = submission.grade
+        if not grade:
+            # If no grade exists, treat update as create
+            return self.create(request, *args, **kwargs)
+        serializer = self.get_serializer(grade, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        marks = serializer.validated_data.get('marks_obtained')
+        if marks is not None and submission.assignment.max_marks is not None and marks > submission.assignment.max_marks:
+            raise exceptions.PermissionDenied("Marks obtained cannot exceed assignment max marks")
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class AssignmentCommentListCreateView(generics.ListCreateAPIView):
     """View for listing and creating assignment comments"""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AssignmentCommentSerializer
+    pagination_class = None
     
     def get_queryset(self):
         """Get comments for specific assignment"""
         assignment_id = self.kwargs.get('assignment_id')
         return AssignmentComment.objects.filter(
             assignment_id=assignment_id,
-            parent_comment__isnull=True  # Only top-level comments
-        )
+            parent_comment__isnull=True
+        ).distinct()
     
     def perform_create(self, serializer):
         """Set author when creating comment"""
-        serializer.save(author=self.request.user)
+        assignment_id = self.kwargs.get('assignment_id')
+        assignment = get_object_or_404(Assignment, id=assignment_id)
+        serializer.save(author=self.request.user, assignment=assignment)
 
 
 class AssignmentFileUploadView(generics.CreateAPIView):
@@ -410,13 +477,13 @@ class AssignmentFileUploadView(generics.CreateAPIView):
 class AssignmentTemplateListCreateView(generics.ListCreateAPIView):
     """View for listing and creating assignment templates"""
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
     
     def get_queryset(self):
         """Filter templates based on user and public status"""
         user = self.request.user
-        return AssignmentTemplate.objects.filter(
-            Q(is_public=True) | Q(created_by=user)
-        )
+        # Only public templates are listed
+        return AssignmentTemplate.objects.filter(is_public=True).distinct()
     
     def get_serializer_class(self):
         """Return appropriate serializer based on request method"""
@@ -487,13 +554,11 @@ def assignment_stats(request):
         
         stats = {
             'total_assignments': Assignment.objects.filter(
-                Q(assigned_to_students=student) | 
-                Q(assigned_to_grades__students=student)
+                assigned_to_students=student
             ).distinct().count(),
             'submitted_assignments': submissions.count(),
             'pending_assignments': Assignment.objects.filter(
-                Q(assigned_to_students=student) | 
-                Q(assigned_to_grades__students=student)
+                assigned_to_students=student
             ).exclude(
                 submissions__student=student
             ).distinct().count(),
@@ -505,8 +570,7 @@ def assignment_stats(request):
                 submission__student=student
             ).aggregate(total=Sum('marks_obtained'))['total'] or 0,
             'total_max_marks': Assignment.objects.filter(
-                Q(assigned_to_students=student) | 
-                Q(assigned_to_grades__students=student)
+                assigned_to_students=student
             ).aggregate(total=Sum('max_marks'))['total'] or 0
         }
         
@@ -620,7 +684,7 @@ class SimpleAssignmentListCreateView(generics.ListCreateAPIView):
         if hasattr(self.request.user, 'faculty_profile'):
             serializer.save(faculty=self.request.user.faculty_profile)
         else:
-            raise permissions.PermissionDenied('Only faculty can create assignments')
+            raise exceptions.PermissionDenied('Only faculty can create assignments')
 
 
 class SimpleAssignmentDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -675,8 +739,7 @@ def my_assignments(request):
         # Student assignments
         student = user.student_profile
         assignments = Assignment.objects.filter(
-            Q(assigned_to_students=student) | 
-            Q(assigned_to_grades__students=student)
+            assigned_to_students=student
         ).distinct().order_by('-created_at')
         
         # Add submission status for each assignment

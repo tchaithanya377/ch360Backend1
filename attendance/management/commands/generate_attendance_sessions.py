@@ -1,7 +1,8 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from academics.models import Timetable
 from attendance.models import AttendanceSession
@@ -22,7 +23,7 @@ class Command(BaseCommand):
 
         if end < start:
             self.stderr.write('End date must be after start date')
-            return
+            raise SystemExit(1)
 
         days_map = {
             'MON': 0,
@@ -50,12 +51,12 @@ class Command(BaseCommand):
                 for t in by_weekday.get(weekday, []):
                     session, created = AttendanceSession.objects.get_or_create(
                         course_section=t.course_section,
-                        date=current,
-                        start_time=t.start_time,
+                        scheduled_date=current,
+                        start_datetime=timezone.make_aware(datetime.combine(current, t.start_time)),
                         defaults={
-                            'end_time': t.end_time,
+                            'end_datetime': timezone.make_aware(datetime.combine(current, t.end_time)),
                             'room': t.room,
-                            'timetable': t,
+                            'faculty': t.course_section.faculty,
                         }
                     )
                     if created:

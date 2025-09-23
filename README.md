@@ -212,6 +212,89 @@ docker-compose -f docker-compose.production.yml up -d
 - **`AWS-EC2-CONNECT-GUIDE.md`** - Complete EC2 Instance Connect guide
 - **`DOCKER-SUMMARY.md`** - Quick reference and overview
 
+## 🧪 API Schema: Phase 1 — Code & Schema Validation
+
+This project uses `drf-spectacular` for OpenAPI generation and Schemathesis for property-based API testing.
+
+### 1) Generate OpenAPI schema (YAML + JSON)
+
+```bash
+# Activate venv (Windows PowerShell)
+. .venv/Scripts/Activate.ps1
+
+# From repo root
+python manage.py export_schema
+
+# Outputs:
+# - schema.yml
+# - schema.json
+```
+
+### 2) Validate schema
+
+```bash
+# YAML (default) or pass schema path
+python tools/validate_schema.py
+python tools/validate_schema.py schema.json
+```
+
+Expected output on success:
+```
+Validating schema: E:\\projects\\ch360Backend-main\\schema.yml
+[OK] OpenAPI schema is valid.
+```
+
+### 3) List operationIds (and write to operations.txt)
+
+```bash
+# Critical endpoints only (default filters)
+python tools/list_operation_ids.py
+
+# All endpoints
+python tools/list_operation_ids.py --all
+
+# Custom filters (multiple --filter allowed)
+python tools/list_operation_ids.py --filter /api/v1/students --filter /api/v1/attendance
+```
+
+Outputs a sorted list to `operations.txt` and prints to console:
+```
+myOpId -> GET /api/v1/students/
+```
+
+### 4) Run Schemathesis
+
+Ensure the local server is running at `http://127.0.0.1:8000`.
+
+**Option A: Python runner (recommended)**
+```bash
+# From repo root
+python tools\run_schemathesis.py --schema schema.yml --base-url http://127.0.0.1:8000
+
+# With custom parameters
+python tools\run_schemathesis.py --schema schema.yml --base-url http://127.0.0.1:8000 --max-ops-per-run 25 --max-examples 3
+```
+
+**Option B: PowerShell runner**
+```powershell
+# From repo root
+powershell -ExecutionPolicy Bypass -File tools\run_schemathesis.ps1 -SchemaPath schema.yml -BaseUrl http://127.0.0.1:8000
+
+# Simple version (no batching)
+powershell -ExecutionPolicy Bypass -File tools\run_schemathesis_simple.ps1 -SchemaPath schema.yml -BaseUrl http://127.0.0.1:8000
+```
+
+The scripts read `operations.txt` and include only those `operationId`s. They limit Hypothesis to 5 examples and use a single worker to avoid memory spikes.
+
+### Notes
+
+- Python 3.12 is supported. Install dependencies with `pip install -r requirements.txt`.
+- If `operations.txt` is missing, the PowerShell script will generate it automatically using default critical filters.
+- Schema and docs are served at:
+  - `/api/schema/` (raw schema)
+  - `/api/docs/` (Swagger UI)
+  - `/api/redoc/` (ReDoc)
+
 ## 🔐 Database Ops: Pooling, Auditing, RLS, Backups
 
 ### pgBouncer (transaction pooling)

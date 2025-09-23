@@ -27,15 +27,18 @@ urlpatterns = [
     path('simple/', views.SimpleAssignmentListCreateView.as_view(), name='simple-assignment-list-create'),
     path('simple/<uuid:pk>/', views.SimpleAssignmentDetailView.as_view(), name='simple-assignment-detail'),
     path('my-assignments/', views.my_assignments, name='my-assignments'),
+    # Alias used by tests
+    path('my/', views.my_assignments, name='my-assignments-alias'),
     path('<uuid:assignment_id>/publish/', views.publish_assignment, name='publish-assignment'),
     path('<uuid:assignment_id>/close/', views.close_assignment, name='close-assignment'),
-    path('<uuid:assignment_id>/submissions/', views.assignment_submissions, name='assignment-submissions'),
+    # All submissions for an assignment (faculty/admin only)
+    path('<uuid:assignment_id>/all-submissions/', views.assignment_submissions, name='assignment-submissions'),
     path('<uuid:assignment_id>/analytics/', views.assignment_analytics_dashboard, name='assignment-analytics-dashboard'),
     path('<uuid:assignment_id>/auto-groups/', views.auto_create_groups_from_batch, name='assignment-auto-groups'),
     path('<uuid:assignment_id>/assign-section/', views.assign_assignment_to_section, name='assignment-assign-section'),
     
-    # Assignment Submissions
-    path('<uuid:assignment_id>/submit/', views.AssignmentSubmissionListCreateView.as_view(), name='submission-list-create'),
+    # Assignment Submissions (student create, role-based list)
+    path('<uuid:assignment_id>/submissions/', views.AssignmentSubmissionListCreateView.as_view(), name='submission-list-create'),
     path('submissions/<uuid:pk>/', views.AssignmentSubmissionDetailView.as_view(), name='submission-detail'),
     
     # Assignment Grades

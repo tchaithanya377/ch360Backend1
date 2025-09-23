@@ -32,6 +32,9 @@ class BaseViewSet(viewsets.ModelViewSet):
     All ViewSets should inherit from this
     """
     permission_classes = [IsAuthenticated]
+    # Disable pagination at the viewset level so list endpoints return plain lists
+    # Tests across the project expect non-paginated responses
+    pagination_class = None
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
@@ -42,7 +45,7 @@ class BaseViewSet(viewsets.ModelViewSet):
             return self.get_list_serializer()
         elif self.action in ['retrieve', 'detail']:
             return self.get_detail_serializer()
-        return self.get_serializer_class()
+        return self.serializer_class
     
     def get_list_serializer(self):
         """Override in subclasses to return list serializer"""

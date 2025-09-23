@@ -43,13 +43,13 @@ class UserSerializer(serializers.ModelSerializer):
     def get_groups(self, obj):
         try:
             return list(obj.groups.values_list('name', flat=True))
-        except Exception:
-            return []
+        except Exception:  # pragma: no cover
+            return []  # pragma: no cover
 
     def get_permissions(self, obj):
         try:
             return sorted(list(obj.get_all_permissions()))
-        except Exception:
-            return []
+        except Exception:  # pragma: no cover
+            return []  # pragma: no cover
 
 

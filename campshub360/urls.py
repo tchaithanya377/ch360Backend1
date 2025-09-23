@@ -25,7 +25,7 @@ from rest_framework_simplejwt.views import (
 )
 from accounts.views import RateLimitedTokenView, RateLimitedRefreshView
 from .health_views import health_check, detailed_health_check, readiness_check, liveness_check, app_metrics
-# drf-spectacular imports removed
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
     # Health check endpoints
@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/auth/token/refresh/', RateLimitedRefreshView.as_view(), name='token_refresh'),
     path('api/accounts/', include('accounts.urls')),
     path('api/v1/students/', include('students.api_urls')),
+    path('api/student-portal/', include('students.student_portal_urls')),
     path('api/v1/faculty/', include('faculty.urls', namespace='faculty')),
     path('api/v1/academics/', include('academics.urls', namespace='academics')),
     path('api/v1/departments/', include('departments.urls', namespace='departments')),
@@ -55,10 +56,16 @@ urlpatterns = [
     path('api/v1/mentoring/', include('mentoring.urls', namespace='mentoring')),
     path('api/v1/feedback/', include('feedback.urls', namespace='feedback')),
     path('api/v1/assignments/', include('assignments.urls', namespace='assignments')),
+    # Alias without version for tests expecting '/api/assignments/...'
+    path('api/assignments/', include('assignments.urls', namespace='assignments')),
     path('api/v1/achievements/', include('achievements.urls')),
     path('api/v1/events/', include('events.urls', namespace='events')),
     # Prometheus metrics (conditionally added below if installed)
     # Docs and API schema routes removed
+    # API schema and docs
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('facilities/', include('facilities.urls', namespace='facilities_dashboard')),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('students/', include('students.urls', namespace='students')),

@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import (
     AcademicProgram, Course, CourseSection, Syllabus, SyllabusTopic, 
-    Timetable, CourseEnrollment, AcademicCalendar, BatchCourseEnrollment, CoursePrerequisite
+    Timetable, AcademicTimetableSlot, CourseEnrollment, AcademicCalendar, BatchCourseEnrollment, CoursePrerequisite
 )
 from students.models import AcademicYear as StudentAcademicYear, Semester as StudentSemester
 
@@ -143,6 +143,162 @@ class TimetableAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('course_section__course', 'course_section__faculty')
+
+
+class AcademicTimetableSlotForm(forms.ModelForm):
+    """Admin form for AcademicTimetableSlot with academic year and semester from students app."""
+    
+    class Meta:
+        model = AcademicTimetableSlot
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Academic year choices from students.AcademicYear
+        year_qs = StudentAcademicYear.objects.filter(is_active=True).order_by('-is_current', '-year')
+        self.fields['academic_year'].queryset = year_qs
+        
+        # Semester choices from students.Semester
+        sem_qs = StudentSemester.objects.filter(is_active=True).order_by('-is_current', 'semester_type')
+        self.fields['semester'].queryset = sem_qs
+
+
+@admin.register(AcademicTimetableSlot)
+class AcademicTimetableSlotAdmin(admin.ModelAdmin):
+    form = AcademicTimetableSlotForm
+    list_display = [
+        'academic_period_display', 'day_of_week', 'start_time', 'end_time', 
+        'slot_display_name', 'room', 'slot_type', 'is_active', 'is_recurring'
+    ]
+    list_filter = [
+        'academic_year', 'semester', 'slot_type', 'day_of_week', 'is_active', 'is_recurring',
+        'course__department', 'faculty', 'student_batch__department'
+    ]
+    search_fields = [
+        'subject', 'description', 'room', 'course__code', 'course__title',
+        'faculty__first_name', 'faculty__last_name', 'student_batch__batch_name'
+    ]
+    ordering = ['academic_year', 'semester', 'day_of_week', 'start_time']
+    list_editable = ['is_active', 'is_recurring']
+    readonly_fields = ['created_at', 'updated_at', 'duration_display']
+    
+    fieldsets = (
+        ('Academic Period', {
+            'fields': ('academic_year', 'semester'),
+            'description': 'Select academic year and semester from students table'
+        }),
+        ('Slot Information', {
+            'fields': ('slot_type', 'day_of_week', 'start_time', 'end_time', 'duration_display', 'room')
+        }),
+        ('Course & Faculty', {
+            'fields': ('course', 'faculty', 'student_batch'),
+            'description': 'Optional: Link to specific course, faculty, or student batch'
+        }),
+        ('Details', {
+            'fields': ('subject', 'description')
+        }),
+        ('Settings', {
+            'fields': ('is_active', 'is_recurring')
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'academic_year', 'semester', 'course', 'faculty', 'student_batch',
+            'student_batch__department', 'student_batch__academic_program', 'created_by'
+        )
+    
+    def academic_period_display(self, obj):
+        """Display academic period information"""
+        if obj.academic_year and obj.semester:
+            return format_html(
+                '<span style="color: #0066cc; font-weight: bold;">{}</span><br/>'
+                '<small style="color: #666;">{}</small>',
+                obj.academic_year.year,
+                obj.semester.name
+            )
+        return format_html('<span style="color: #999;">No Period</span>')
+    academic_period_display.short_description = 'Academic Period'
+    
+    def slot_display_name(self, obj):
+        """Display slot name with course/faculty information"""
+        if obj.course and obj.faculty:
+            return format_html(
+                '<span style="color: #009900; font-weight: bold;">{}</span><br/>'
+                '<small style="color: #666;">{}</small>',
+                obj.course.code,
+                obj.faculty.name
+            )
+        elif obj.course:
+            return format_html(
+                '<span style="color: #009900; font-weight: bold;">{}</span>',
+                obj.course.code
+            )
+        elif obj.faculty:
+            return format_html(
+                '<span style="color: #cc6600; font-weight: bold;">{}</span>',
+                obj.faculty.name
+            )
+        elif obj.subject:
+            return format_html(
+                '<span style="color: #6666cc; font-weight: bold;">{}</span>',
+                obj.subject
+            )
+        else:
+            return format_html(
+                '<span style="color: #999;">{}</span>',
+                obj.get_slot_type_display()
+            )
+    slot_display_name.short_description = 'Slot Details'
+    
+    def duration_display(self, obj):
+        """Display slot duration"""
+        if obj.start_time and obj.end_time:
+            duration = obj.duration_minutes
+            hours = duration // 60
+            minutes = duration % 60
+            if hours > 0:
+                return f"{hours}h {minutes}m"
+            else:
+                return f"{minutes}m"
+        return "N/A"
+    duration_display.short_description = 'Duration'
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # New object
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    actions = ['activate_slots', 'deactivate_slots', 'make_recurring', 'make_non_recurring']
+    
+    def activate_slots(self, request, queryset):
+        """Activate selected timetable slots"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} timetable slots activated.')
+    activate_slots.short_description = "Activate selected slots"
+    
+    def deactivate_slots(self, request, queryset):
+        """Deactivate selected timetable slots"""
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'{updated} timetable slots deactivated.')
+    deactivate_slots.short_description = "Deactivate selected slots"
+    
+    def make_recurring(self, request, queryset):
+        """Make selected slots recurring"""
+        updated = queryset.update(is_recurring=True)
+        self.message_user(request, f'{updated} timetable slots set as recurring.')
+    make_recurring.short_description = "Make selected slots recurring"
+    
+    def make_non_recurring(self, request, queryset):
+        """Make selected slots non-recurring"""
+        updated = queryset.update(is_recurring=False)
+        self.message_user(request, f'{updated} timetable slots set as non-recurring.')
+    make_non_recurring.short_description = "Make selected slots non-recurring"
 
 
 @admin.register(CourseEnrollment)

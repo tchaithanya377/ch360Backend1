@@ -43,6 +43,11 @@ def create_user_for_student(sender, instance: Student, created: bool, **kwargs):
     instance.user = user
     instance.save(update_fields=['user'])
 
+    # Assign Student role
+    from django.contrib.auth.models import Group
+    student_group, _ = Group.objects.get_or_create(name='Student')
+    user.groups.add(student_group)
+
     # Create identifiers
     # Email identifier
     if instance.email:

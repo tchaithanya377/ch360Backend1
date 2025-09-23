@@ -110,8 +110,11 @@ def log_user_changes(sender, instance, created, **kwargs):
         entity_id = instance.pk
     
     if entity_id:
+        # Ensure we only assign a real User instance to the AuditLog.user FK.
+        # Tests may call this handler with dummy objects (e.g., having session_key),
+        # which should not be assigned to the FK field.
         create_audit_log(
-            user=instance,
+            user=instance if isinstance(instance, User) else None,
             action=action,
             object_type='User',
             object_id=entity_id,

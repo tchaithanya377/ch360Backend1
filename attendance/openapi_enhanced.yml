@@ -1,0 +1,1075 @@
+openapi: 3.0.3
+info:
+  title: CampsHub360 Attendance API
+  description: Production-ready attendance system for AP universities
+  version: 1.0.0
+  contact:
+    name: CampsHub360 Support
+    email: support@campushub360.com
+
+servers:
+  - url: https://api.campushub360.com/attendance
+    description: Production server
+  - url: http://localhost:8000/attendance
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/configurations/:
+    get:
+      summary: List attendance configurations
+      tags: [Configuration]
+      responses:
+        '200':
+          description: List of configurations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AttendanceConfiguration'
+    post:
+      summary: Create attendance configuration
+      tags: [Configuration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceConfigurationCreate'
+      responses:
+        '201':
+          description: Configuration created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceConfiguration'
+
+  /api/sessions/:
+    get:
+      summary: List attendance sessions
+      tags: [Sessions]
+      parameters:
+        - name: course_section
+          in: query
+          schema:
+            type: integer
+        - name: faculty
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [scheduled, open, closed, locked, cancelled]
+        - name: scheduled_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AttendanceSessionList'
+    post:
+      summary: Create attendance session
+      tags: [Sessions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceSessionCreate'
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceSessionDetail'
+
+  /api/sessions/{id}/open/:
+    post:
+      summary: Open attendance session
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session opened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Session opened successfully"
+
+  /api/sessions/{id}/close/:
+    post:
+      summary: Close attendance session
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session closed successfully
+
+  /api/sessions/{id}/generate-qr/:
+    post:
+      summary: Generate QR code for session
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: QR code generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qr_token:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  session_id:
+                    type: string
+                    format: uuid
+
+  /api/records/:
+    get:
+      summary: List attendance records
+      tags: [Records]
+      parameters:
+        - name: session
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: student
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: mark
+          in: query
+          schema:
+            type: string
+            enum: [present, absent, late, excused]
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [manual, qr, biometric, rfid, offline, import, system]
+      responses:
+        '200':
+          description: List of attendance records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AttendanceRecord'
+    post:
+      summary: Create attendance record
+      tags: [Records]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceRecordCreate'
+      responses:
+        '201':
+          description: Record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceRecord'
+
+  /api/records/bulk-mark/:
+    post:
+      summary: Bulk mark attendance
+      tags: [Records]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkAttendanceMark'
+      responses:
+        '200':
+          description: Bulk marking completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created_count:
+                    type: integer
+                  session:
+                    $ref: '#/components/schemas/AttendanceSessionList'
+
+  /api/records/qr-scan/:
+    post:
+      summary: Mark attendance via QR scan
+      tags: [Records]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QRCodeScan'
+      responses:
+        '200':
+          description: Attendance marked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  record_id:
+                    type: string
+                    format: uuid
+                  mark:
+                    type: string
+                  created:
+                    type: boolean
+
+  /api/leave-applications/:
+    get:
+      summary: List leave applications
+      tags: [Leave Applications]
+      parameters:
+        - name: student
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, cancelled]
+        - name: leave_type
+          in: query
+          schema:
+            type: string
+            enum: [medical, maternity, on_duty, sport, personal, other]
+      responses:
+        '200':
+          description: List of leave applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaveApplication'
+    post:
+      summary: Create leave application
+      tags: [Leave Applications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveApplicationCreate'
+      responses:
+        '201':
+          description: Leave application created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveApplication'
+
+  /api/leave-applications/{id}/approve/:
+    post:
+      summary: Approve leave application
+      tags: [Leave Applications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision_note:
+                  type: string
+      responses:
+        '200':
+          description: Leave application approved
+
+  /api/statistics/student-summary/:
+    get:
+      summary: Get student attendance summary
+      tags: [Statistics]
+      parameters:
+        - name: student_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: course_section_id
+          in: query
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Student attendance summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentAttendanceSummary'
+
+  /api/statistics/course-summary/:
+    get:
+      summary: Get course attendance summary
+      tags: [Statistics]
+      parameters:
+        - name: course_section_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Course attendance summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseAttendanceSummary'
+
+  /api/export/data/:
+    post:
+      summary: Export attendance data
+      tags: [Export]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceExport'
+      responses:
+        '200':
+          description: Export completed
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AttendanceConfiguration:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        value:
+          type: string
+        description:
+          type: string
+        data_type:
+          type: string
+          enum: [string, integer, float, boolean, json]
+        is_active:
+          type: boolean
+        typed_value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AttendanceConfigurationCreate:
+      type: object
+      required: [key, value, data_type]
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        description:
+          type: string
+        data_type:
+          type: string
+          enum: [string, integer, float, boolean, json]
+        is_active:
+          type: boolean
+          default: true
+
+    AttendanceSessionList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course_section:
+          type: integer
+        course_section_name:
+          type: string
+        faculty:
+          type: string
+          format: uuid
+        faculty_name:
+          type: string
+        scheduled_date:
+          type: string
+          format: date
+        start_datetime:
+          type: string
+          format: date-time
+        end_datetime:
+          type: string
+          format: date-time
+        room:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, open, closed, locked, cancelled]
+        is_qr_valid:
+          type: boolean
+        is_active:
+          type: boolean
+        duration_minutes:
+          type: integer
+        makeup:
+          type: boolean
+        notes:
+          type: string
+        attendance_summary:
+          type: object
+          properties:
+            total_students:
+              type: integer
+            present:
+              type: integer
+            absent:
+              type: integer
+            late:
+              type: integer
+            excused:
+              type: integer
+            attendance_percentage:
+              type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AttendanceSessionDetail:
+      allOf:
+        - $ref: '#/components/schemas/AttendanceSessionList'
+        - type: object
+          properties:
+            timetable_slot:
+              type: integer
+            actual_start_datetime:
+              type: string
+              format: date-time
+            actual_end_datetime:
+              type: string
+              format: date-time
+            auto_opened:
+              type: boolean
+            auto_closed:
+              type: boolean
+            qr_token:
+              type: string
+            qr_expires_at:
+              type: string
+              format: date-time
+            qr_generated_at:
+              type: string
+              format: date-time
+            biometric_enabled:
+              type: boolean
+            biometric_device_id:
+              type: string
+            offline_sync_token:
+              type: string
+            last_sync_at:
+              type: string
+              format: date-time
+            qr_code_data:
+              type: object
+              properties:
+                token:
+                  type: string
+                expires_at:
+                  type: string
+                  format: date-time
+                session_id:
+                  type: string
+                  format: uuid
+                course_section_id:
+                  type: integer
+            student_snapshots:
+              type: array
+              items:
+                $ref: '#/components/schemas/StudentSnapshot'
+
+    AttendanceSessionCreate:
+      type: object
+      required: [course_section, faculty, scheduled_date, start_datetime, end_datetime]
+      properties:
+        course_section:
+          type: integer
+        faculty:
+          type: string
+          format: uuid
+        timetable_slot:
+          type: integer
+        scheduled_date:
+          type: string
+          format: date
+        start_datetime:
+          type: string
+          format: date-time
+        end_datetime:
+          type: string
+          format: date-time
+        room:
+          type: string
+        makeup:
+          type: boolean
+          default: false
+        notes:
+          type: string
+        biometric_enabled:
+          type: boolean
+          default: false
+        biometric_device_id:
+          type: string
+
+    StudentSnapshot:
+      type: object
+      properties:
+        id:
+          type: integer
+        session:
+          type: string
+          format: uuid
+        student:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        course_section:
+          type: integer
+        student_batch:
+          type: integer
+        roll_number:
+          type: string
+        full_name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        academic_year:
+          type: string
+        semester:
+          type: string
+        year_of_study:
+          type: string
+        section:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        session:
+          type: string
+          format: uuid
+        session_info:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            course_section:
+              type: string
+            scheduled_date:
+              type: string
+              format: date
+            start_time:
+              type: string
+              format: time
+            room:
+              type: string
+        student:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        student_roll_number:
+          type: string
+        mark:
+          type: string
+          enum: [present, absent, late, excused]
+        marked_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [manual, qr, biometric, rfid, offline, import, system]
+        reason:
+          type: string
+        notes:
+          type: string
+        device_id:
+          type: string
+        device_type:
+          type: string
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        location_lat:
+          type: number
+        location_lng:
+          type: number
+        client_uuid:
+          type: string
+        sync_status:
+          type: string
+          enum: [pending, synced, conflict]
+        vendor_event_id:
+          type: string
+        vendor_data:
+          type: object
+        marked_by:
+          type: string
+          format: uuid
+        last_modified_by:
+          type: string
+          format: uuid
+        is_present:
+          type: boolean
+        is_late:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AttendanceRecordCreate:
+      type: object
+      required: [session, student, mark]
+      properties:
+        session:
+          type: string
+          format: uuid
+        student:
+          type: string
+          format: uuid
+        mark:
+          type: string
+          enum: [present, absent, late, excused]
+        source:
+          type: string
+          enum: [manual, qr, biometric, rfid, offline, import, system]
+          default: manual
+        reason:
+          type: string
+        notes:
+          type: string
+        device_id:
+          type: string
+        device_type:
+          type: string
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        location_lat:
+          type: number
+        location_lng:
+          type: number
+        client_uuid:
+          type: string
+        vendor_event_id:
+          type: string
+        vendor_data:
+          type: object
+
+    BulkAttendanceMark:
+      type: object
+      required: [session_id, attendance_data]
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        attendance_data:
+          type: array
+          items:
+            type: object
+            required: [student_id, mark]
+            properties:
+              student_id:
+                type: string
+                format: uuid
+              mark:
+                type: string
+                enum: [present, absent, late, excused]
+              reason:
+                type: string
+              device_id:
+                type: string
+        source:
+          type: string
+          enum: [manual, qr, biometric, rfid, offline, import, system]
+          default: manual
+        device_id:
+          type: string
+
+    QRCodeScan:
+      type: object
+      required: [qr_token, student_id]
+      properties:
+        qr_token:
+          type: string
+        student_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+        location_lat:
+          type: number
+        location_lng:
+          type: number
+
+    LeaveApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        student:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        student_roll_number:
+          type: string
+        leave_type:
+          type: string
+          enum: [medical, maternity, on_duty, sport, personal, emergency, other]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        duration_days:
+          type: integer
+        reason:
+          type: string
+        supporting_document:
+          type: string
+          format: uri
+        status:
+          type: string
+          enum: [pending, approved, rejected, cancelled]
+        decided_by:
+          type: string
+          format: uuid
+        decided_by_name:
+          type: string
+        decided_at:
+          type: string
+          format: date-time
+        decision_note:
+          type: string
+        affects_attendance:
+          type: boolean
+        auto_apply_to_sessions:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    LeaveApplicationCreate:
+      type: object
+      required: [student, leave_type, start_date, end_date, reason]
+      properties:
+        student:
+          type: string
+          format: uuid
+        leave_type:
+          type: string
+          enum: [medical, maternity, on_duty, sport, personal, emergency, other]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+        supporting_document:
+          type: string
+          format: binary
+        affects_attendance:
+          type: boolean
+          default: true
+        auto_apply_to_sessions:
+          type: boolean
+          default: true
+
+    StudentAttendanceSummary:
+      type: object
+      properties:
+        student_id:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        student_roll_number:
+          type: string
+        course_section_id:
+          type: integer
+        course_section_name:
+          type: string
+        total_sessions:
+          type: integer
+        present_count:
+          type: integer
+        absent_count:
+          type: integer
+        late_count:
+          type: integer
+        excused_count:
+          type: integer
+        attendance_percentage:
+          type: number
+          format: decimal
+        leave_days:
+          type: integer
+        is_eligible_for_exam:
+          type: boolean
+        threshold_percent:
+          type: integer
+
+    CourseAttendanceSummary:
+      type: object
+      properties:
+        course_section_id:
+          type: integer
+        course_section_name:
+          type: string
+        faculty_name:
+          type: string
+        total_students:
+          type: integer
+        total_sessions:
+          type: integer
+        average_attendance_percentage:
+          type: number
+          format: decimal
+        eligible_students_count:
+          type: integer
+        ineligible_students_count:
+          type: integer
+        attendance_distribution:
+          type: object
+          properties:
+            present:
+              type: integer
+            absent:
+              type: integer
+            late:
+              type: integer
+            excused:
+              type: integer
+
+    AttendanceExport:
+      type: object
+      required: [format, start_date, end_date]
+      properties:
+        format:
+          type: string
+          enum: [csv, excel, pdf]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        course_sections:
+          type: array
+          items:
+            type: integer
+        students:
+          type: array
+          items:
+            type: string
+            format: uuid
+        include_details:
+          type: boolean
+          default: true
+        include_statistics:
+          type: boolean
+          default: true
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: object
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Authentication credentials were not provided."
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "You do not have permission to perform this action."
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "The requested resource was not found."
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "An internal server error occurred."

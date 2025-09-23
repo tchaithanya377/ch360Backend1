@@ -90,15 +90,12 @@ class UserAdmin(admin.ModelAdmin):
 admin.site.unregister = getattr(admin.site, 'unregister', lambda model: None)
 
 # Hide custom RBAC models from admin menu to avoid duplication; manage via Django Groups instead
-try:
-    from .models import Role, Permission as CustomPermission, RolePermission, UserRole
-    for mdl in (Role, CustomPermission, RolePermission, UserRole):
-        try:
-            admin.site.unregister(mdl)
-        except Exception:
-            pass
-except Exception:
-    pass
+from .models import Role, Permission as CustomPermission, RolePermission, UserRole
+for mdl in (Role, CustomPermission, RolePermission, UserRole):
+    try:
+        admin.site.unregister(mdl)
+    except Exception:
+        pass
 
 # Keep operational/auth tables visible as needed
 admin.site.register(AuthIdentifier)

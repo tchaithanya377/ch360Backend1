@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from copy import deepcopy
 
 from .models import (
-    Course, CourseSection, Syllabus, SyllabusTopic, Timetable, 
+    Course, CourseSection, Syllabus, SyllabusTopic, Timetable, AcademicTimetableSlot,
     CourseEnrollment, AcademicCalendar, BatchCourseEnrollment, CoursePrerequisite
 )
 from .serializers import (
@@ -17,7 +17,8 @@ from .serializers import (
     CourseSectionSerializer, CourseSectionCreateSerializer,
     SyllabusSerializer, SyllabusCreateSerializer, SyllabusDetailSerializer,
     SyllabusTopicSerializer, TimetableSerializer, TimetableCreateSerializer,
-    TimetableDetailSerializer, CourseEnrollmentSerializer, 
+    TimetableDetailSerializer, AcademicTimetableSlotSerializer, AcademicTimetableSlotCreateSerializer,
+    AcademicTimetableSlotDetailSerializer, CourseEnrollmentSerializer, 
     CourseEnrollmentCreateSerializer, AcademicCalendarSerializer,
     AcademicCalendarCreateSerializer, BatchCourseEnrollmentSerializer,
     BatchCourseEnrollmentCreateSerializer, BatchCourseEnrollmentDetailSerializer,
@@ -824,4 +825,229 @@ class CoursePrerequisiteViewSet(viewsets.ModelViewSet):
             'unmet_prerequisites': unmet_prerequisites,
             'total_prerequisites': len(met_prerequisites) + len(unmet_prerequisites),
             'all_prerequisites_met': len(unmet_prerequisites) == 0
+        })
+
+
+class AcademicTimetableSlotViewSet(viewsets.ModelViewSet):
+    """ViewSet for AcademicTimetableSlot model"""
+    queryset = AcademicTimetableSlot.objects.all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = [
+        'academic_year', 'semester', 'course', 'faculty', 'student_batch',
+        'slot_type', 'day_of_week', 'is_active', 'is_recurring'
+    ]
+    search_fields = [
+        'subject', 'description', 'room', 'course__code', 'course__title',
+        'faculty__first_name', 'faculty__last_name', 'student_batch__batch_name'
+    ]
+    ordering_fields = ['academic_year', 'semester', 'day_of_week', 'start_time']
+    ordering = ['academic_year', 'semester', 'day_of_week', 'start_time']
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return AcademicTimetableSlotCreateSerializer
+        elif self.action in ['retrieve', 'detail']:
+            return AcademicTimetableSlotDetailSerializer
+        return AcademicTimetableSlotSerializer
+    
+    def get_queryset(self):
+        return AcademicTimetableSlot.objects.select_related(
+            'academic_year', 'semester', 'course', 'faculty', 'student_batch',
+            'student_batch__department', 'student_batch__academic_program',
+            'created_by'
+        )
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+    
+    @action(detail=True, methods=['get'], url_path='detail')
+    def get_detail(self, request, pk=None):
+        """Get detailed timetable slot information"""
+        timetable_slot = self.get_object()
+        serializer = AcademicTimetableSlotDetailSerializer(timetable_slot)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_academic_period(self, request):
+        """Get timetable slots for a specific academic year and semester"""
+        academic_year_id = request.query_params.get('academic_year_id')
+        semester_id = request.query_params.get('semester_id')
+        
+        if not academic_year_id or not semester_id:
+            return Response({
+                'error': 'academic_year_id and semester_id parameters are required'
+            }, status=400)
+        
+        slots = AcademicTimetableSlot.objects.filter(
+            academic_year_id=academic_year_id,
+            semester_id=semester_id,
+            is_active=True
+        )
+        serializer = self.get_serializer(slots, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_faculty(self, request):
+        """Get timetable slots for a specific faculty member"""
+        faculty_id = request.query_params.get('faculty_id')
+        if not faculty_id:
+            return Response({'error': 'faculty_id parameter is required'}, status=400)
+        
+        slots = AcademicTimetableSlot.objects.filter(
+            faculty_id=faculty_id,
+            is_active=True
+        )
+        serializer = self.get_serializer(slots, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_student_batch(self, request):
+        """Get timetable slots for a specific student batch"""
+        batch_id = request.query_params.get('batch_id')
+        if not batch_id:
+            return Response({'error': 'batch_id parameter is required'}, status=400)
+        
+        slots = AcademicTimetableSlot.objects.filter(
+            student_batch_id=batch_id,
+            is_active=True
+        )
+        serializer = self.get_serializer(slots, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def weekly_schedule(self, request):
+        """Get weekly schedule for a specific academic period, faculty, or batch"""
+        academic_year_id = request.query_params.get('academic_year_id')
+        semester_id = request.query_params.get('semester_id')
+        faculty_id = request.query_params.get('faculty_id')
+        batch_id = request.query_params.get('batch_id')
+        
+        queryset = AcademicTimetableSlot.objects.filter(is_active=True)
+        
+        if academic_year_id:
+            queryset = queryset.filter(academic_year_id=academic_year_id)
+        if semester_id:
+            queryset = queryset.filter(semester_id=semester_id)
+        if faculty_id:
+            queryset = queryset.filter(faculty_id=faculty_id)
+        if batch_id:
+            queryset = queryset.filter(student_batch_id=batch_id)
+        
+        # Group by day of week
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        weekly_schedule = {d: [] for d in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']}
+        
+        for item in data:
+            day = item.get('day_of_week')
+            if day in weekly_schedule:
+                weekly_schedule[day].append(item)
+        
+        return Response({
+            'weekly_schedule': weekly_schedule,
+            'all_slots': data
+        })
+    
+    @action(detail=False, methods=['get'])
+    def conflicts(self, request):
+        """Check for timetable slot conflicts"""
+        academic_year_id = request.query_params.get('academic_year_id')
+        semester_id = request.query_params.get('semester_id')
+        faculty_id = request.query_params.get('faculty_id')
+        room = request.query_params.get('room')
+        
+        if not all([academic_year_id, semester_id]):
+            return Response({
+                'error': 'academic_year_id and semester_id parameters are required'
+            }, status=400)
+        
+        # Find overlapping schedules
+        conflicts = []
+        queryset = AcademicTimetableSlot.objects.filter(
+            academic_year_id=academic_year_id,
+            semester_id=semester_id,
+            is_active=True
+        )
+        
+        if faculty_id:
+            queryset = queryset.filter(faculty_id=faculty_id)
+        if room:
+            queryset = queryset.filter(room=room)
+        
+        timetables = list(queryset)
+        
+        for i, t1 in enumerate(timetables):
+            for t2 in timetables[i+1:]:
+                if t1.day_of_week == t2.day_of_week:
+                    # Check for time overlap
+                    if (t1.start_time < t2.end_time and t2.start_time < t1.end_time):
+                        conflicts.append({
+                            'conflict_type': 'Time Overlap',
+                            'slot1': AcademicTimetableSlotSerializer(t1).data,
+                            'slot2': AcademicTimetableSlotSerializer(t2).data
+                        })
+        
+        return Response({
+            'conflicts': conflicts,
+            'total_conflicts': len(conflicts)
+        })
+    
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Get timetable slot statistics"""
+        total_slots = AcademicTimetableSlot.objects.count()
+        active_slots = AcademicTimetableSlot.objects.filter(is_active=True).count()
+        
+        # Get statistics by academic year
+        slots_by_year = AcademicTimetableSlot.objects.values(
+            'academic_year__year'
+        ).annotate(count=Count('id'))
+        
+        # Get statistics by slot type
+        slots_by_type = AcademicTimetableSlot.objects.values('slot_type').annotate(count=Count('id'))
+        
+        # Get statistics by day of week
+        slots_by_day = AcademicTimetableSlot.objects.values('day_of_week').annotate(count=Count('id'))
+        
+        return Response({
+            'total_slots': total_slots,
+            'active_slots': active_slots,
+            'slots_by_year': slots_by_year,
+            'slots_by_type': slots_by_type,
+            'slots_by_day': slots_by_day
+        })
+    
+    @action(detail=False, methods=['post'])
+    def bulk_create(self, request):
+        """Bulk create timetable slots"""
+        slots_data = request.data.get('slots', [])
+        if not slots_data:
+            return Response({'error': 'slots data is required'}, status=400)
+        
+        created_slots = []
+        errors = []
+        
+        for slot_data in slots_data:
+            try:
+                serializer = AcademicTimetableSlotCreateSerializer(data=slot_data)
+                if serializer.is_valid():
+                    slot = serializer.save(created_by=request.user)
+                    created_slots.append(AcademicTimetableSlotSerializer(slot).data)
+                else:
+                    errors.append({
+                        'data': slot_data,
+                        'errors': serializer.errors
+                    })
+            except Exception as e:
+                errors.append({
+                    'data': slot_data,
+                    'error': str(e)
+                })
+        
+        return Response({
+            'created_slots': created_slots,
+            'errors': errors,
+            'total_created': len(created_slots),
+            'total_errors': len(errors)
         })

@@ -11,59 +11,6 @@ class Migration(migrations.Migration):
         ('students', '0005_alter_quota_options_and_more'),
     ]
 
-    operations = [
-        migrations.CreateModel(
-            name='BulkAssignment',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('operation_type', models.CharField(
-                    choices=[
-                        ('ASSIGN_DEPARTMENT', 'Assign Department'),
-                        ('ASSIGN_PROGRAM', 'Assign Academic Program'),
-                        ('ASSIGN_YEAR', 'Assign Academic Year'),
-                        ('ASSIGN_SEMESTER', 'Assign Semester'),
-                        ('ASSIGN_SECTION', 'Assign Section'),
-                        ('PROMOTE_YEAR', 'Promote to Next Year'),
-                        ('TRANSFER_BATCH', 'Transfer to Different Batch'),
-                        ('CUSTOM', 'Custom Assignment'),
-                    ],
-                    max_length=20
-                )),
-                ('title', models.CharField(help_text="Operation title", max_length=200)),
-                ('description', models.TextField(blank=True, help_text="Operation description", null=True)),
-                ('criteria', models.JSONField(default=dict, help_text="Selection criteria")),
-                ('assignment_data', models.JSONField(default=dict, help_text="Assignment data")),
-                ('total_students_found', models.PositiveIntegerField(default=0)),
-                ('students_updated', models.PositiveIntegerField(default=0)),
-                ('students_failed', models.PositiveIntegerField(default=0)),
-                ('errors', models.JSONField(blank=True, default=list)),
-                ('warnings', models.JSONField(blank=True, default=list)),
-                ('status', models.CharField(
-                    choices=[
-                        ('PENDING', 'Pending'),
-                        ('PROCESSING', 'Processing'),
-                        ('COMPLETED', 'Completed'),
-                        ('FAILED', 'Failed'),
-                        ('PARTIAL', 'Partially Completed'),
-                    ],
-                    default='PENDING',
-                    max_length=20
-                )),
-                ('started_at', models.DateTimeField(blank=True, null=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('created_by', models.ForeignKey(
-                    null=True,
-                    on_delete=django.db.models.deletion.SET_NULL,
-                    related_name='bulk_assignments',
-                    to='accounts.user'
-                )),
-            ],
-            options={
-                'verbose_name': 'Bulk Assignment',
-                'verbose_name_plural': 'Bulk Assignments',
-                'ordering': ['-created_at'],
-            },
-        ),
-    ]
+    # BulkAssignment table already exists from earlier migrations/state.
+    # No-op to keep migration graph consistent.
+    operations = []

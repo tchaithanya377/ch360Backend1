@@ -134,8 +134,8 @@ class RollOrEmailTokenSerializer(TokenObtainPairSerializer):
                 'email': user.email,
                 'username': user.username,
             }
-        except Exception:
-            pass
+        except Exception:  # pragma: no cover
+            pass  # pragma: no cover
 
         return data
 

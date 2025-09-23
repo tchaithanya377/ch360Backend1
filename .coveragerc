@@ -1,0 +1,15 @@
+[run]
+source = achievements
+omit =
+	achievements/migrations/*
+	achievements/admin.py
+	achievements/factories.py
+	achievements/tests.py
+	achievements/tests/test_signals.py
+	achievements/tests/test_utils.py
+	achievements/apps.py
+
+[report]
+show_missing = True
+fail_under = 100
+

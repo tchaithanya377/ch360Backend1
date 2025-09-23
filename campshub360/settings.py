@@ -141,9 +141,11 @@ INSTALLED_APPS = [
     'campshub360',
     'achievements',
     'events',
+    # API schema
+    'drf_spectacular',
 ]
 
-# drf-spectacular removed
+# drf-spectacular enabled
 
 # Optionally include ratelimit if installed, to avoid hard dependency during local dev
 try:
@@ -314,9 +316,16 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ),
     'EXCEPTION_HANDLER': 'campshub360.exceptions.custom_exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# Schema generation removed
+# drf-spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'CampsHub360 API',
+    'DESCRIPTION': 'OpenAPI schema for CampsHub360 backend',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
 # SimpleJWT settings (optional sane defaults)
 from datetime import timedelta
@@ -455,6 +464,17 @@ if DATABASES['default']['ENGINE'].endswith('postgresql'):
 
 # Optional: route reads to replica
 DATABASE_ROUTERS = ['campshub360.db_routers.ReadReplicaRouter']
+
+# Force SQLite for pytest runs to keep tests fast and isolated
+_running_pytest = bool(os.getenv('PYTEST_CURRENT_TEST'))
+if _running_pytest:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+    DATABASE_ROUTERS = []
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = os.getenv(
@@ -654,3 +674,42 @@ if not DEBUG:
             },
         },
     }
+
+
+# Attendance system settings
+ATTENDANCE_GRACE_PERIOD_MINUTES = int(os.getenv('ATTENDANCE_GRACE_PERIOD_MINUTES', '5'))
+ATTENDANCE_MIN_DURATION_FOR_PRESENT_MINUTES = int(os.getenv('ATTENDANCE_MIN_DURATION_FOR_PRESENT_MINUTES', '10'))
+ATTENDANCE_THRESHOLD_PERCENT = int(os.getenv('ATTENDANCE_THRESHOLD_PERCENT', '75'))
+ATTENDANCE_ALLOW_QR_SELF_MARK = os.getenv('ATTENDANCE_ALLOW_QR_SELF_MARK', 'True').lower() == 'true'
+ATTENDANCE_OFFLINE_SYNC_MAX_DELTA_MINUTES = int(os.getenv('ATTENDANCE_OFFLINE_SYNC_MAX_DELTA_MINUTES', '120'))
+ATTENDANCE_DEFAULT_TIMEZONE = os.getenv('ATTENDANCE_DEFAULT_TIMEZONE', 'Asia/Kolkata')
+ATTENDANCE_DATA_RETENTION_YEARS = int(os.getenv('ATTENDANCE_DATA_RETENTION_YEARS', '7'))
+ATTENDANCE_AUTO_OPEN_SESSIONS = os.getenv('ATTENDANCE_AUTO_OPEN_SESSIONS', 'True').lower() == 'true'
+ATTENDANCE_AUTO_CLOSE_SESSIONS = os.getenv('ATTENDANCE_AUTO_CLOSE_SESSIONS', 'True').lower() == 'true'
+ATTENDANCE_QR_TOKEN_EXPIRY_MINUTES = int(os.getenv('ATTENDANCE_QR_TOKEN_EXPIRY_MINUTES', '60'))
+ATTENDANCE_MAX_CORRECTION_DAYS = int(os.getenv('ATTENDANCE_MAX_CORRECTION_DAYS', '7'))
+
+# Celery settings for attendance tasks
+CELERY_BEAT_SCHEDULE = {
+    'auto-open-attendance-sessions': {
+        'task': 'attendance.tasks.auto_open_sessions',
+        'schedule': 60.0,  # Run every minute
+    },
+    'auto-close-attendance-sessions': {
+        'task': 'attendance.tasks.auto_close_sessions',
+        'schedule': 60.0,  # Run every minute
+    },
+    'generate-daily-attendance-sessions': {
+        'task': 'attendance.tasks.generate_sessions_for_range',
+        'schedule': 0.0,  # Run at midnight (configure via crontab)
+        'args': (),  # Will be called with default date range
+    },
+    'cleanup-old-attendance-data': {
+        'task': 'attendance.tasks.cleanup_old_attendance_data',
+        'schedule': 86400.0,  # Run daily
+    },
+    'calculate-attendance-statistics': {
+        'task': 'attendance.tasks.calculate_attendance_statistics',
+        'schedule': 3600.0,  # Run hourly
+    },
+}

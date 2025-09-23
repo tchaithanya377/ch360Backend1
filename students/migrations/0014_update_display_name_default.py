@@ -12,55 +12,5 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
-    operations = [
-        migrations.AlterModelOptions(
-            name='studentbatch',
-            options={'ordering': ['department', 'academic_year__year', 'year_of_study', 'section'], 'verbose_name': 'Student Batch', 'verbose_name_plural': 'Student Batches'},
-        ),
-        migrations.RemoveIndex(
-            model_name='student',
-            name='idx_student_dept_year_section',
-        ),
-        migrations.RemoveIndex(
-            model_name='student',
-            name='idx_student_program_year',
-        ),
-        migrations.RemoveField(
-            model_name='student',
-            name='academic_program',
-        ),
-        migrations.RemoveField(
-            model_name='student',
-            name='academic_year',
-        ),
-        migrations.RemoveField(
-            model_name='student',
-            name='department',
-        ),
-        migrations.RemoveField(
-            model_name='student',
-            name='section',
-        ),
-        migrations.RemoveField(
-            model_name='student',
-            name='semester',
-        ),
-        migrations.RemoveField(
-            model_name='student',
-            name='year_of_study',
-        ),
-        migrations.AddField(
-            model_name='student',
-            name='student_batch',
-            field=models.ForeignKey(blank=True, help_text="Student's batch (contains department, program, year, semester, section)", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='students', to='students.studentbatch'),
-        ),
-        migrations.AlterField(
-            model_name='studentbatch',
-            name='academic_year',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='student_batches', to='students.academicyear'),
-        ),
-        migrations.AddIndex(
-            model_name='student',
-            index=models.Index(fields=['student_batch'], name='idx_student_batch'),
-        ),
-    ]
+    # No-op migration - fields already exist in current model state
+    operations = []

@@ -8,6 +8,7 @@ router.register(r'course-sections', views.CourseSectionViewSet, basename='course
 router.register(r'syllabi', views.SyllabusViewSet, basename='syllabus')
 router.register(r'syllabus-topics', views.SyllabusTopicViewSet, basename='syllabus-topic')
 router.register(r'timetables', views.TimetableViewSet, basename='timetable')
+router.register(r'academic-timetable-slots', views.AcademicTimetableSlotViewSet, basename='academic-timetable-slot')
 router.register(r'enrollments', views.CourseEnrollmentViewSet, basename='enrollment')
 router.register(r'batch-enrollments', views.BatchCourseEnrollmentViewSet, basename='batch-enrollment')
 router.register(r'course-prerequisites', views.CoursePrerequisiteViewSet, basename='course-prerequisite')

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    Course, CourseSection, Syllabus, SyllabusTopic, Timetable, 
+    Course, CourseSection, Syllabus, SyllabusTopic, Timetable, AcademicTimetableSlot,
     CourseEnrollment, AcademicCalendar, BatchCourseEnrollment, CoursePrerequisite
 )
 from faculty.serializers import FacultySerializer
@@ -447,3 +447,95 @@ class CoursePrerequisiteCreateSerializer(serializers.ModelSerializer):
                 )
         
         return data
+
+
+# Academic Timetable Slot Serializers
+class AcademicTimetableSlotSerializer(serializers.ModelSerializer):
+    """Serializer for AcademicTimetableSlot model"""
+    academic_year = serializers.StringRelatedField(read_only=True)
+    semester = serializers.StringRelatedField(read_only=True)
+    course = CourseSerializer(read_only=True)
+    faculty = FacultySerializer(read_only=True)
+    student_batch = StudentBatchSerializer(read_only=True)
+    day_of_week_display = serializers.CharField(source='get_day_of_week_display', read_only=True)
+    slot_type_display = serializers.CharField(source='get_slot_type_display', read_only=True)
+    duration_minutes = serializers.SerializerMethodField()
+    academic_period_display = serializers.SerializerMethodField()
+    slot_display_name = serializers.SerializerMethodField()
+    created_by = serializers.StringRelatedField(read_only=True)
+    
+    class Meta:
+        model = AcademicTimetableSlot
+        fields = [
+            'id', 'academic_year', 'semester', 'course', 'faculty', 'student_batch',
+            'slot_type', 'slot_type_display', 'day_of_week', 'day_of_week_display',
+            'start_time', 'end_time', 'room', 'subject', 'description',
+            'is_active', 'is_recurring', 'duration_minutes', 'academic_period_display',
+            'slot_display_name', 'created_by', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_duration_minutes(self, obj):
+        return obj.duration_minutes
+    
+    def get_academic_period_display(self, obj):
+        return obj.academic_period_display
+    
+    def get_slot_display_name(self, obj):
+        return obj.slot_display_name
+
+
+class AcademicTimetableSlotCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating AcademicTimetableSlot"""
+    
+    class Meta:
+        model = AcademicTimetableSlot
+        fields = [
+            'academic_year', 'semester', 'course', 'faculty', 'student_batch',
+            'slot_type', 'day_of_week', 'start_time', 'end_time', 'room',
+            'subject', 'description', 'is_active', 'is_recurring'
+        ]
+    
+    def validate(self, data):
+        """Validate timetable slot data"""
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        
+        # Validate time range
+        if start_time and end_time:
+            if start_time >= end_time:
+                raise serializers.ValidationError(
+                    "End time must be after start time"
+                )
+        
+        # Validate academic year and semester relationship
+        academic_year = data.get('academic_year')
+        semester = data.get('semester')
+        
+        if academic_year and semester:
+            if semester.academic_year != academic_year:
+                raise serializers.ValidationError(
+                    "Semester must belong to the selected academic year"
+                )
+        
+        # Validate student batch belongs to the academic year and semester
+        student_batch = data.get('student_batch')
+        if student_batch:
+            if academic_year and student_batch.academic_year != academic_year:
+                raise serializers.ValidationError(
+                    "Student batch must belong to the selected academic year"
+                )
+            
+            if semester and student_batch.get_semester_object() != semester:
+                raise serializers.ValidationError(
+                    "Student batch semester must match the selected semester"
+                )
+        
+        return data
+
+
+class AcademicTimetableSlotDetailSerializer(AcademicTimetableSlotSerializer):
+    """Detailed serializer for AcademicTimetableSlot with additional information"""
+    
+    class Meta(AcademicTimetableSlotSerializer.Meta):
+        fields = AcademicTimetableSlotSerializer.Meta.fields

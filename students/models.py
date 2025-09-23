@@ -880,3 +880,360 @@ class BulkAssignment(TimeStampedUUIDModel):
         if self.started_at and self.completed_at:
             return self.completed_at - self.started_at
         return None
+
+
+# Student Portal Models for CR/LR functionality
+
+class StudentRepresentativeType(models.TextChoices):
+    """Types of student representatives in AP universities"""
+    CR = 'CR', 'Class Representative'
+    LR = 'LR', 'Ladies Representative'
+    SPORTS = 'SPORTS', 'Sports Representative'
+    CULTURAL = 'CULTURAL', 'Cultural Representative'
+    ACADEMIC = 'ACADEMIC', 'Academic Representative'
+    HOSTEL = 'HOSTEL', 'Hostel Representative'
+    LIBRARY = 'LIBRARY', 'Library Representative'
+    PLACEMENT = 'PLACEMENT', 'Placement Representative'
+
+
+class StudentRepresentative(TimeStampedUUIDModel):
+    """Model for student representatives (CR, LR, etc.) in AP universities"""
+    
+    student = models.OneToOneField(
+        Student,
+        on_delete=models.CASCADE,
+        related_name='representative_role',
+        help_text="Student who holds this representative position"
+    )
+    
+    representative_type = models.CharField(
+        max_length=20,
+        choices=StudentRepresentativeType.choices,
+        help_text="Type of representative role"
+    )
+    
+    # Academic context
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.CASCADE,
+        related_name='representatives',
+        help_text="Academic year for this representation"
+    )
+    semester = models.CharField(
+        max_length=10,
+        help_text="Semester (e.g., 1, 2, 3, 4, 5, 6, 7, 8)"
+    )
+    department = models.ForeignKey(
+        'departments.Department',
+        on_delete=models.CASCADE,
+        related_name='representatives',
+        help_text="Department this representative serves"
+    )
+    academic_program = models.ForeignKey(
+        'academics.AcademicProgram',
+        on_delete=models.CASCADE,
+        related_name='representatives',
+        help_text="Academic program this representative serves"
+    )
+    year_of_study = models.CharField(
+        max_length=1,
+        choices=[
+            ('1', '1st Year'), ('2', '2nd Year'), ('3', '3rd Year'),
+            ('4', '4th Year'), ('5', '5th Year')
+        ],
+        help_text="Year of study this representative serves"
+    )
+    section = models.CharField(
+        max_length=1,
+        choices=[
+            ('A', 'Section A'), ('B', 'Section B'), ('C', 'Section C'),
+            ('D', 'Section D'), ('E', 'Section E'), ('F', 'Section F'),
+            ('G', 'Section G'), ('H', 'Section H'), ('I', 'Section I'),
+            ('J', 'Section J'), ('K', 'Section K'), ('L', 'Section L'),
+            ('M', 'Section M'), ('N', 'Section N'), ('O', 'Section O'),
+            ('P', 'Section P'), ('Q', 'Section Q'), ('R', 'Section R'),
+            ('S', 'Section S'), ('T', 'Section T')
+        ],
+        help_text="Section this representative serves"
+    )
+    
+    # Representative details
+    responsibilities = models.TextField(
+        blank=True,
+        help_text="Key responsibilities and duties"
+    )
+    contact_email = models.EmailField(
+        blank=True,
+        help_text="Contact email for representative matters"
+    )
+    contact_phone = models.CharField(
+        max_length=15,
+        blank=True,
+        help_text="Contact phone number"
+    )
+    
+    # Status and dates
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this representative is currently active"
+    )
+    start_date = models.DateField(
+        default=timezone.now,
+        help_text="Date when representation started"
+    )
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date when representation ended (if applicable)"
+    )
+    
+    # Additional metadata
+    notes = models.TextField(
+        blank=True,
+        help_text="Additional notes about this representative"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Student Representative'
+        verbose_name_plural = 'Student Representatives'
+        indexes = [
+            models.Index(fields=['representative_type', 'is_active']),
+            models.Index(fields=['academic_year', 'semester']),
+            models.Index(fields=['department', 'academic_program']),
+            models.Index(fields=['year_of_study', 'section']),
+        ]
+    
+    def __str__(self):
+        return f"{self.student.get_full_name()} - {self.get_representative_type_display()}"
+    
+    @property
+    def scope_description(self):
+        """Get human-readable scope description"""
+        return f"{self.get_year_of_study_display()} {self.get_section_display()} - {self.semester} Sem"
+
+
+class StudentRepresentativeActivity(TimeStampedUUIDModel):
+    """Model to track activities performed by student representatives"""
+    
+    ACTIVITY_TYPES = [
+        ('MEETING', 'Meeting'),
+        ('EVENT', 'Event Organization'),
+        ('FEEDBACK', 'Feedback Collection'),
+        ('COMPLAINT', 'Complaint Handling'),
+        ('ANNOUNCEMENT', 'Announcement'),
+        ('COORDINATION', 'Coordination'),
+        ('REPORTING', 'Reporting'),
+        ('OTHER', 'Other'),
+    ]
+    
+    representative = models.ForeignKey(
+        StudentRepresentative,
+        on_delete=models.CASCADE,
+        related_name='activities',
+        help_text="Representative who performed this activity"
+    )
+    
+    activity_type = models.CharField(
+        max_length=20,
+        choices=ACTIVITY_TYPES,
+        help_text="Type of activity performed"
+    )
+    
+    title = models.CharField(
+        max_length=200,
+        help_text="Title of the activity"
+    )
+    
+    description = models.TextField(
+        help_text="Detailed description of the activity"
+    )
+    
+    date_performed = models.DateTimeField(
+        default=timezone.now,
+        help_text="Date and time when activity was performed"
+    )
+    
+    participants_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of participants involved"
+    )
+    
+    outcome = models.TextField(
+        blank=True,
+        help_text="Outcome or result of the activity"
+    )
+    
+    attachments = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of attachment URLs or file paths"
+    )
+    
+    is_public = models.BooleanField(
+        default=True,
+        help_text="Whether this activity is visible to all students"
+    )
+    
+    class Meta:
+        ordering = ['-date_performed']
+        verbose_name = 'Representative Activity'
+        verbose_name_plural = 'Representative Activities'
+        indexes = [
+            models.Index(fields=['representative', 'activity_type']),
+            models.Index(fields=['date_performed']),
+            models.Index(fields=['is_public']),
+        ]
+    
+    def __str__(self):
+        return f"{self.representative} - {self.title}"
+
+
+class StudentFeedback(TimeStampedUUIDModel):
+    """Model for student feedback and complaints"""
+    
+    FEEDBACK_TYPES = [
+        ('ACADEMIC', 'Academic Issue'),
+        ('INFRASTRUCTURE', 'Infrastructure Issue'),
+        ('HOSTEL', 'Hostel Issue'),
+        ('LIBRARY', 'Library Issue'),
+        ('SPORTS', 'Sports Facility Issue'),
+        ('CULTURAL', 'Cultural Activity Issue'),
+        ('PLACEMENT', 'Placement Issue'),
+        ('GENERAL', 'General Feedback'),
+        ('COMPLAINT', 'Complaint'),
+        ('SUGGESTION', 'Suggestion'),
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High'),
+        ('URGENT', 'Urgent'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('SUBMITTED', 'Submitted'),
+        ('UNDER_REVIEW', 'Under Review'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('RESOLVED', 'Resolved'),
+        ('CLOSED', 'Closed'),
+        ('REJECTED', 'Rejected'),
+    ]
+    
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name='feedback_submissions',
+        help_text="Student who submitted this feedback"
+    )
+    
+    title = models.CharField(
+        max_length=200,
+        help_text="Title of the feedback"
+    )
+    
+    feedback_type = models.CharField(
+        max_length=20,
+        choices=FEEDBACK_TYPES,
+        help_text="Type of feedback or issue"
+    )
+    
+    description = models.TextField(
+        help_text="Detailed description of the feedback"
+    )
+    
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_LEVELS,
+        default='MEDIUM',
+        help_text="Priority level of the feedback"
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='SUBMITTED',
+        help_text="Current status of the feedback"
+    )
+    
+    # Response and resolution
+    resolution_notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Notes about resolution or action taken"
+    )
+    
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_feedback',
+        help_text="User who resolved this feedback"
+    )
+    
+    resolved_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date when feedback was resolved"
+    )
+    
+    # Follow-up
+    follow_up_required = models.BooleanField(
+        default=False,
+        help_text="Whether follow-up is required"
+    )
+    
+    follow_up_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date for follow-up"
+    )
+    
+    # Additional metadata
+    attachments = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of attachment file paths"
+    )
+    
+    is_anonymous = models.BooleanField(
+        default=False,
+        help_text="Whether this feedback is anonymous"
+    )
+    
+    # Representative handling
+    representative = models.ForeignKey(
+        'StudentRepresentative',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='handled_feedback',
+        help_text="Representative handling this feedback"
+    )
+    
+    class Meta:
+        ordering = ['-created_at', 'priority']
+        verbose_name = 'Student Feedback'
+        verbose_name_plural = 'Student Feedback'
+        indexes = [
+            models.Index(fields=['student', 'status']),
+            models.Index(fields=['feedback_type', 'priority']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.student.get_full_name()} - {self.title}"
+    
+    @property
+    def is_resolved(self):
+        """Check if feedback is resolved"""
+        return self.status in ['RESOLVED', 'CLOSED']
+    
+    @property
+    def resolution_time(self):
+        """Calculate time taken to resolve"""
+        if self.resolved_date and self.created_at:
+            return self.resolved_date - self.created_at
+        return None

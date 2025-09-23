@@ -89,7 +89,7 @@ class AssignmentGradeSerializer(serializers.ModelSerializer):
             'id', 'marks_obtained', 'out_of_marks', 'percentage', 'grade_letter', 'feedback',
             'graded_by', 'graded_by_name', 'graded_at', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'graded_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'graded_by', 'graded_at', 'created_at', 'updated_at']
 
     def get_percentage(self, obj):
         try:
@@ -131,6 +131,7 @@ class AssignmentSubmissionCreateSerializer(serializers.ModelSerializer):
         fields = [
             'assignment', 'content', 'notes', 'attachment_files'
         ]
+        read_only_fields = []
     
     def create(self, validated_data):
         """Create a new submission"""
@@ -147,6 +148,7 @@ class AssignmentSubmissionCreateSerializer(serializers.ModelSerializer):
 class AssignmentSerializer(serializers.ModelSerializer):
     """Serializer for Assignment model"""
     
+    faculty = serializers.CharField(source='faculty.id', read_only=True)
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
     faculty_id = serializers.CharField(source='faculty.apaar_faculty_id', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -158,6 +160,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
     files = AssignmentFileSerializer(many=True, read_only=True)
     comments = AssignmentCommentSerializer(many=True, read_only=True)
     submissions = AssignmentSubmissionSerializer(many=True, read_only=True)
+    submission_status = serializers.SerializerMethodField()
     assigned_to_programs_names = serializers.StringRelatedField(
         source='assigned_to_programs', many=True, read_only=True
     )
@@ -194,12 +197,15 @@ class AssignmentSerializer(serializers.ModelSerializer):
             'assigned_to_course_sections', 'assigned_to_course_sections_names',
             'assigned_to_students', 'assigned_to_students_names', 'attachment_files', 
             'files', 'comments', 'submissions', 'submission_count', 'graded_count', 
-            'is_overdue', 'created_at', 'updated_at'
+            'is_overdue', 'created_at', 'updated_at', 'submission_status'
         ]
         read_only_fields = [
-            'id', 'submission_count', 'graded_count', 'is_overdue',
+            'id', 'submission_count', 'graded_count', 'is_overdue', 'submission_status',
             'created_at', 'updated_at'
         ]
+
+    def get_submission_status(self, obj):
+        return getattr(obj, 'submission_status', None)
 
 
 class AssignmentCreateSerializer(serializers.ModelSerializer):

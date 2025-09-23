@@ -9,15 +9,5 @@ class Migration(migrations.Migration):
         ('students', '0008_add_academic_program_to_studentbatch'),
     ]
 
-    operations = [
-        migrations.RunSQL(
-            sql="""
-            ALTER TABLE students_studentbatch 
-            ADD COLUMN IF NOT EXISTS academic_year VARCHAR(9);
-            """,
-            reverse_sql="""
-            ALTER TABLE students_studentbatch 
-            DROP COLUMN IF EXISTS academic_year;
-            """
-        ),
-    ]
+    # No-op: academic_year handling is already part of current schema/migrations
+    operations = []

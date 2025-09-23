@@ -9,16 +9,5 @@ class Migration(migrations.Migration):
         ('students', '0007_create_bulk_assignment'),
     ]
 
-    operations = [
-        migrations.RunSQL(
-            sql="""
-            ALTER TABLE students_studentbatch 
-            ADD COLUMN IF NOT EXISTS academic_program_id UUID 
-            REFERENCES academics_academicprogram(id) ON DELETE CASCADE;
-            """,
-            reverse_sql="""
-            ALTER TABLE students_studentbatch 
-            DROP COLUMN IF EXISTS academic_program_id;
-            """
-        ),
-    ]
+    # No-op for cross-db compatibility; field exists in current models
+    operations = []

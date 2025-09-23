@@ -582,6 +582,139 @@ class CoursePrerequisite(models.Model):
         return f"{self.course.code} requires {self.prerequisite_course.code}{batch_info}"
 
 
+class AcademicTimetableSlot(models.Model):
+    """Model for academic timetable slots linked to academic year and semester from students table"""
+    
+    SLOT_TYPES = [
+        ('LECTURE', 'Lecture'),
+        ('LAB', 'Laboratory'),
+        ('TUTORIAL', 'Tutorial'),
+        ('SEMINAR', 'Seminar'),
+        ('WORKSHOP', 'Workshop'),
+        ('EXAM', 'Examination'),
+        ('BREAK', 'Break'),
+        ('FREE', 'Free Period'),
+    ]
+    
+    DAYS_OF_WEEK = [
+        ('MON', 'Monday'),
+        ('TUE', 'Tuesday'),
+        ('WED', 'Wednesday'),
+        ('THU', 'Thursday'),
+        ('FRI', 'Friday'),
+        ('SAT', 'Saturday'),
+        ('SUN', 'Sunday'),
+    ]
+    
+    # Link to academic year and semester from students table
+    academic_year = models.ForeignKey(
+        'students.AcademicYear',
+        on_delete=models.CASCADE,
+        related_name='timetable_slots',
+        help_text="Academic year from students table"
+    )
+    semester = models.ForeignKey(
+        'students.Semester',
+        on_delete=models.CASCADE,
+        related_name='timetable_slots',
+        help_text="Semester from students table"
+    )
+    
+    # Course and faculty information
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='timetable_slots',
+        null=True,
+        blank=True,
+        help_text="Course for this slot (optional)"
+    )
+    faculty = models.ForeignKey(
+        Faculty,
+        on_delete=models.CASCADE,
+        related_name='timetable_slots',
+        null=True,
+        blank=True,
+        help_text="Faculty member for this slot (optional)"
+    )
+    
+    # Student batch information
+    student_batch = models.ForeignKey(
+        'students.StudentBatch',
+        on_delete=models.CASCADE,
+        related_name='timetable_slots',
+        null=True,
+        blank=True,
+        help_text="Student batch for this slot (optional)"
+    )
+    
+    # Slot details
+    slot_type = models.CharField(max_length=20, choices=SLOT_TYPES, default='LECTURE')
+    day_of_week = models.CharField(max_length=3, choices=DAYS_OF_WEEK)
+    start_time = models.TimeField(help_text="Slot start time")
+    end_time = models.TimeField(help_text="Slot end time")
+    room = models.CharField(max_length=100, help_text="Room or venue")
+    
+    # Additional information
+    subject = models.CharField(max_length=200, blank=True, help_text="Subject or topic")
+    description = models.TextField(blank=True, help_text="Additional description")
+    is_active = models.BooleanField(default=True, help_text="Whether this slot is active")
+    is_recurring = models.BooleanField(default=True, help_text="Whether this slot repeats weekly")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_timetable_slots'
+    )
+    
+    class Meta:
+        ordering = ['academic_year', 'semester', 'day_of_week', 'start_time']
+        verbose_name = "Timetable Slot"
+        verbose_name_plural = "Timetable Slots"
+        indexes = [
+            Index(fields=['academic_year', 'semester']),
+            Index(fields=['day_of_week', 'start_time']),
+            Index(fields=['faculty', 'is_active']),
+            Index(fields=['student_batch', 'is_active']),
+        ]
+    
+    def __str__(self):
+        course_info = f" - {self.course.code}" if self.course else ""
+        faculty_info = f" ({self.faculty.name})" if self.faculty else ""
+        return f"{self.get_day_of_week_display()} {self.start_time}-{self.end_time}{course_info}{faculty_info}"
+    
+    @property
+    def duration_minutes(self):
+        """Calculate slot duration in minutes"""
+        start_minutes = self.start_time.hour * 60 + self.start_time.minute
+        end_minutes = self.end_time.hour * 60 + self.end_time.minute
+        return end_minutes - start_minutes
+    
+    @property
+    def academic_period_display(self):
+        """Get formatted academic period display"""
+        return f"{self.academic_year.year} - {self.semester.name}"
+    
+    @property
+    def slot_display_name(self):
+        """Get formatted slot display name"""
+        if self.course and self.faculty:
+            return f"{self.course.code} - {self.faculty.name}"
+        elif self.course:
+            return f"{self.course.code}"
+        elif self.faculty:
+            return f"{self.faculty.name}"
+        elif self.subject:
+            return self.subject
+        else:
+            return f"{self.get_slot_type_display()}"
+
+
 class AcademicCalendar(models.Model):
     """Model for academic calendar events"""
     EVENT_TYPE = [
